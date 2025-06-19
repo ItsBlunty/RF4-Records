@@ -48,28 +48,28 @@ function App() {
   const [lastRefresh, setLastRefresh] = useState(null);
 
   // Fetch records from API
-  const fetchRecords = async () => {
-    try {
-      setLoading(true);
+    const fetchRecords = async () => {
+      try {
+        setLoading(true);
       setError(null);
       const response = await axios.get('/api/records');
-      setRecords(response.data);
-      
-      // Extract unique values for filters
-      const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
-      const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
+        setRecords(response.data);
+        
+        // Extract unique values for filters
+        const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
+        const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
       const bait = [...new Set(response.data.map(r => r.bait_display || r.bait).filter(Boolean))].sort();
-      
+        
       setUniqueValues({ fish, waterbody, bait });
-      setFilteredRecords(response.data);
+        setFilteredRecords(response.data);
       setLastRefresh(new Date());
-    } catch (err) {
-      setError('Failed to fetch records. Make sure the backend server is running.');
-      console.error('Error fetching records:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      } catch (err) {
+        setError('Failed to fetch records. Make sure the backend server is running.');
+        console.error('Error fetching records:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
   // Manual refresh function
   const handleRefresh = () => {
@@ -81,7 +81,7 @@ function App() {
     // Prevent duplicate calls in React Strict Mode
     if (hasFetched.current) return;
     hasFetched.current = true;
-    
+
     fetchRecords();
   }, []);
 
@@ -130,7 +130,7 @@ function App() {
         if (sortConfig.key === 'weight') {
           aValue = Number(aValue);
           bValue = Number(bValue);
-        }
+    }
 
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;

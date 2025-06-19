@@ -47,16 +47,16 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                       ))}
                     </datalist>
                     {filters.fish && (
-                      <button
+          <button
                         type="button"
                         onClick={() => clearFilter('fish')}
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                         tabIndex={-1}
                       >
                         <X className="h-4 w-4" />
-                      </button>
+          </button>
                     )}
-                  </div>
+        </div>
                 </td>
                 <td className="location">
                   <div className="relative">
@@ -74,7 +74,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                     <datalist id="locations">
                       {uniqueValues.waterbody.map((loc, idx) => (
                         <option key={idx} value={loc} />
-                      ))}
+              ))}
                     </datalist>
                     {filters.waterbody && (
                       <button
@@ -86,7 +86,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                         <X className="h-4 w-4" />
                       </button>
                     )}
-                  </div>
+          </div>
                 </td>
                 <td className="bait">
                   <div className="relative">
@@ -95,7 +95,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                       list="bait-list"
                       placeholder="Bait"
                       name="bait_query"
-                      value={filters.bait}
+              value={filters.bait}
                       onChange={e => handleInputChange('bait', e.target.value)}
                       autoComplete="off"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -104,7 +104,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                     <datalist id="bait-list">
                       {uniqueValues.bait.map((bait, idx) => (
                         <option key={idx} value={bait} />
-                      ))}
+              ))}
                     </datalist>
                     {filters.bait && (
                       <button
@@ -116,14 +116,14 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                         <X className="h-4 w-4" />
                       </button>
                     )}
-                  </div>
+          </div>
                 </td>
                 <td className="right">
                   <button
                     type="button"
                     onClick={onClear}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
+            >
                     Clear All
                   </button>
                 </td>
