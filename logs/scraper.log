@@ -1,0 +1,8 @@
+2025-06-18 19:26:28,050 - INFO - === STARTING SCHEDULED SCRAPE at 2025-06-18 19:26:28.050012 ===
+2025-06-18 19:26:28,056 - ERROR - Critical error during scraping: (sqlite3.OperationalError) no such table: records
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT records.id AS records_id, records.player AS records_player, records.fish AS records_fish, records.weight AS records_weight, records.waterbody AS records_waterbody, records.bait AS records_bait, records.date AS records_date, records.region AS records_region 
+FROM records) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-06-18 19:26:28,056 - INFO - Database connection closed
+2025-06-18 19:26:28,056 - INFO - === SCRAPING SESSION ENDED ===
