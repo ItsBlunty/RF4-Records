@@ -8,11 +8,16 @@
     "healthcheckPath": "/api",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 10,
+    "volumeMount": {
+      "mountPath": "/app/data",
+      "volumeId": "${{RAILWAY_VOLUME_NAME}}"
+    }
   },
   "variables": {
     "BROWSER_WEBDRIVER_ENDPOINT_PRIVATE": "${{Browserless.BROWSER_WEBDRIVER_ENDPOINT_PRIVATE}}",
-    "BROWSER_TOKEN": "${{Browserless.BROWSER_TOKEN}}"
+    "BROWSER_TOKEN": "${{Browserless.BROWSER_TOKEN}}",
+    "RAILWAY_VOLUME_MOUNT_PATH": "/app/data"
   },
   "environments": {
     "production": {

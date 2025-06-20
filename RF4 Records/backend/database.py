@@ -30,11 +30,20 @@ def get_database_url():
     if 'POSTGRES_URL' in os.environ:
         return os.environ['POSTGRES_URL']
     
+    # Use persistent volume on Railway if available, otherwise local SQLite
+    if 'RAILWAY_VOLUME_MOUNT_PATH' in os.environ:
+        # Railway persistent volume - store database in mounted volume
+        volume_path = os.environ['RAILWAY_VOLUME_MOUNT_PATH']
+        db_path = os.path.join(volume_path, 'rf4_records.db')
+        return f"sqlite:///{db_path}"
+    
     # Default to SQLite for local development
     return "sqlite:///./rf4_records.db"
 
 # Create engine and session
-engine = create_engine(get_database_url())
+database_url = get_database_url()
+print(f"🗄️  Using database: {database_url}")
+engine = create_engine(database_url)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create tables
