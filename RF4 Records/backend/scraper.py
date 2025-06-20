@@ -460,20 +460,18 @@ def scrape_and_update_records():
     try:
         # Get initial database count
         initial_count = db.query(Record).count()
-        logger.info(f"Initial database count: {initial_count} records")
-        
         driver = get_driver()
-        logger.info("Chrome WebDriver initialized successfully")
         
         # Loop through all categories
         for category_key, category_info in CATEGORIES.items():
             if should_stop_scraping:
                 break
-            logger.info(f"=== STARTING CATEGORY: {category_info['name']} ===")
+            # Removed verbose category start message
             
             # Reset consecutive failures for each new category
             consecutive_region_failures = 0
             category_had_success = False
+            category_successful_regions = 0
             
             # Loop through all regions for this category
             for region in category_info['regions']:
@@ -482,21 +480,18 @@ def scrape_and_update_records():
                 
                 # Skip to next category if we've had 2 consecutive failures
                 if consecutive_region_failures >= 2:
-                    logger.warning(f"Skipping rest of {category_info['name']} category due to 2 consecutive region failures")
                     category_failures += 1
                     break
                 region_start_time = datetime.now()
-                logger.info(f"Starting scrape for {category_info['name']} - {region['name']} ({region['code']})")
+                # Removed verbose region start message
                 try:
                     # Check if driver is still alive before using it
                     try:
                         driver.current_url  # Simple check to see if session is alive
                     except Exception:
-                        logger.warning("WebDriver session appears dead, refreshing...")
                         if driver:
                             driver.quit()
                         driver = get_driver()
-                        logger.info("WebDriver session refreshed due to dead session")
                     
                     driver.get(region['url'])
                     records = parse_table_selenium(driver, region)
@@ -543,13 +538,9 @@ def scrape_and_update_records():
                     # Success! Reset consecutive failures and mark category success
                     consecutive_region_failures = 0
                     category_had_success = True
+                    category_successful_regions += 1
                     
-                    region_end_time = datetime.now()
-                    region_duration = (region_end_time - region_start_time).total_seconds()
-                    logger.info(f"{category_info['name']} - {region['name']} completed in {region_duration:.2f}s:")
-                    logger.info(f"  - Fish types found: {len(region_fish)}")
-                    logger.info(f"  - Total records processed: {len(records)}")
-                    logger.info(f"  - New records added: {region_new_records}")
+                    # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     time.sleep(2)
                 except Exception as e:
@@ -557,20 +548,16 @@ def scrape_and_update_records():
                     errors_occurred = True
                     consecutive_region_failures += 1
                     
-                    # Log the failure strategy
+                    # Handle failure strategy quietly
                     if consecutive_region_failures == 1:
-                        logger.info(f"Region failed, continuing to next region in {category_info['name']} (1 consecutive failure)")
                         # Try to refresh the WebDriver session after first failure
                         try:
-                            logger.info("Refreshing WebDriver session due to potential session timeout...")
                             if driver:
                                 driver.quit()
                             driver = get_driver()
-                            logger.info("WebDriver session refreshed successfully")
                         except Exception as refresh_error:
                             logger.error(f"Failed to refresh WebDriver session: {refresh_error}")
-                    elif consecutive_region_failures >= 2:
-                        logger.warning(f"2 consecutive failures in {category_info['name']}, will skip to next category")
+                    # Skip to next category after 2 consecutive failures (handled by loop logic)
                     
                     # Continue to next region (don't break the loop)
                     continue
@@ -580,27 +567,25 @@ def scrape_and_update_records():
             # Track if this entire category failed
             if not category_had_success:
                 category_failures += 1
-                logger.warning(f"Category {category_info['name']} completed with no successful regions")
+            
+            # Simple one-line category summary
+            logger.info(f"{category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions, {total_new_records} total records")
             
             db.commit()
-            logger.info(f"Database committed after {category_info['name']} category - {total_new_records} total records added so far")
             
             # Refresh WebDriver session between categories to prevent staleness
             try:
-                logger.info("Refreshing WebDriver session between categories...")
                 if driver:
                     driver.quit()
                 driver = get_driver()
-                logger.info("WebDriver session refreshed for next category")
             except Exception as refresh_error:
                 logger.error(f"Failed to refresh WebDriver session between categories: {refresh_error}")
         if should_stop_scraping:
-            logger.info("Scraping was interrupted by user")
-            print("🛑 Scraping stopped by user request")
+            logger.info("🛑 Scraping interrupted by user")
+        elif category_failures > 0:
+            logger.info(f"✅ Scraping complete ({category_failures} categories had failures)")
         else:
-            logger.info("All categories completed - final database commit done")
-            if category_failures > 0:
-                logger.warning(f"Completed with {category_failures} categories having failures")
+            logger.info("✅ Scraping complete (all categories successful)")
         final_count = db.query(Record).count()
         sample_record = None
         if final_count > 0:
@@ -619,27 +604,9 @@ def scrape_and_update_records():
                 }
         end_time = datetime.now()
         total_duration = (end_time - start_time).total_seconds()
-        if should_stop_scraping:
-            logger.info(f"=== SCRAPING INTERRUPTED after {total_duration:.2f}s ===")
-            print(f"⏹️ Scraping interrupted after {total_duration:.2f}s")
-        else:
-            logger.info(f"=== SCRAPING COMPLETE in {total_duration:.2f}s ===")
-        logger.info(f"Categories scraped: {len(CATEGORIES)}")
-        logger.info(f"Total regions scraped: {regions_scraped}")
-        logger.info(f"Total unique fish types across all categories and regions: {len(all_unique_fish)}")
-        logger.info(f"Total new records added: {total_new_records}")
-        logger.info(f"Total records in database: {final_count} (was {initial_count})")
-        if sample_record:
-            logger.info(f"Sample record: {sample_record['fish']} ({sample_record['weight']}g) by {sample_record['player']} in {sample_record['region']} - {sample_record['category']}")
-        if should_stop_scraping:
-            logger.info("Scraping was interrupted by user request")
-        elif errors_occurred:
-            if category_failures >= len(CATEGORIES) // 2:  # If more than half the categories failed
-                logger.error("Scraping completed with major issues - many categories failed")
-            else:
-                logger.warning("Scraping completed with some errors - check logs for details")
-        else:
-            logger.info("Scraping completed successfully without errors")
+        
+        # Final summary - one clean line
+        logger.info(f"📊 Final: {regions_scraped} regions, +{total_new_records} new records, {total_duration:.1f}s")
     except Exception as e:
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
@@ -650,22 +617,17 @@ def scrape_and_update_records():
                 driver.set_page_load_timeout(5)
                 driver.implicitly_wait(1)
                 driver.quit()
-                logger.info("Chrome WebDriver closed")
             except Exception as e:
-                logger.warning(f"Error during WebDriver cleanup: {e}")
                 # Force kill if normal cleanup fails
                 try:
                     import psutil
                     for proc in psutil.process_iter(['pid', 'name']):
                         if 'chromedriver' in proc.info['name'].lower():
                             proc.kill()
-                    logger.info("Chrome WebDriver processes force-killed")
                 except:
-                    logger.warning("Could not force-kill Chrome WebDriver processes")
+                    pass
         db.close()
-        logger.info("Database connection closed")
         should_stop_scraping = False
-    logger.info(f"=== SCRAPING SESSION ENDED ===")
     return {
         'success': not errors_occurred and not should_stop_scraping,
         'categories_scraped': len(CATEGORIES),
