@@ -5,5 +5,5 @@ alwaysApply: true
 ---
  - The Goal for this project is to deploy on railway, since we're using selenium already, we will use browserless v1 and refer to those docs instead of v2.
  - This project requires scraping javascript so we must use browser emulation, and selenium works locally, so we are using that ONLY. No manual scrapes or fallbacks.
-
+ - Dont forget to chmod for vite in the build phase
  - This project has 10 regions and 5 categories. Always be sure that you include all these in changes to the scraping.

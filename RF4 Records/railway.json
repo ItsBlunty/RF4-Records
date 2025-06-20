@@ -10,8 +10,12 @@
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   },
-  "variables": {
-    "BROWSER_WEBDRIVER_ENDPOINT": "${{Browserless.BROWSER_WEBDRIVER_ENDPOINT}}",
-    "BROWSER_TOKEN": "${{Browserless.BROWSER_TOKEN}}"
-  }
+      "environments": {
+      "production": {
+        "variables": {
+          "BROWSER_WEBDRIVER_ENDPOINT_PRIVATE": "${{Browserless.BROWSER_WEBDRIVER_ENDPOINT_PRIVATE}}",
+          "BROWSER_TOKEN": "${{Browserless.BROWSER_TOKEN}}"
+        }
+      }
+    }
 } 

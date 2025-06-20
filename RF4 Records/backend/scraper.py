@@ -184,7 +184,7 @@ def get_driver():
     chrome_options.add_argument('--no-sandbox')
     
     # Check if we're running on Railway with Browserless
-    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
+    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE')
     browser_token = os.getenv('BROWSER_TOKEN')
     
     if browser_endpoint and browser_token:
