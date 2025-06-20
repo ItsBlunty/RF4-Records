@@ -6,7 +6,8 @@ from sqlalchemy.orm import Session
 from database import SessionLocal, Record, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from scheduler import is_high_frequency_period, get_next_schedule_change
 import logging
 import signal
 import sys
@@ -95,30 +96,97 @@ def scheduled_scrape():
         is_scraping = True
     
     try:
-        logger.info("=== SCHEDULED SCRAPE TRIGGERED ===")
+        frequency = "15-minute" if is_high_frequency_period() else "hourly"
+        logger.info(f"Starting {frequency} scheduled scrape")
         result = scrape_and_update_records()
         
         if result['success']:
-            logger.info(f"Scheduled scrape completed successfully: {result['new_records']} new records from {result['regions_scraped']} regions")
+            logger.info(f"{frequency.capitalize()} scrape completed successfully")
         else:
-            logger.error(f"Scheduled scrape completed with errors: {result['new_records']} new records from {result['regions_scraped']} regions")
+            logger.warning(f"{frequency.capitalize()} scrape completed with issues")
             
     except Exception as e:
-        logger.error(f"Critical error in scheduled scrape: {e}")
+        logger.error(f"Scheduled scrape failed: {e}")
     finally:
         with scraping_lock:
             is_scraping = False
 
-# Add the scheduled job: first run 1 minute after start, then every 15 minutes
-scheduler.add_job(
-    scheduled_scrape,
-    'interval',
-    minutes=15,
-    id='scrape_job',
-    next_run_time=datetime.now() + timedelta(minutes=1)
-)
+def update_schedule():
+    """Update the scheduler based on current time period"""
+    try:
+        # Remove existing job
+        if scheduler.get_job('scrape_job'):
+            scheduler.remove_job('scrape_job')
+        
+        if is_high_frequency_period():
+            # High frequency: every 15 minutes
+            scheduler.add_job(
+                scheduled_scrape,
+                'interval',
+                minutes=15,
+                id='scrape_job',
+                next_run_time=datetime.now() + timedelta(minutes=1)
+            )
+            frequency = "15-minute"
+        else:
+            # Low frequency: every hour
+            scheduler.add_job(
+                scheduled_scrape,
+                'interval',
+                hours=1,
+                id='scrape_job',
+                next_run_time=datetime.now() + timedelta(minutes=1)
+            )
+            frequency = "hourly"
+        
+        next_change, next_frequency = get_next_schedule_change()
+        logger.info(f"Schedule updated to {frequency} scraping")
+        logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+        
+        # Schedule the next schedule update
+        scheduler.add_job(
+            update_schedule,
+            'date',
+            run_date=next_change,
+            id='schedule_update_job',
+            replace_existing=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error updating schedule: {e}")
+
+def schedule_monitor():
+    """Monitor and update schedule when needed (fallback check every hour)"""
+    try:
+        # Check if we need to update the schedule
+        now = datetime.now(timezone.utc)
+        
+        # Get the next scheduled change time
+        next_change, _ = get_next_schedule_change()
+        
+        # If we're past the change time and no update job exists, update now
+        if now >= next_change and not scheduler.get_job('schedule_update_job'):
+            logger.info("Schedule change detected, updating...")
+            update_schedule()
+            
+    except Exception as e:
+        logger.error(f"Error in schedule monitor: {e}")
+
+# Initialize the dynamic scheduler
 scheduler.start()
-logger.info("Scheduler started - first scrape in 1 minute, then every 15 minutes")
+
+# Set up dynamic scheduling based on current time
+update_schedule()
+
+# Add hourly monitoring job as fallback
+scheduler.add_job(
+    schedule_monitor,
+    'interval',
+    hours=1,
+    id='schedule_monitor_job'
+)
+
+logger.info("Dynamic scheduler started - frequency based on weekly schedule")
 
 @app.on_event("startup")
 def startup_event():
@@ -141,10 +209,15 @@ def startup_event():
     print("   GET  /status   - Server and DB status")
     print("   GET  /docs     - Interactive API documentation")
     print("✅ Server ready! Frontend can connect to this URL")
-    print("🔄 Scheduled scraping will run every 15 minutes (first run in 1 minute)")
+    
+    # Show current schedule
+    frequency = "15-minute" if is_high_frequency_period() else "hourly"
+    next_change, next_frequency = get_next_schedule_change()
+    print(f"🔄 Dynamic scheduling active: {frequency} scraping")
+    print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
     print("🛑 Press Ctrl+C to gracefully shut down the server")
     
-    logger.info("Server started successfully - scheduled scraping active")
+    logger.info("Server started successfully - dynamic scheduled scraping active")
 
 @app.on_event("shutdown")
 def shutdown_event():
@@ -156,10 +229,16 @@ def shutdown_event():
 @app.get("/api")
 def api_root():
     """API root endpoint"""
+    frequency = "15-minute" if is_high_frequency_period() else "hourly"
+    next_change, next_frequency = get_next_schedule_change()
+    
     return {
         "message": "RF4 Records API",
         "status": "running",
         "scheduler_active": scheduler.running,
+        "current_frequency": frequency,
+        "next_schedule_change": next_change.isoformat(),
+        "next_frequency": next_frequency,
         "timestamp": datetime.now().isoformat(),
         "environment": os.getenv("RAILWAY_ENVIRONMENT", "development")
     }

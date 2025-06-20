@@ -1,6 +1,6 @@
 # RF4 Records Dynamic Scheduler
 
-The RF4 Records project includes a dynamic scheduler that automatically adjusts scraping frequency based on the day of the week.
+The RF4 Records project includes a dynamic scheduler that is **integrated directly into the main FastAPI application**. It automatically adjusts scraping frequency based on the day of the week.
 
 ## Schedule
 
@@ -8,6 +8,15 @@ The RF4 Records project includes a dynamic scheduler that automatically adjusts 
 - **Low Frequency**: Tuesday 6PM UTC → Sunday 6PM UTC (every hour)
 
 This schedule is designed around the game's weekly reset cycle, providing more frequent updates during the active period.
+
+## How It Works
+
+The dynamic scheduler is built into `backend/main.py` and:
+- Automatically detects the current time period on startup
+- Starts scraping at the appropriate frequency (15-minute or hourly)
+- Automatically switches frequencies at transition times
+- Provides fallback monitoring to ensure schedule changes are not missed
+- Logs all schedule changes and scrape results
 
 ## Local Development
 
@@ -19,18 +28,20 @@ cd backend
 pip install -r requirements.txt
 ```
 
-### Running the Scheduler
+### Running the Application
+
+Simply run the main application - the scheduler is included:
 
 ```bash
 cd backend
-python start_scheduler.py
+python main.py
 ```
 
-The scheduler will:
-- Automatically detect the current period (high/low frequency)
-- Set up the appropriate schedule
-- Switch schedules automatically at the transition times
-- Log all activities to `logs/scheduler.log`
+The application will show the current schedule on startup:
+```
+🔄 Dynamic scheduling active: hourly scraping
+📅 Next schedule change: 2024-01-21 18:00 UTC -> 15-minute
+```
 
 ### Manual Testing
 
@@ -40,80 +51,94 @@ cd backend
 python -c "from scraper import scrape_and_update_records; scrape_and_update_records()"
 ```
 
+Or trigger via API:
+```bash
+curl -X POST http://localhost:8000/refresh
+```
+
 ## Production Deployment
 
 ### Railway Deployment
 
-For Railway deployment, you can run the scheduler as a separate service or use a cron job service.
+**No additional setup required!** The scheduler runs automatically as part of your main Railway deployment.
 
-#### Option 1: Separate Railway Service
-
-1. Create a new Railway service
-2. Connect the same GitHub repository
-3. Set the start command to: `cd backend && python start_scheduler.py`
-4. Add the same environment variables as your main service
-
-#### Option 2: Cron Job Service
-
-Use Railway's cron job feature or an external service like GitHub Actions to trigger scraping:
-
-```yaml
-# .github/workflows/scraper.yml
-name: RF4 Records Scraper
-on:
-  schedule:
-    # Every 15 minutes during high frequency period
-    - cron: '*/15 * * 0,1 *'  # Sunday and Monday
-    - cron: '0,15,30,45 0-17 * * 2'  # Tuesday before 6PM
-    # Every hour during low frequency period  
-    - cron: '0 18-23 * * 2'  # Tuesday after 6PM
-    - cron: '0 * * 3,4,5,6 *'  # Wednesday through Saturday
-    - cron: '0 0-17 * * 0'  # Sunday before 6PM
-
-jobs:
-  scrape:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger scraping
-        run: curl -X POST ${{ secrets.SCRAPER_WEBHOOK_URL }}
-```
+When you deploy your application to Railway:
+1. The main service starts with FastAPI
+2. The scheduler automatically initializes with the correct frequency
+3. Schedule changes happen automatically at transition times
+4. Everything runs in a single Railway service
 
 ### Environment Variables
 
-The scheduler requires the same environment variables as the main scraper:
+The scheduler uses the same environment variables as the main application:
 - `BROWSER_WEBDRIVER_ENDPOINT_PRIVATE` or `BROWSER_WEBDRIVER_ENDPOINT`
 - `BROWSER_TOKEN`
 - Database connection variables (if using PostgreSQL)
+
+## API Endpoints
+
+The scheduler status is available through the API:
+
+### GET `/api`
+Returns current scheduler information:
+```json
+{
+  "message": "RF4 Records API",
+  "status": "running",
+  "scheduler_active": true,
+  "current_frequency": "hourly",
+  "next_schedule_change": "2024-01-21T18:00:00+00:00",
+  "next_frequency": "15-minute",
+  "timestamp": "2024-01-20T14:30:00.123456",
+  "environment": "production"
+}
+```
+
+### POST `/refresh`
+Manually trigger a scrape (works independently of the scheduler)
 
 ## Monitoring
 
 ### Logs
 
-The scheduler logs to both console and `logs/scheduler.log`:
-- Schedule changes
-- Scraping start/completion
-- Errors and issues
+The scheduler provides detailed logging integrated with the main application:
+- Schedule changes and frequency updates
+- Scrape start/completion with results summary
+- Error handling and recovery
 
 ### Sample Log Output
 
 ```
-2025-06-20 18:00:00,000 - INFO - 🚀 Starting RF4 Records Dynamic Scheduler
-2025-06-20 18:00:00,001 - INFO - 📅 Schedule set to 15-minute scraping
-2025-06-20 18:00:00,002 - INFO - 📅 Next schedule change: 2025-06-22 18:00 UTC -> hourly
-2025-06-20 18:00:00,003 - INFO - 🕐 Starting 15-minute scheduled scrape
-2025-06-20 18:02:30,000 - INFO - Light: 8/10 regions, 1234 total records
-2025-06-20 18:02:35,000 - INFO - 📊 Final: 45 regions, +123 new records, 155.2s
-2025-06-20 18:02:35,001 - INFO - ✅ 15-minute scrape completed successfully
+2024-01-15 18:00:00 - INFO - Schedule updated to 15-minute scraping
+2024-01-15 18:00:00 - INFO - Next schedule change: 2024-01-17 18:00 UTC -> hourly
+2024-01-15 18:00:30 - INFO - Starting 15-minute scheduled scrape
+2024-01-15 18:05:45 - INFO - 15-minute scrape completed successfully
+2024-01-17 18:00:00 - INFO - Schedule updated to hourly scraping
 ```
+
+## Manual Control
+
+You can trigger manual scrapes anytime by:
+1. Calling the `/refresh` endpoint via HTTP
+2. Using the Railway dashboard to make an API call
+3. The manual scrape runs independently of the scheduled scrapes
+
+## Advantages of Integrated Scheduler
+
+✅ **Single Service**: No need for separate Railway services or external cron jobs
+✅ **Automatic**: Works out of the box with no additional setup
+✅ **Reliable**: Built-in fallback monitoring ensures schedule changes happen
+✅ **Cost Effective**: Uses the same Railway service resources
+✅ **Synchronized**: Scheduler and API share the same database and environment
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Import Error**: Make sure you're running from the `backend` directory
-2. **Database Connection**: Ensure database is initialized with `python init_db.py`
-3. **WebDriver Issues**: Check Browserless service is running and environment variables are set
-4. **Schedule Not Changing**: Check system timezone is set correctly
+1. **Scheduler Not Working**: Check the main application logs in Railway dashboard
+2. **Wrong Frequency**: Check the `/api` endpoint to see current frequency and next change time
+3. **Database Connection**: Ensure database is initialized properly
+4. **WebDriver Issues**: Check Browserless service connection status
 
 ### Manual Schedule Check
 
@@ -126,12 +151,32 @@ next_change, next_freq = get_next_schedule_change()
 print(f"Next change: {next_change} -> {next_freq}")
 ```
 
+### API Status Check
+
+Check scheduler status via API:
+```bash
+curl http://localhost:8000/api
+# or in production:
+curl https://your-app.railway.app/api
+```
+
 ## Architecture
 
-The scheduler uses the `schedule` library for simple, readable scheduling logic. It:
+The integrated scheduler uses APScheduler (Advanced Python Scheduler) with:
 
-1. Determines the current period based on UTC time
-2. Sets up appropriate schedule (15min or 1hr)
-3. Monitors for schedule change times
-4. Automatically switches schedules when needed
-5. Handles errors gracefully and continues running 
+1. **Dynamic Job Management**: Jobs are created/updated automatically based on time periods
+2. **Automatic Transitions**: Schedule changes are handled by timed jobs
+3. **Fallback Monitoring**: Hourly checks ensure no schedule changes are missed
+4. **Error Resilience**: Scheduler continues running even if individual scrapes fail
+5. **Shared Resources**: Uses the same database and WebDriver configuration as the API
+
+## Migration from Separate Scheduler
+
+If you were previously using the separate `start_scheduler.py` approach:
+
+1. **No migration needed** - just deploy the updated `main.py`
+2. **Remove separate scheduler service** if you had one on Railway
+3. **Update any external cron jobs** to use the `/refresh` endpoint instead
+4. **Check logs** to confirm the integrated scheduler is working
+
+The integrated approach is simpler, more reliable, and more cost-effective than running separate services. 

@@ -19405,3 +19405,17 @@ Stacktrace:
 2025-06-20 11:32:58,172 - INFO - Testing fixed fatal_scrape_error reference
 2025-06-20 11:45:16,244 - INFO - Testing WebDriver session refresh logic
 2025-06-20 14:07:25,796 - INFO - Testing minimal console output
+2025-06-20 14:26:33,415 - WARNING - Frontend dist directory not found at G:\RF4 Records\RF4 Records\backend\..\frontend\dist
+2025-06-20 14:26:33,418 - INFO - Scheduler started
+2025-06-20 14:26:33,419 - INFO - Added job "scheduled_scrape" to job store "default"
+2025-06-20 14:26:33,436 - INFO - Added job "update_schedule" to job store "default"
+2025-06-20 14:26:33,436 - INFO - Added job "schedule_monitor" to job store "default"
+2025-06-20 14:26:33,436 - INFO - Dynamic scheduler started - frequency based on weekly schedule
+2025-06-20 14:29:25,748 - WARNING - Frontend dist directory not found at G:\RF4 Records\RF4 Records\backend\..\frontend\dist
+2025-06-20 14:29:25,750 - INFO - Scheduler started
+2025-06-20 14:29:25,752 - INFO - Added job "scheduled_scrape" to job store "default"
+2025-06-20 14:29:25,752 - INFO - Schedule updated to hourly scraping
+2025-06-20 14:29:25,752 - INFO - Next schedule change: 2025-06-22 18:00 UTC -> 15-minute
+2025-06-20 14:29:25,753 - INFO - Added job "update_schedule" to job store "default"
+2025-06-20 14:29:25,753 - INFO - Added job "schedule_monitor" to job store "default"
+2025-06-20 14:29:25,753 - INFO - Dynamic scheduler started - frequency based on weekly schedule
