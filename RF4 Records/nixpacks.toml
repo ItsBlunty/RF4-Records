@@ -4,12 +4,12 @@ nixPkgs = ["python311", "python311Packages.pip", "nodejs_20"]
 [phases.install]
 cmds = [
     "cd backend && pip install -r requirements.txt --break-system-packages",
-    "cd frontend && npm ci",
-    "chmod -R +x frontend/node_modules/.bin"
+    "cd frontend && npm ci"
 ]
 
 [phases.build]
 cmds = [
+    "chmod -R +x frontend/node_modules/.bin",
     "cd frontend && npm run build",
     "echo 'Build complete'"
 ]
