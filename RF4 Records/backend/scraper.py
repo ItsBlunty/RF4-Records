@@ -188,9 +188,7 @@ def get_driver():
     browser_token = os.getenv('BROWSER_TOKEN')
     
     # Debug logging
-    logger.info(f"Environment check - BROWSER_WEBDRIVER_ENDPOINT_PRIVATE: {'SET' if os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') else 'NOT SET'}")
-    logger.info(f"Environment check - BROWSER_WEBDRIVER_ENDPOINT: {'SET' if os.getenv('BROWSER_WEBDRIVER_ENDPOINT') else 'NOT SET'}")
-    logger.info(f"Environment check - BROWSER_TOKEN: {'SET' if browser_token else 'NOT SET'}")
+                    # Environment variables checked silently
     
     if browser_endpoint and browser_token:
         # Production: Use Browserless

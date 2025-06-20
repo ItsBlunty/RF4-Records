@@ -19401,3 +19401,7 @@ Stacktrace:
 2025-06-19 16:14:00,477 - INFO - Scheduler stopped
 2025-06-19 16:14:00,477 - INFO - Graceful shutdown complete
 2025-06-19 16:14:00,478 - INFO - === SERVER SHUTDOWN ===
+2025-06-20 11:27:30,726 - INFO - Testing new resilient error handling - this should work!
+2025-06-20 11:32:58,172 - INFO - Testing fixed fatal_scrape_error reference
+2025-06-20 11:45:16,244 - INFO - Testing WebDriver session refresh logic
+2025-06-20 14:07:25,796 - INFO - Testing minimal console output

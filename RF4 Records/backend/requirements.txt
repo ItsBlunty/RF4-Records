@@ -7,4 +7,5 @@ psycopg2-binary==2.9.9
 apscheduler==3.10.4
 selenium==4.15.2
 webdriver-manager==4.0.1
-psutil==5.9.6 
+psutil==5.9.6
+schedule==1.2.0 
