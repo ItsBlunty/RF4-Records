@@ -6,13 +6,8 @@ import RecordsTable from './components/RecordsTable.jsx';
 import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 
-// Configure API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.DEV ? 'http://localhost:8000' : ''
-);
-
-// Configure axios defaults
-axios.defaults.baseURL = API_BASE_URL;
+// Configure API base URL - in production, frontend and backend are served from same domain
+// In development, use proxy configuration in vite.config.js
 
 function App() {
   const [records, setRecords] = useState([]);
