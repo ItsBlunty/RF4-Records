@@ -10,8 +10,9 @@ cmds = [
 [phases.build]
 cmds = [
     "chmod -R +x frontend/node_modules/.bin",
+    "cd frontend && rm -rf dist",
     "cd frontend && npm run build",
-    "echo 'Build complete'"
+    "echo 'Frontend build complete'"
 ]
 
 [start]
