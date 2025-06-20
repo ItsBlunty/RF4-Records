@@ -95,14 +95,8 @@ function App() {
     fetchRecords();
   }, []);
 
-  // Auto-refresh every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchRecords();
-    }, 5 * 60 * 1000); // 5 minutes
-
-    return () => clearInterval(interval);
-  }, []);
+  // No automatic refresh - users can manually refresh by reloading the page
+  // All filtering and sorting is done client-side with cached data
 
   // Apply filters and sorting
   useEffect(() => {
