@@ -454,7 +454,8 @@ def scrape_and_update_records():
     all_unique_fish = set()
     regions_scraped = 0
     errors_occurred = False
-    fatal_scrape_error = False  # NEW: flag to abort on first region failure
+    consecutive_region_failures = 0  # Track consecutive failures within a category
+    category_failures = 0  # Track how many categories had failures
     
     try:
         # Get initial database count
@@ -466,13 +467,23 @@ def scrape_and_update_records():
         
         # Loop through all categories
         for category_key, category_info in CATEGORIES.items():
-            if should_stop_scraping or fatal_scrape_error:
+            if should_stop_scraping:
                 break
             logger.info(f"=== STARTING CATEGORY: {category_info['name']} ===")
             
+            # Reset consecutive failures for each new category
+            consecutive_region_failures = 0
+            category_had_success = False
+            
             # Loop through all regions for this category
             for region in category_info['regions']:
-                if should_stop_scraping or fatal_scrape_error:
+                if should_stop_scraping:
+                    break
+                
+                # Skip to next category if we've had 2 consecutive failures
+                if consecutive_region_failures >= 2:
+                    logger.warning(f"Skipping rest of {category_info['name']} category due to 2 consecutive region failures")
+                    category_failures += 1
                     break
                 region_start_time = datetime.now()
                 logger.info(f"Starting scrape for {category_info['name']} - {region['name']} ({region['code']})")
@@ -516,8 +527,13 @@ def scrape_and_update_records():
                             logger.error(f"Error processing record in {category_info['name']} - {region['name']}: {e}")
                             errors_occurred = True
                             continue
-                    if should_stop_scraping or fatal_scrape_error:
+                    if should_stop_scraping:
                         break
+                    
+                    # Success! Reset consecutive failures and mark category success
+                    consecutive_region_failures = 0
+                    category_had_success = True
+                    
                     region_end_time = datetime.now()
                     region_duration = (region_end_time - region_start_time).total_seconds()
                     logger.info(f"{category_info['name']} - {region['name']} completed in {region_duration:.2f}s:")
@@ -527,22 +543,35 @@ def scrape_and_update_records():
                     regions_scraped += 1
                     time.sleep(2)
                 except Exception as e:
-                    logger.error(f"FATAL: Error scraping {category_info['name']} - {region['name']}: {e}")
+                    logger.error(f"Error scraping {category_info['name']} - {region['name']}: {e}")
                     errors_occurred = True
-                    fatal_scrape_error = True
-                    break  # Abort this category and all further scraping
-            if should_stop_scraping or fatal_scrape_error:
+                    consecutive_region_failures += 1
+                    
+                    # Log the failure strategy
+                    if consecutive_region_failures == 1:
+                        logger.info(f"Region failed, continuing to next region in {category_info['name']} (1 consecutive failure)")
+                    elif consecutive_region_failures >= 2:
+                        logger.warning(f"2 consecutive failures in {category_info['name']}, will skip to next category")
+                    
+                    # Continue to next region (don't break the loop)
+                    continue
+            if should_stop_scraping:
                 break
+            
+            # Track if this entire category failed
+            if not category_had_success:
+                category_failures += 1
+                logger.warning(f"Category {category_info['name']} completed with no successful regions")
+            
             db.commit()
             logger.info(f"Database committed after {category_info['name']} category - {total_new_records} total records added so far")
         if should_stop_scraping:
             logger.info("Scraping was interrupted by user")
             print("🛑 Scraping stopped by user request")
-        elif fatal_scrape_error:
-            logger.error("Scraping aborted due to a fatal error in a record table scrape.")
-            print("💥 Scraping aborted due to a fatal error in a record table scrape.")
         else:
             logger.info("All categories completed - final database commit done")
+            if category_failures > 0:
+                logger.warning(f"Completed with {category_failures} categories having failures")
         final_count = db.query(Record).count()
         sample_record = None
         if final_count > 0:
@@ -564,9 +593,6 @@ def scrape_and_update_records():
         if should_stop_scraping:
             logger.info(f"=== SCRAPING INTERRUPTED after {total_duration:.2f}s ===")
             print(f"⏹️ Scraping interrupted after {total_duration:.2f}s")
-        elif fatal_scrape_error:
-            logger.error(f"=== SCRAPING ABORTED DUE TO FATAL ERROR after {total_duration:.2f}s ===")
-            print(f"⏹️ Scraping aborted due to fatal error after {total_duration:.2f}s")
         else:
             logger.info(f"=== SCRAPING COMPLETE in {total_duration:.2f}s ===")
         logger.info(f"Categories scraped: {len(CATEGORIES)}")
@@ -578,10 +604,11 @@ def scrape_and_update_records():
             logger.info(f"Sample record: {sample_record['fish']} ({sample_record['weight']}g) by {sample_record['player']} in {sample_record['region']} - {sample_record['category']}")
         if should_stop_scraping:
             logger.info("Scraping was interrupted by user request")
-        elif fatal_scrape_error:
-            logger.error("Scraping aborted due to a fatal error in a record table scrape.")
         elif errors_occurred:
-            logger.warning("Scraping completed with some errors - check logs for details")
+            if category_failures >= len(CATEGORIES) // 2:  # If more than half the categories failed
+                logger.error("Scraping completed with major issues - many categories failed")
+            else:
+                logger.warning("Scraping completed with some errors - check logs for details")
         else:
             logger.info("Scraping completed successfully without errors")
     except Exception as e:
@@ -611,14 +638,14 @@ def scrape_and_update_records():
         should_stop_scraping = False
     logger.info(f"=== SCRAPING SESSION ENDED ===")
     return {
-        'success': not errors_occurred and not should_stop_scraping and not fatal_scrape_error,
+        'success': not errors_occurred and not should_stop_scraping,
         'categories_scraped': len(CATEGORIES),
         'regions_scraped': regions_scraped,
         'new_records': total_new_records,
         'duration_seconds': total_duration if 'total_duration' in locals() else 0,
         'errors_occurred': errors_occurred,
         'interrupted': should_stop_scraping,
-        'fatal_scrape_error': fatal_scrape_error
+        'category_failures': category_failures
     }
 
 def scrape_limited_regions():
