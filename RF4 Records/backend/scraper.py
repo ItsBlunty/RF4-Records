@@ -373,36 +373,54 @@ def parse_single_row(row, fish_name, row_type, region_info):
             logger.warning(f"Invalid weight '{weight_text}' found for {fish_name} by {gamername_text} in {region_info['name']}")
             return None
             
-        # Handle weight conversion
+        # Handle weight conversion with improved parsing for all formats
         try:
-            # Remove any unit suffixes and clean the number
-            weight_text = weight_text.lower().strip()
-            is_grams = weight_text.endswith('g') and not weight_text.endswith('kg')
+            # Clean and parse weight - handles: "9.747 kg", "341 g", "1 079.839 kg"
+            weight_text = weight_text.strip()
+            original_weight = weight_text
             
-            # Remove units
-            weight_text = weight_text.replace('kg', '').replace('g', '').strip()
+            # Determine if it's grams or kilograms
+            is_grams = weight_text.lower().endswith('g') and not weight_text.lower().endswith('kg')
+            is_kg = weight_text.lower().endswith('kg')
             
-            # Remove any spaces (for large numbers with thousand separators)
+            # Remove units (case insensitive)
+            weight_text = weight_text.lower().replace('kg', '').replace('g', '').strip()
+            
+            # Handle different number formats:
+            # "9.747" -> 9.747
+            # "341" -> 341  
+            # "1 079.839" -> 1079.839
+            
+            # Remove spaces that are used as thousand separators
             weight_text = weight_text.replace(' ', '')
             
-            # Replace comma with dot for decimal point
+            # Replace comma with dot for decimal point (European format)
             weight_text = weight_text.replace(',', '.')
             
-            # Convert to float first for precise calculation
+            # Convert to float
             weight_float = float(weight_text)
             
-            # Convert to grams
+            # Convert to grams (our storage format)
             if is_grams:
                 weight_grams = int(weight_float)
-            else:
+            elif is_kg:
                 weight_grams = int(weight_float * 1000)  # Convert kg to g
+            else:
+                # If no unit specified, assume grams for small numbers, kg for large
+                if weight_float < 50:  # Likely kg if less than 50
+                    weight_grams = int(weight_float * 1000)
+                else:  # Likely grams if 50 or more
+                    weight_grams = int(weight_float)
             
             if weight_grams <= 0:
                 logger.warning(f"Zero/negative weight {weight_grams}g found for {fish_name} by {gamername_text} in {region_info['name']}")
                 return None
+            
+            # Log successful parsing for debugging
+            logger.debug(f"Parsed weight '{original_weight}' -> {weight_grams}g for {fish_name}")
                 
-        except ValueError:
-            logger.warning(f"Could not parse weight '{weight_text}' for {fish_name} by {gamername_text} in {region_info['name']}")
+        except ValueError as e:
+            logger.warning(f"Could not parse weight '{original_weight}' for {fish_name} by {gamername_text} in {region_info['name']}: {e}")
             return None
         
         record = {

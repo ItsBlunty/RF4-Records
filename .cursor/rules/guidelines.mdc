@@ -7,3 +7,4 @@ alwaysApply: true
  - This project requires scraping javascript so we must use browser emulation, and selenium works locally, so we are using that ONLY. No manual scrapes or fallbacks.
  - Dont forget to chmod for vite in the build phase
  - This project has 10 regions and 5 categories. Always be sure that you include all these in changes to the scraping.
+ - We always need to handle these weight types on scraping "9.747 kg" "341 g" "1 079.839 kg".

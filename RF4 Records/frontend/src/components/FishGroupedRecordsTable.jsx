@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatWeight } from '../utils/formatWeight.js';
 
 const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -222,11 +223,7 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       {largestFish?.bait_display || largestFish?.bait || groupRecords[0]?.bait_display || groupRecords[0]?.bait || '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      {largestFish?.weight ? (
-                        largestFish.weight < 1000 
-                          ? `${largestFish.weight}g`
-                          : `${(largestFish.weight / 1000).toFixed(3)} kg`
-                      ) : '-'}
+                                      {formatWeight(largestFish?.weight)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {largestFish?.waterbody || groupRecords[0]?.waterbody || '-'}
@@ -266,11 +263,7 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         {record.bait_display || record.bait || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                        {record.weight ? (
-                          record.weight < 1000 
-                            ? `${record.weight}g`
-                            : `${(record.weight / 1000).toFixed(3)} kg`
-                        ) : '-'}
+                                            {formatWeight(record.weight)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {record.waterbody || '-'}

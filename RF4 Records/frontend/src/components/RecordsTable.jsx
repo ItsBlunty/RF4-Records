@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatWeight } from '../utils/formatWeight.js';
 
 const RecordsTable = ({ records }) => {
   if (!records || records.length === 0) {
@@ -36,11 +37,7 @@ const RecordsTable = ({ records }) => {
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{record.fish || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">{record.bait_display || record.bait || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap font-semibold text-blue-800">
-                  {record.weight ? (
-                    record.weight < 1000 
-                      ? `${record.weight}g`
-                      : `${(record.weight / 1000).toFixed(3)} kg`
-                  ) : '-'}
+                  {formatWeight(record.weight)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">{record.waterbody || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">{record.date || '-'}</td>
