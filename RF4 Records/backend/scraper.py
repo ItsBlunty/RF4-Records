@@ -184,12 +184,17 @@ def get_driver():
     chrome_options.add_argument('--no-sandbox')
     
     # Check if we're running on Railway with Browserless
-    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE')
+    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
     browser_token = os.getenv('BROWSER_TOKEN')
+    
+    # Debug logging
+    logger.info(f"Environment check - BROWSER_WEBDRIVER_ENDPOINT_PRIVATE: {'SET' if os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') else 'NOT SET'}")
+    logger.info(f"Environment check - BROWSER_WEBDRIVER_ENDPOINT: {'SET' if os.getenv('BROWSER_WEBDRIVER_ENDPOINT') else 'NOT SET'}")
+    logger.info(f"Environment check - BROWSER_TOKEN: {'SET' if browser_token else 'NOT SET'}")
     
     if browser_endpoint and browser_token:
         # Production: Use Browserless
-        logger.info("Using Browserless service for WebDriver")
+        logger.info(f"Using Browserless service for WebDriver at: {browser_endpoint}")
         chrome_options.set_capability('browserless:token', browser_token)
         driver = webdriver.Remote(
             command_executor=browser_endpoint,
