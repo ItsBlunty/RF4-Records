@@ -37,9 +37,9 @@ def setup_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
     
-    # Configure logging
+    # Configure logging with DEBUG level for detailed debugging
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler('logs/scraper.log'),
@@ -340,19 +340,39 @@ def parse_single_table(records_table, table_num, region_info):
 def parse_single_row(row, fish_name, row_type, region_info):
     """Parse a single row and return a record dict"""
     try:
+        # Find columns with more flexible matching for different languages
         weight_col = row.find('div', class_='col overflow nowrap weight')
         location_col = row.find('div', class_='col overflow nowrap location')
         bait_col = row.find('div', class_='col overflow nowrap bait')
         
         # Look for gamername column (with or without has_overflow)
+        # Also try alternative class names that might exist in different language versions
         gamername_col = (
             row.find('div', class_='col overflow nowrap gamername') or
-            row.find('div', class_='col overflow nowrap gamername has_overflow')
+            row.find('div', class_='col overflow nowrap gamername has_overflow') or
+            row.find('div', class_='col overflow nowrap player') or
+            row.find('div', class_='col overflow nowrap username')
         )
         
         data_col = row.find('div', class_='col overflow nowrap data')
         
-        # Extract text from each column
+        # Debug: Log the row structure if we're having issues
+        if region_info['code'] in ['KR', 'CN', 'JP'] and (not weight_col or not gamername_col):
+            logger.debug(f"Row structure analysis for {region_info['name']} ({region_info['code']}):")
+            logger.debug(f"  All columns found: {[div.get('class') for div in row.find_all('div', class_='col')]}")
+            logger.debug(f"  Weight column found: {weight_col is not None}")
+            logger.debug(f"  Player column found: {gamername_col is not None}")
+            logger.debug(f"  Row HTML snippet: {str(row)[:500]}...")
+            
+            # Save problematic row HTML for manual inspection
+            try:
+                with open(f'problematic_row_{region_info["code"]}.html', 'w', encoding='utf-8') as f:
+                    f.write(str(row))
+                logger.debug(f"Saved problematic row HTML to problematic_row_{region_info['code']}.html")
+            except Exception as e:
+                logger.debug(f"Could not save problematic row HTML: {e}")
+        
+        # Extract text from each column with detailed debugging
         weight_text = weight_col.get_text(strip=True) if weight_col else ''
         location_text = location_col.get_text(strip=True) if location_col else ''
         
@@ -368,9 +388,32 @@ def parse_single_row(row, fish_name, row_type, region_info):
         gamername_text = gamername_col.get_text(strip=True) if gamername_col else ''
         data_text = data_col.get_text(strip=True) if data_col else ''
         
-        # Clean up and validate weight
+        # Debug logging for problematic records
+        if not weight_text or not gamername_text or not fish_name:
+            logger.debug(f"Potential issue in {region_info['name']} ({region_info['code']}):")
+            logger.debug(f"  Fish: '{fish_name}'")
+            logger.debug(f"  Weight: '{weight_text}' (from column: {weight_col})")
+            logger.debug(f"  Player: '{gamername_text}' (from column: {gamername_col})")
+            logger.debug(f"  Location: '{location_text}'")
+            logger.debug(f"  Bait: '{bait_text}'")
+            logger.debug(f"  Date: '{data_text}'")
+            logger.debug(f"  Row type: {row_type}")
+            if weight_col:
+                logger.debug(f"  Weight column HTML: {weight_col}")
+            if gamername_col:
+                logger.debug(f"  Player column HTML: {gamername_col}")
+        
+        # Clean up and validate required fields
         if not weight_text or weight_text == '-':
             logger.warning(f"Invalid weight '{weight_text}' found for {fish_name} by {gamername_text} in {region_info['name']}")
+            return None
+            
+        if not gamername_text:
+            logger.warning(f"Empty player name found for {fish_name} in {region_info['name']} - skipping record")
+            return None
+            
+        if not fish_name:
+            logger.warning(f"Empty fish name found for player {gamername_text} in {region_info['name']} - skipping record")
             return None
             
         # Handle weight conversion with improved parsing for all formats
