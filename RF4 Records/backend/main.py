@@ -9,6 +9,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import is_high_frequency_period, get_next_schedule_change
 import logging
+import gc
 import signal
 import sys
 import time
@@ -86,7 +87,7 @@ signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
 signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
 
 def scheduled_scrape():
-    """Wrapper function for scheduled scraping with error handling"""
+    """Wrapper function for scheduled scraping with error handling and memory management"""
     global is_scraping
     
     with scraping_lock:
@@ -108,6 +109,8 @@ def scheduled_scrape():
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")
     finally:
+        # Force garbage collection after each scrape to manage memory
+        gc.collect()
         with scraping_lock:
             is_scraping = False
 
@@ -334,21 +337,64 @@ def refresh():
         with scraping_lock:
             is_scraping = False
 
+@app.post("/cleanup")
+def force_cleanup():
+    """Force garbage collection and memory cleanup"""
+    try:
+        import gc
+        
+        # Force garbage collection
+        collected = gc.collect()
+        
+        # Get memory info
+        import psutil
+        import os as os_module
+        process = psutil.Process(os_module.getpid())
+        memory_info = process.memory_info()
+        memory_mb = memory_info.rss / 1024 / 1024
+        
+        return {
+            "message": "Memory cleanup completed",
+            "objects_collected": collected,
+            "current_memory_mb": round(memory_mb, 2),
+            "memory_percent": round(process.memory_percent(), 2),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
+        return {"error": "Cleanup failed", "details": str(e)}
+
 @app.get("/status")
 def get_status():
-    """Get server and scraping status"""
+    """Get server and scraping status with memory information"""
     try:
+        import psutil
+        import os as os_module
+        
+        # Get memory usage
+        process = psutil.Process(os_module.getpid())
+        memory_info = process.memory_info()
+        memory_mb = memory_info.rss / 1024 / 1024  # Convert to MB
+        
         db: Session = SessionLocal()
         total_records = db.query(Record).count()
         db.close()
+        
+        # Get current schedule info
+        frequency = "15-minute" if is_high_frequency_period() else "hourly"
+        next_change, next_frequency = get_next_schedule_change()
         
         return {
             "server_status": "running",
             "scheduler_active": scheduler.running,
             "is_scraping": is_scraping,
             "total_records": total_records,
+            "current_frequency": frequency,
+            "next_schedule_change": next_change.isoformat(),
+            "next_frequency": next_frequency,
+            "memory_usage_mb": round(memory_mb, 2),
+            "memory_percent": round(process.memory_percent(), 2),
             "last_update": datetime.now().isoformat(),
-            "next_scheduled_scrape": "Every 15 minutes (first run in 1 minute)",
             "environment": os.getenv("RAILWAY_ENVIRONMENT", "development")
         }
     except Exception as e:

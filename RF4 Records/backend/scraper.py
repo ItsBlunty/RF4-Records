@@ -161,18 +161,19 @@ def split_bait_string(bait_string):
         return bait_string.strip(), None
 
 def get_driver():
-    """Create and configure Chrome WebDriver for Browserless or local development"""
+    """Create and configure Chrome WebDriver for Browserless or local development with proper memory management"""
     chrome_options = Options()
     
-    # Set args similar to puppeteer's for best performance
-    chrome_options.add_argument('--window-size=1920,1080')
+    # Memory optimization flags for Browserless
+    chrome_options.add_argument('--memory-pressure-off')
+    chrome_options.add_argument('--max_old_space_size=4096')
     chrome_options.add_argument('--disable-background-timer-throttling')
     chrome_options.add_argument('--disable-backgrounding-occluded-windows')
     chrome_options.add_argument('--disable-breakpad')
     chrome_options.add_argument('--disable-component-extensions-with-background-pages')
     chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees')
+    chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor')
     chrome_options.add_argument('--disable-ipc-flooding-protection')
     chrome_options.add_argument('--disable-renderer-backgrounding')
     chrome_options.add_argument('--enable-features=NetworkService,NetworkServiceInProcess')
@@ -182,29 +183,98 @@ def get_driver():
     chrome_options.add_argument('--mute-audio')
     chrome_options.add_argument('--headless')
     chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--window-size=1280,720')  # Smaller window to save memory
+    
+    # Additional memory management
+    chrome_options.add_argument('--aggressive-cache-discard')
+    chrome_options.add_argument('--disable-background-networking')
+    chrome_options.add_argument('--disable-default-apps')
+    chrome_options.add_argument('--disable-sync')
+    chrome_options.add_argument('--no-first-run')
+    chrome_options.add_argument('--disable-plugins')
+    chrome_options.add_argument('--disable-images')  # Don't load images to save memory
     
     # Check if we're running on Railway with Browserless
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
     browser_token = os.getenv('BROWSER_TOKEN')
     
-    # Debug logging
-                    # Environment variables checked silently
-    
     if browser_endpoint and browser_token:
-        # Production: Use Browserless
-        logger.info(f"Using Browserless service for WebDriver at: {browser_endpoint}")
+        # Production: Use Browserless with memory management
+        logger.info(f"Using Browserless service for WebDriver")
         chrome_options.set_capability('browserless:token', browser_token)
+        
+        # Set timeouts to prevent hanging sessions
+        chrome_options.set_capability('browserless:timeout', 300000)  # 5 minutes max
+        chrome_options.set_capability('browserless:blockAds', True)  # Block ads to save memory
+        
         driver = webdriver.Remote(
             command_executor=browser_endpoint,
             options=chrome_options
         )
+        
+        # Set timeouts to prevent memory leaks from hanging operations
+        driver.set_page_load_timeout(30)  # 30 second page load timeout
+        driver.implicitly_wait(10)  # 10 second implicit wait
+        
     else:
         # Local development: Use local Chrome
         logger.info("Using local Chrome WebDriver for development")
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        # Set timeouts for local development too
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
     
     return driver
+
+def cleanup_driver(driver):
+    """Properly cleanup WebDriver session to prevent memory leaks"""
+    if not driver:
+        return
+    
+    try:
+        # Clear cookies and local storage to free memory
+        driver.delete_all_cookies()
+        driver.execute_script("window.localStorage.clear();")
+        driver.execute_script("window.sessionStorage.clear();")
+        
+        # Close all windows
+        for handle in driver.window_handles:
+            driver.switch_to.window(handle)
+            driver.close()
+            
+    except Exception as e:
+        logger.debug(f"Error during driver cleanup: {e}")
+    
+    try:
+        # Final quit
+        driver.quit()
+    except Exception as e:
+        logger.debug(f"Error during driver quit: {e}")
+
+def is_driver_alive(driver):
+    """Check if WebDriver session is still alive"""
+    if not driver:
+        return False
+    
+    try:
+        # Simple check to see if session is alive
+        driver.current_url
+        return True
+    except Exception:
+        return False
+
+def force_garbage_collection():
+    """Force garbage collection to help with memory management"""
+    try:
+        import gc
+        gc.collect()
+        logger.debug("Forced garbage collection")
+    except Exception as e:
+        logger.debug(f"Error during garbage collection: {e}")
 
 def parse_table_selenium(driver, region_info):
     """Parse the records table using Selenium after JavaScript loads"""
@@ -484,11 +554,8 @@ def scrape_and_update_records():
                 # Removed verbose region start message
                 try:
                     # Check if driver is still alive before using it
-                    try:
-                        driver.current_url  # Simple check to see if session is alive
-                    except Exception:
-                        if driver:
-                            driver.quit()
+                    if not is_driver_alive(driver):
+                        cleanup_driver(driver)
                         driver = get_driver()
                     
                     driver.get(region['url'])
@@ -550,8 +617,7 @@ def scrape_and_update_records():
                     if consecutive_region_failures == 1:
                         # Try to refresh the WebDriver session after first failure
                         try:
-                            if driver:
-                                driver.quit()
+                            cleanup_driver(driver)
                             driver = get_driver()
                         except Exception as refresh_error:
                             logger.error(f"Failed to refresh WebDriver session: {refresh_error}")
@@ -571,10 +637,10 @@ def scrape_and_update_records():
             
             db.commit()
             
-            # Refresh WebDriver session between categories to prevent staleness
+            # Refresh WebDriver session between categories to prevent staleness and memory leaks
             try:
-                if driver:
-                    driver.quit()
+                cleanup_driver(driver)
+                force_garbage_collection()  # Force garbage collection between categories
                 driver = get_driver()
             except Exception as refresh_error:
                 logger.error(f"Failed to refresh WebDriver session between categories: {refresh_error}")
@@ -609,21 +675,9 @@ def scrape_and_update_records():
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
     finally:
-        if driver:
-            try:
-                # Set a short timeout for cleanup operations
-                driver.set_page_load_timeout(5)
-                driver.implicitly_wait(1)
-                driver.quit()
-            except Exception as e:
-                # Force kill if normal cleanup fails
-                try:
-                    import psutil
-                    for proc in psutil.process_iter(['pid', 'name']):
-                        if 'chromedriver' in proc.info['name'].lower():
-                            proc.kill()
-                except:
-                    pass
+        # Proper cleanup to prevent memory leaks
+        cleanup_driver(driver)
+        force_garbage_collection()  # Final garbage collection
         db.close()
         should_stop_scraping = False
     return {
