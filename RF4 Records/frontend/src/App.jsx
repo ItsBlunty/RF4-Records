@@ -49,7 +49,18 @@ function App() {
       try {
         setLoading(true);
       setError(null);
+      console.log('Fetching records from API...');
       const response = await axios.get(import.meta.env.DEV ? '/api/records' : '/records');
+      console.log('API Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      
+      // Check if response.data is an array
+      if (!Array.isArray(response.data)) {
+        console.error('Response data is not an array:', response.data);
+        throw new Error('Invalid response format - expected array');
+      }
+      
         setRecords(response.data);
         
         // Extract unique values for filters
@@ -60,9 +71,11 @@ function App() {
       setUniqueValues({ fish, waterbody, bait });
         setFilteredRecords(response.data);
       setLastRefresh(new Date());
+      console.log(`Successfully loaded ${response.data.length} records`);
       } catch (err) {
-        setError('Failed to fetch records. Make sure the backend server is running.');
-        console.error('Error fetching records:', err);
+        console.error('Detailed error:', err);
+        console.error('Error response:', err.response);
+        setError(`Failed to fetch records: ${err.message}`);
       } finally {
         setLoading(false);
       }

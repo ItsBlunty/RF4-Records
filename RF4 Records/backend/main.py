@@ -165,6 +165,7 @@ def api_root():
     }
 
 @app.get("/records")
+@app.get("/api/records")
 def get_records():
     """Get all records from database, deduplicated for frontend display"""
     try:
