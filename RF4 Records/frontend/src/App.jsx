@@ -7,7 +7,9 @@ import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 
 // Configure API base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.DEV ? 'http://localhost:8000' : ''
+);
 
 // Configure axios defaults
 axios.defaults.baseURL = API_BASE_URL;
@@ -52,7 +54,7 @@ function App() {
       try {
         setLoading(true);
       setError(null);
-      const response = await axios.get('/api/records');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records' : '/records');
         setRecords(response.data);
         
         // Extract unique values for filters

@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
@@ -38,6 +39,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Serve static files (built frontend) in production
+frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+if os.path.exists(frontend_dist_path):
+    app.mount("/static", StaticFiles(directory=frontend_dist_path), name="static")
+    logger.info(f"Serving static files from {frontend_dist_path}")
+else:
+    logger.warning(f"Frontend dist directory not found at {frontend_dist_path}")
 
 # Global variables for scraping control
 is_scraping = False
@@ -144,9 +153,9 @@ def shutdown_event():
     scheduler.shutdown()
     logger.info("Scheduler shutdown complete")
 
-@app.get("/")
-def root():
-    """Root endpoint"""
+@app.get("/api")
+def api_root():
+    """API root endpoint"""
     return {
         "message": "RF4 Records API",
         "status": "running",
@@ -265,6 +274,26 @@ def get_status():
     except Exception as e:
         logger.error(f"Error getting status: {e}")
         return {"error": "Failed to get status"}
+
+# Serve the frontend for all other routes (SPA routing)
+@app.get("/{path:path}")
+def serve_frontend(path: str):
+    """Serve the frontend application for all non-API routes"""
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+    index_path = os.path.join(frontend_dist_path, "index.html")
+    
+    # If the frontend build exists, serve it
+    if os.path.exists(index_path):
+        # Check if the requested path is a file that exists
+        requested_file = os.path.join(frontend_dist_path, path)
+        if os.path.isfile(requested_file):
+            return FileResponse(requested_file)
+        else:
+            # For SPA routing, serve index.html for all other paths
+            return FileResponse(index_path)
+    else:
+        # Fallback if frontend is not built
+        return {"message": "Frontend not available - API only mode", "path": path}
 
 if __name__ == "__main__":
     import uvicorn

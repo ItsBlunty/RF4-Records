@@ -161,16 +161,46 @@ def split_bait_string(bait_string):
         return bait_string.strip(), None
 
 def get_driver():
-    """Create and configure Chrome WebDriver"""
+    """Create and configure Chrome WebDriver for Browserless or local development"""
     chrome_options = Options()
-    chrome_options.add_argument('--headless')  # Run in background
-    chrome_options.add_argument('--no-sandbox')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-gpu')
-    chrome_options.add_argument('--window-size=1920,1080')
     
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    # Set args similar to puppeteer's for best performance
+    chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.add_argument('--disable-background-timer-throttling')
+    chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+    chrome_options.add_argument('--disable-breakpad')
+    chrome_options.add_argument('--disable-component-extensions-with-background-pages')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees')
+    chrome_options.add_argument('--disable-ipc-flooding-protection')
+    chrome_options.add_argument('--disable-renderer-backgrounding')
+    chrome_options.add_argument('--enable-features=NetworkService,NetworkServiceInProcess')
+    chrome_options.add_argument('--force-color-profile=srgb')
+    chrome_options.add_argument('--hide-scrollbars')
+    chrome_options.add_argument('--metrics-recording-only')
+    chrome_options.add_argument('--mute-audio')
+    chrome_options.add_argument('--headless')
+    chrome_options.add_argument('--no-sandbox')
+    
+    # Check if we're running on Railway with Browserless
+    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
+    browser_token = os.getenv('BROWSER_TOKEN')
+    
+    if browser_endpoint and browser_token:
+        # Production: Use Browserless
+        logger.info("Using Browserless service for WebDriver")
+        chrome_options.set_capability('browserless:token', browser_token)
+        driver = webdriver.Remote(
+            command_executor=browser_endpoint,
+            options=chrome_options
+        )
+    else:
+        # Local development: Use local Chrome
+        logger.info("Using local Chrome WebDriver for development")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    
     return driver
 
 def parse_table_selenium(driver, region_info):
