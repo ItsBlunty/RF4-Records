@@ -494,7 +494,7 @@ def scrape_and_update_records():
                     region_fish = set()
                     region_new_records = 0
                     for rec in records:
-                        if should_stop_scraping or fatal_scrape_error:
+                        if should_stop_scraping:
                             break
                         try:
                             # Split bait into bait1 and bait2
