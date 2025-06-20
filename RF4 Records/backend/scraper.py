@@ -37,9 +37,9 @@ def setup_logging():
     if not os.path.exists('logs'):
         os.makedirs('logs')
     
-    # Configure logging with DEBUG level for detailed debugging
+    # Configure logging with clean, minimal output
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format='%(asctime)s - %(levelname)s - %(message)s',
         handlers=[
             logging.FileHandler('logs/scraper.log'),
@@ -212,14 +212,11 @@ def parse_table_selenium(driver, region_info):
     """Parse the records table using Selenium after JavaScript loads"""
     global should_stop_scraping
     
-    print(f"Waiting for page to load for {region_info['name']}...")
-    
     # Wait for the page to redirect and load the actual content
     time.sleep(3)
     
     # Check for interruption
     if should_stop_scraping:
-        print(f"Scraping interrupted while loading {region_info['name']}")
         return []
     
     # Wait for records tables to be present with timeout
@@ -228,32 +225,20 @@ def parse_table_selenium(driver, region_info):
     # Look for all records tables on the page
     try:
         table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.records_subtable.flex_table")))
-        print(f"Found {len(table_elements)} fish record tables for {region_info['name']}")
     except:
-        print(f"No records tables found for {region_info['name']}")
-        # Save page source for debugging
-        with open(f'rf4_selenium_debug_{region_info["code"]}.html', 'w', encoding='utf-8') as f:
-            f.write(driver.page_source)
-        print(f"Page source saved to rf4_selenium_debug_{region_info['code']}.html")
+        logger.warning(f"No records tables found for {region_info['name']}")
         return []
     
     # Check for interruption
     if should_stop_scraping:
-        print(f"Scraping interrupted while parsing {region_info['name']}")
         return []
     
     # Get the page source and parse with BeautifulSoup
     html_content = driver.page_source
     soup = BeautifulSoup(html_content, 'html.parser')
     
-    # Save the actual loaded page for debugging
-    with open(f'rf4_loaded_page_{region_info["code"]}.html', 'w', encoding='utf-8') as f:
-        f.write(html_content)
-    print(f"Loaded page saved to rf4_loaded_page_{region_info['code']}.html")
-    
     # Check for interruption before parsing
     if should_stop_scraping:
-        print(f"Scraping interrupted before parsing {region_info['name']}")
         return []
     
     # Now parse all the records tables
@@ -264,11 +249,8 @@ def parse_single_table(records_table, table_num, region_info):
     """Parse a single records table"""
     records = []
     
-    print(f"\n=== Parsing table {table_num} ===")
-    
     # Find all direct children - header rows and detail row containers
     all_children = records_table.find_all(['div'], recursive=False)
-    print(f"Found {len(all_children)} direct children in table {table_num}")
     
     current_fish_name = ""
     
@@ -286,16 +268,14 @@ def parse_single_table(records_table, table_num, region_info):
                     current_fish_name = fish_text_div.get_text(strip=True)
                 else:
                     current_fish_name = fish_col.get_text(strip=True)
-                print(f"Fish: '{current_fish_name}' (header + 4 additional records)")
             
             # Process the header row as the first record
             try:
                 record = parse_single_row(child, current_fish_name, "header", region_info)
                 if record:  # Only append if we got a valid record
                     records.append(record)
-                    
             except Exception as e:
-                print(f"Error parsing header row: {e}")
+                logger.debug(f"Error parsing header row: {e}")
                 continue
         
         # Check if this is a rows container (contains the 4 additional detail rows)
@@ -310,7 +290,7 @@ def parse_single_table(records_table, table_num, region_info):
                         records.append(record)
                         
                 except Exception as e:
-                    print(f"Error parsing additional row {j+1}: {e}")
+                    logger.debug(f"Error parsing additional row {j+1}: {e}")
                     continue
         
         # Handle any standalone rows (fallback)
@@ -331,10 +311,9 @@ def parse_single_table(records_table, table_num, region_info):
                     records.append(record)
                     
             except Exception as e:
-                print(f"Error parsing standalone row: {e}")
+                logger.debug(f"Error parsing standalone row: {e}")
                 continue
     
-    print(f"Table {table_num} parsed: {len(records)} records for '{current_fish_name}'")
     return records
 
 def parse_single_row(row, fish_name, row_type, region_info):
@@ -356,21 +335,7 @@ def parse_single_row(row, fish_name, row_type, region_info):
         
         data_col = row.find('div', class_='col overflow nowrap data')
         
-        # Debug: Log the row structure if we're having issues
-        if region_info['code'] in ['KR', 'CN', 'JP'] and (not weight_col or not gamername_col):
-            logger.debug(f"Row structure analysis for {region_info['name']} ({region_info['code']}):")
-            logger.debug(f"  All columns found: {[div.get('class') for div in row.find_all('div', class_='col')]}")
-            logger.debug(f"  Weight column found: {weight_col is not None}")
-            logger.debug(f"  Player column found: {gamername_col is not None}")
-            logger.debug(f"  Row HTML snippet: {str(row)[:500]}...")
-            
-            # Save problematic row HTML for manual inspection
-            try:
-                with open(f'problematic_row_{region_info["code"]}.html', 'w', encoding='utf-8') as f:
-                    f.write(str(row))
-                logger.debug(f"Saved problematic row HTML to problematic_row_{region_info['code']}.html")
-            except Exception as e:
-                logger.debug(f"Could not save problematic row HTML: {e}")
+
         
         # Extract text from each column with detailed debugging
         weight_text = weight_col.get_text(strip=True) if weight_col else ''
@@ -388,32 +353,8 @@ def parse_single_row(row, fish_name, row_type, region_info):
         gamername_text = gamername_col.get_text(strip=True) if gamername_col else ''
         data_text = data_col.get_text(strip=True) if data_col else ''
         
-        # Debug logging for problematic records
-        if not weight_text or not gamername_text or not fish_name:
-            logger.debug(f"Potential issue in {region_info['name']} ({region_info['code']}):")
-            logger.debug(f"  Fish: '{fish_name}'")
-            logger.debug(f"  Weight: '{weight_text}' (from column: {weight_col})")
-            logger.debug(f"  Player: '{gamername_text}' (from column: {gamername_col})")
-            logger.debug(f"  Location: '{location_text}'")
-            logger.debug(f"  Bait: '{bait_text}'")
-            logger.debug(f"  Date: '{data_text}'")
-            logger.debug(f"  Row type: {row_type}")
-            if weight_col:
-                logger.debug(f"  Weight column HTML: {weight_col}")
-            if gamername_col:
-                logger.debug(f"  Player column HTML: {gamername_col}")
-        
-        # Clean up and validate required fields
-        if not weight_text or weight_text == '-':
-            logger.warning(f"Invalid weight '{weight_text}' found for {fish_name} by {gamername_text} in {region_info['name']}")
-            return None
-            
-        if not gamername_text:
-            logger.warning(f"Empty player name found for {fish_name} in {region_info['name']} - skipping record")
-            return None
-            
-        if not fish_name:
-            logger.warning(f"Empty fish name found for player {gamername_text} in {region_info['name']} - skipping record")
+        # Silently skip empty records (fish not caught this week in this region)
+        if not weight_text or weight_text == '-' or not gamername_text or not fish_name:
             return None
             
         # Handle weight conversion with improved parsing for all formats
@@ -459,8 +400,7 @@ def parse_single_row(row, fish_name, row_type, region_info):
                 logger.warning(f"Zero/negative weight {weight_grams}g found for {fish_name} by {gamername_text} in {region_info['name']}")
                 return None
             
-            # Log successful parsing for debugging
-            logger.debug(f"Parsed weight '{original_weight}' -> {weight_grams}g for {fish_name}")
+
                 
         except ValueError as e:
             logger.warning(f"Could not parse weight '{original_weight}' for {fish_name} by {gamername_text} in {region_info['name']}: {e}")
@@ -479,30 +419,22 @@ def parse_single_row(row, fish_name, row_type, region_info):
         return record
         
     except Exception as e:
-        print(f"Error parsing {row_type} row: {e}")
+        logger.debug(f"Error parsing {row_type} row: {e}")
         return None
 
 def parse_all_records_from_soup(soup, region_info):
     """Parse all records tables from the BeautifulSoup object"""
     all_records = []
     
-    print(f"=== Parsing all fish tables on page for {region_info['name']} ===")
-    
     # Find all records tables on the page
     records_tables = soup.find_all('div', class_='records_subtable flex_table')
-    print(f"Found {len(records_tables)} fish tables to process for {region_info['name']}")
     
     if not records_tables:
-        print(f"No records tables found for {region_info['name']}")
         return []
     
     for i, table in enumerate(records_tables, 1):
         table_records = parse_single_table(table, i, region_info)
         all_records.extend(table_records)
-    
-    print(f"\n=== SUMMARY for {region_info['name']} ===")
-    print(f"Total fish types processed: {len(records_tables)}")
-    print(f"Total records parsed: {len(all_records)}")
     
     return all_records
 
