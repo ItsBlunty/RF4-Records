@@ -488,6 +488,16 @@ def scrape_and_update_records():
                 region_start_time = datetime.now()
                 logger.info(f"Starting scrape for {category_info['name']} - {region['name']} ({region['code']})")
                 try:
+                    # Check if driver is still alive before using it
+                    try:
+                        driver.current_url  # Simple check to see if session is alive
+                    except Exception:
+                        logger.warning("WebDriver session appears dead, refreshing...")
+                        if driver:
+                            driver.quit()
+                        driver = get_driver()
+                        logger.info("WebDriver session refreshed due to dead session")
+                    
                     driver.get(region['url'])
                     records = parse_table_selenium(driver, region)
                     # Track unique fish names for this region
@@ -550,6 +560,15 @@ def scrape_and_update_records():
                     # Log the failure strategy
                     if consecutive_region_failures == 1:
                         logger.info(f"Region failed, continuing to next region in {category_info['name']} (1 consecutive failure)")
+                        # Try to refresh the WebDriver session after first failure
+                        try:
+                            logger.info("Refreshing WebDriver session due to potential session timeout...")
+                            if driver:
+                                driver.quit()
+                            driver = get_driver()
+                            logger.info("WebDriver session refreshed successfully")
+                        except Exception as refresh_error:
+                            logger.error(f"Failed to refresh WebDriver session: {refresh_error}")
                     elif consecutive_region_failures >= 2:
                         logger.warning(f"2 consecutive failures in {category_info['name']}, will skip to next category")
                     
@@ -565,6 +584,16 @@ def scrape_and_update_records():
             
             db.commit()
             logger.info(f"Database committed after {category_info['name']} category - {total_new_records} total records added so far")
+            
+            # Refresh WebDriver session between categories to prevent staleness
+            try:
+                logger.info("Refreshing WebDriver session between categories...")
+                if driver:
+                    driver.quit()
+                driver = get_driver()
+                logger.info("WebDriver session refreshed for next category")
+            except Exception as refresh_error:
+                logger.error(f"Failed to refresh WebDriver session between categories: {refresh_error}")
         if should_stop_scraping:
             logger.info("Scraping was interrupted by user")
             print("🛑 Scraping stopped by user request")
