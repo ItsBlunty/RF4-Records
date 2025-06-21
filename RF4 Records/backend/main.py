@@ -144,7 +144,7 @@ def update_schedule():
                 'interval',
                 minutes=15,
                 id='scrape_job',
-                next_run_time=datetime.now() + timedelta(minutes=1)
+                next_run_time=datetime.now() + timedelta(hours=1)
             )
             frequency = "15-minute"
         else:
@@ -154,7 +154,7 @@ def update_schedule():
                 'interval',
                 hours=1,
                 id='scrape_job',
-                next_run_time=datetime.now() + timedelta(minutes=1)
+                next_run_time=datetime.now() + timedelta(hours=1)
             )
             frequency = "hourly"
         
