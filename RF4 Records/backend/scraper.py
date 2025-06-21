@@ -231,29 +231,45 @@ def get_driver():
     return driver
 
 def cleanup_driver(driver):
-    """Properly cleanup WebDriver session to prevent memory leaks"""
+    """Aggressively cleanup WebDriver session to prevent memory leaks"""
     if not driver:
         return
     
     try:
-        # Clear cookies and local storage to free memory
+        # Clear all browser data to free memory
         driver.delete_all_cookies()
         driver.execute_script("window.localStorage.clear();")
         driver.execute_script("window.sessionStorage.clear();")
+        driver.execute_script("window.indexedDB.deleteDatabase();")
         
-        # Close all windows
-        for handle in driver.window_handles:
-            driver.switch_to.window(handle)
-            driver.close()
-            
+        # Clear cache and history
+        driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        
+        # Close all windows and tabs
+        handles = driver.window_handles.copy()
+        for handle in handles:
+            try:
+                driver.switch_to.window(handle)
+                driver.close()
+            except Exception:
+                pass
+                
     except Exception as e:
         logger.debug(f"Error during driver cleanup: {e}")
     
     try:
-        # Final quit
+        # Final quit with timeout
         driver.quit()
+        
+        # Give system time to clean up processes
+        import time
+        time.sleep(0.5)
+        
     except Exception as e:
         logger.debug(f"Error during driver quit: {e}")
+    
+    # Force cleanup of driver object reference
+    driver = None
 
 def is_driver_alive(driver):
     """Check if WebDriver session is still alive"""
@@ -268,13 +284,49 @@ def is_driver_alive(driver):
         return False
 
 def force_garbage_collection():
-    """Force garbage collection to help with memory management"""
+    """Aggressively force garbage collection to help with memory management"""
     try:
         import gc
-        gc.collect()
-        logger.debug("Forced garbage collection")
+        
+        # Multiple collection passes for thorough cleanup
+        collected = 0
+        for i in range(3):  # 3 passes to catch circular references
+            collected += gc.collect()
+        
+        # Force collection of specific generations
+        gc.collect(0)  # Young objects
+        gc.collect(1)  # Middle-aged objects  
+        gc.collect(2)  # Old objects
+        
+        logger.debug(f"Garbage collection: {collected} objects collected")
+        
     except Exception as e:
         logger.debug(f"Error during garbage collection: {e}")
+
+def get_memory_usage():
+    """Get current memory usage in MB"""
+    try:
+        import psutil
+        import os
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        return round(memory_mb, 1)
+    except Exception:
+        return 0
+
+def log_memory_usage(context=""):
+    """Log current memory usage with context"""
+    memory_mb = get_memory_usage()
+    if memory_mb > 0:
+        logger.info(f"Memory usage {context}: {memory_mb} MB")
+        
+        # Force aggressive cleanup if memory usage is too high
+        if memory_mb > 350:  # Threshold for aggressive cleanup
+            logger.warning(f"High memory usage detected ({memory_mb} MB), forcing aggressive cleanup")
+            force_garbage_collection()
+            force_garbage_collection()  # Double cleanup
+            
+    return memory_mb
 
 def parse_table_selenium(driver, region_info):
     """Parse the records table using Selenium after JavaScript loads"""
@@ -516,6 +568,9 @@ def scrape_and_update_records():
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
     
+    # Log initial memory usage
+    initial_memory = log_memory_usage("before scrape")
+    
     db = SessionLocal()
     total_new_records = 0
     driver = None
@@ -635,13 +690,23 @@ def scrape_and_update_records():
             # Simple one-line category summary
             logger.info(f"{category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions, {total_new_records} total records")
             
-            db.commit()
+            # Commit and refresh database session between categories
+            try:
+                db.commit()
+                db.close()
+                db = SessionLocal()  # Fresh database session
+            except Exception as db_error:
+                logger.error(f"Database session refresh error: {db_error}")
             
             # Refresh WebDriver session between categories to prevent staleness and memory leaks
             try:
                 cleanup_driver(driver)
                 force_garbage_collection()  # Force garbage collection between categories
                 driver = get_driver()
+                
+                # Log memory usage after category cleanup
+                log_memory_usage(f"after {category_info['name']} category")
+                
             except Exception as refresh_error:
                 logger.error(f"Failed to refresh WebDriver session between categories: {refresh_error}")
         if should_stop_scraping:
@@ -669,16 +734,36 @@ def scrape_and_update_records():
         end_time = datetime.now()
         total_duration = (end_time - start_time).total_seconds()
         
-        # Final summary - one clean line
+        # Final summary with memory usage
+        final_memory = get_memory_usage()
+        memory_change = final_memory - initial_memory if 'initial_memory' in locals() else 0
         logger.info(f"📊 Final: {regions_scraped} regions, +{total_new_records} new records, {total_duration:.1f}s")
+        logger.info(f"🧠 Memory: {final_memory} MB (Δ{memory_change:+.1f} MB)")
     except Exception as e:
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
     finally:
-        # Proper cleanup to prevent memory leaks
+        # Aggressive cleanup to prevent memory leaks
+        try:
+            # Close database session properly
+            if db:
+                db.rollback()  # Rollback any pending transactions
+                db.close()
+                db = None
+        except Exception as e:
+            logger.debug(f"Error closing database session: {e}")
+        
+        # Clean up WebDriver
         cleanup_driver(driver)
-        force_garbage_collection()  # Final garbage collection
-        db.close()
+        driver = None
+        
+        # Clear large variables
+        all_unique_fish = None
+        
+        # Force multiple garbage collection cycles
+        force_garbage_collection()
+        force_garbage_collection()  # Second pass for circular references
+        
         should_stop_scraping = False
     return {
         'success': not errors_occurred and not should_stop_scraping,

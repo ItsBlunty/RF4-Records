@@ -101,20 +101,32 @@ def scheduled_scrape():
         is_scraping = True
     
     try:
+        import psutil
+        import os
+        
+        # Log memory before scrape
+        process = psutil.Process(os.getpid())
+        memory_before = process.memory_info().rss / 1024 / 1024
+        
         frequency = "15-minute" if is_high_frequency_period() else "hourly"
-        logger.info(f"Starting {frequency} scheduled scrape")
+        logger.info(f"Starting {frequency} scheduled scrape (Memory: {memory_before:.1f} MB)")
         result = scrape_and_update_records()
         
+        # Log memory after scrape
+        memory_after = process.memory_info().rss / 1024 / 1024
+        memory_change = memory_after - memory_before
+        
         if result['success']:
-            logger.info(f"{frequency.capitalize()} scrape completed successfully")
+            logger.info(f"{frequency.capitalize()} scrape completed successfully (Memory: {memory_after:.1f} MB, Δ{memory_change:+.1f} MB)")
         else:
-            logger.warning(f"{frequency.capitalize()} scrape completed with issues")
+            logger.warning(f"{frequency.capitalize()} scrape completed with issues (Memory: {memory_after:.1f} MB, Δ{memory_change:+.1f} MB)")
             
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")
     finally:
-        # Force garbage collection after each scrape to manage memory
-        gc.collect()
+        # Aggressive garbage collection after each scrape
+        for _ in range(3):  # Multiple passes
+            gc.collect()
         with scraping_lock:
             is_scraping = False
 
