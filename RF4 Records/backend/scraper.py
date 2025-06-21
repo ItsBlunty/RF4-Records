@@ -267,9 +267,6 @@ def cleanup_driver(driver):
         
     except Exception as e:
         logger.debug(f"Error during driver quit: {e}")
-    
-    # Force cleanup of driver object reference
-    driver = None
 
 def is_driver_alive(driver):
     """Check if WebDriver session is still alive"""
@@ -697,6 +694,11 @@ def scrape_and_update_records():
                 db = SessionLocal()  # Fresh database session
             except Exception as db_error:
                 logger.error(f"Database session refresh error: {db_error}")
+                # Ensure we have a valid database session
+                try:
+                    db = SessionLocal()
+                except Exception as fallback_error:
+                    logger.error(f"Failed to create fallback database session: {fallback_error}")
             
             # Refresh WebDriver session between categories to prevent staleness and memory leaks
             try:
