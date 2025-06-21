@@ -384,4 +384,3 @@ const TrophyWeights = () => {
 };
 
 export default TrophyWeights;
-</rewritten_file>
