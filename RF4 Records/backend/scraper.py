@@ -196,35 +196,46 @@ def get_driver():
     chrome_options.add_argument('--disable-plugins')
     chrome_options.add_argument('--disable-images')  # Don't load images to save memory
     
+    # Enhanced stability settings (remove VizDisplayCompositor duplicate)
+    chrome_options.add_argument('--disable-web-security')
+    chrome_options.add_argument('--disable-threaded-animation')
+    chrome_options.add_argument('--disable-threaded-scrolling')
+    chrome_options.add_argument('--disable-3d-apis')
+    chrome_options.add_argument('--disable-accelerated-2d-canvas')
+    chrome_options.add_argument('--disable-accelerated-video-decode')
+    
+    # Additional memory-specific flags (remove duplicate --memory-pressure-off)
+    chrome_options.add_argument('--max-unused-resource-memory-usage-percentage=5')
+    chrome_options.add_argument('--purge-memory-button')
+    
     # Check if we're running on Railway with Browserless
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
-    browser_token = os.getenv('BROWSER_TOKEN')
     
-    if browser_endpoint and browser_token:
-        # Production: Use Browserless with memory management
-        logger.info(f"Using Browserless service for WebDriver")
-        chrome_options.set_capability('browserless:token', browser_token)
+    if browser_endpoint:
+        logger.info("Using Browserless service for WebDriver")
         
-        # Set timeouts to prevent hanging sessions
-        chrome_options.set_capability('browserless:timeout', 300000)  # 5 minutes max
-        chrome_options.set_capability('browserless:blockAds', True)  # Block ads to save memory
+        # Enhanced timeout settings for Browserless
+        chrome_options.add_argument('--timeout=25000')  # 25 second timeout
+        chrome_options.add_argument('--navigation-timeout=25000')
+        chrome_options.add_argument('--page-load-strategy=eager')  # Don't wait for all resources
         
+        # Create remote WebDriver with enhanced timeouts
         driver = webdriver.Remote(
             command_executor=browser_endpoint,
             options=chrome_options
         )
         
-        # Set timeouts to prevent memory leaks from hanging operations
-        driver.set_page_load_timeout(30)  # 30 second page load timeout
-        driver.implicitly_wait(10)  # 10 second implicit wait
+        # Set aggressive timeouts for better reliability
+        driver.set_page_load_timeout(25)  # 25 seconds max page load
+        driver.implicitly_wait(10)  # 10 seconds implicit wait
         
     else:
-        # Local development: Use local Chrome
-        logger.info("Using local Chrome WebDriver for development")
+        # Local development
+        logger.info("Using local ChromeDriver")
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set timeouts for local development too
+        # Set timeouts for local development
         driver.set_page_load_timeout(30)
         driver.implicitly_wait(10)
     
@@ -240,10 +251,13 @@ def cleanup_driver(driver):
         driver.delete_all_cookies()
         driver.execute_script("window.localStorage.clear();")
         driver.execute_script("window.sessionStorage.clear();")
-        driver.execute_script("window.indexedDB.deleteDatabase();")
         
-        # Clear cache and history
-        driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        # Essential storage cleanup only
+        try:
+            driver.execute_script("window.indexedDB.deleteDatabase();")
+            driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        except Exception:
+            pass
         
         # Close all windows and tabs
         handles = driver.window_handles.copy()
@@ -263,7 +277,7 @@ def cleanup_driver(driver):
         
         # Give system time to clean up processes
         import time
-        time.sleep(0.5)
+        time.sleep(0.5)  # Wait for cleanup
         
     except Exception as e:
         logger.debug(f"Error during driver quit: {e}")
@@ -285,14 +299,13 @@ def force_garbage_collection():
     try:
         import gc
         
-        # Multiple collection passes for thorough cleanup
+        # Multiple collection passes for cleanup
         collected = 0
-        for i in range(3):  # 3 passes to catch circular references
+        for i in range(2):  # 2 passes to catch circular references
             collected += gc.collect()
         
         # Force collection of specific generations
         gc.collect(0)  # Young objects
-        gc.collect(1)  # Middle-aged objects  
         gc.collect(2)  # Old objects
         
         logger.debug(f"Garbage collection: {collected} objects collected")
@@ -326,41 +339,62 @@ def log_memory_usage(context=""):
     return memory_mb
 
 def parse_table_selenium(driver, region_info):
-    """Parse the records table using Selenium after JavaScript loads"""
+    """Parse the records table using Selenium after JavaScript loads with enhanced timeout handling"""
     global should_stop_scraping
     
-    # Wait for the page to redirect and load the actual content
-    time.sleep(3)
+    # Shorter initial wait for faster processing
+    time.sleep(2)
     
     # Check for interruption
     if should_stop_scraping:
         return []
     
-    # Wait for records tables to be present with timeout
-    wait = WebDriverWait(driver, 15)
+    # Enhanced timeout handling with multiple strategies
+    wait = WebDriverWait(driver, 20)  # Increased timeout for reliability
     
-    # Look for all records tables on the page
+    # Look for all records tables on the page with multiple fallback strategies
     try:
+        # Strategy 1: Look for the main records tables
         table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.records_subtable.flex_table")))
-    except:
-        logger.warning(f"No records tables found for {region_info['name']}")
-        return []
+    except Exception as e1:
+        try:
+            # Strategy 2: Look for any table-like structure
+            logger.debug(f"Primary table selector failed for {region_info['name']}, trying fallback")
+            table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.flex_table")))
+        except Exception as e2:
+            try:
+                # Strategy 3: Look for any records container
+                logger.debug(f"Secondary table selector failed for {region_info['name']}, trying final fallback")
+                table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[class*='record']")))
+            except Exception as e3:
+                logger.warning(f"All table selectors failed for {region_info['name']}: {str(e1)[:100]}")
+                return []
     
     # Check for interruption
     if should_stop_scraping:
         return []
     
     # Get the page source and parse with BeautifulSoup
-    html_content = driver.page_source
-    soup = BeautifulSoup(html_content, 'html.parser')
-    
-    # Check for interruption before parsing
-    if should_stop_scraping:
+    try:
+        html_content = driver.page_source
+        soup = BeautifulSoup(html_content, 'html.parser')
+        
+        # Check for interruption before parsing
+        if should_stop_scraping:
+            return []
+        
+        # Now parse all the records tables
+        records = parse_all_records_from_soup(soup, region_info)
+        
+        # Clear the HTML content from memory immediately
+        html_content = None
+        soup = None
+        
+        return records
+        
+    except Exception as e:
+        logger.error(f"Error parsing page content for {region_info['name']}: {e}")
         return []
-    
-    # Now parse all the records tables
-    records = parse_all_records_from_soup(soup, region_info)
-    return records
 
 def parse_single_table(records_table, table_num, region_info):
     """Parse a single records table"""
@@ -659,6 +693,11 @@ def scrape_and_update_records():
                     
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
+                    
+                    # Periodic memory cleanup between regions
+                    if regions_scraped % 10 == 0:  # Every 10 regions, do cleanup
+                        force_garbage_collection()
+                    
                     time.sleep(2)
                 except Exception as e:
                     logger.error(f"Error scraping {category_info['name']} - {region['name']}: {e}")

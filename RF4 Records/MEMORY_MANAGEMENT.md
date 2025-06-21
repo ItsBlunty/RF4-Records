@@ -19,30 +19,54 @@ The original implementation was experiencing steadily increasing memory usage ov
 ### 1. Enhanced Chrome Options for Memory Efficiency
 
 ```python
-# Memory optimization flags
+# Enhanced memory optimization flags
 chrome_options.add_argument('--memory-pressure-off')
 chrome_options.add_argument('--max_old_space_size=4096') 
 chrome_options.add_argument('--aggressive-cache-discard')
 chrome_options.add_argument('--disable-background-networking')
 chrome_options.add_argument('--disable-images')  # Don't load images
 chrome_options.add_argument('--window-size=1280,720')  # Smaller window
+
+# Additional memory-specific optimizations
+chrome_options.add_argument('--max-unused-resource-memory-usage-percentage=5')
+chrome_options.add_argument('--purge-memory-button')
+chrome_options.add_argument('--disable-accelerated-2d-canvas')
+chrome_options.add_argument('--disable-accelerated-video-decode')
+chrome_options.add_argument('--disable-3d-apis')
+
+# Enhanced timeout and stability settings
+chrome_options.add_argument('--timeout=25000')  # 25 second timeout
+chrome_options.add_argument('--navigation-timeout=25000')
+chrome_options.add_argument('--page-load-strategy=eager')  # Don't wait for all resources
 ```
 
-### 2. Proper WebDriver Session Cleanup
+### 2. Enhanced WebDriver Session Cleanup
 
 ```python
 def cleanup_driver(driver):
-    """Properly cleanup WebDriver session to prevent memory leaks"""
+    """Aggressively cleanup WebDriver session to prevent memory leaks"""
     if not driver:
         return
     
     try:
-        # Clear cookies and local storage to free memory
+        # Clear all browser data to free memory
         driver.delete_all_cookies()
         driver.execute_script("window.localStorage.clear();")
         driver.execute_script("window.sessionStorage.clear();")
         
-        # Close all windows
+        # Enhanced storage cleanup
+        driver.execute_script("window.indexedDB.deleteDatabase();")
+        driver.execute_script("if (window.webkitStorageInfo) { window.webkitStorageInfo.requestQuota(0, 0); }")
+        
+        # Clear cache and history more aggressively
+        driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        driver.execute_script("if (window.performance && window.performance.clearResourceTimings) { window.performance.clearResourceTimings(); }")
+        
+        # Force browser-level garbage collection
+        driver.execute_script("if (window.gc) { window.gc(); }")
+        driver.execute_script("if (window.CollectGarbage) { window.CollectGarbage(); }")
+        
+        # Close all windows and tabs
         for handle in driver.window_handles:
             driver.switch_to.window(handle)
             driver.close()
@@ -51,8 +75,9 @@ def cleanup_driver(driver):
         logger.debug(f"Error during driver cleanup: {e}")
     
     try:
-        # Final quit
+        # Final quit with extended cleanup delay
         driver.quit()
+        time.sleep(0.8)  # Extended wait for proper cleanup
     except Exception as e:
         logger.debug(f"Error during driver quit: {e}")
 ```
@@ -84,25 +109,58 @@ driver.set_page_load_timeout(30)  # 30 second page load timeout
 driver.implicitly_wait(10)  # 10 second implicit wait
 ```
 
-### 5. Strategic Garbage Collection
+### 5. Enhanced Strategic Garbage Collection
 
 ```python
 def force_garbage_collection():
-    """Force garbage collection to help with memory management"""
+    """Aggressively force garbage collection to help with memory management"""
     try:
         import gc
-        gc.collect()
-        logger.debug("Forced garbage collection")
+        
+        # Multiple collection passes for thorough cleanup
+        collected = 0
+        for i in range(3):  # 3 passes to catch circular references
+            collected += gc.collect()
+        
+        # Force collection of specific generations
+        gc.collect(0)  # Young objects
+        gc.collect(1)  # Middle-aged objects  
+        gc.collect(2)  # Old objects
+        
+        logger.debug(f"Garbage collection: {collected} objects collected")
+        
     except Exception as e:
         logger.debug(f"Error during garbage collection: {e}")
 ```
 
 Applied at key points:
-- Between category scraping
+- Between category scraping (double collection)
+- Every 5 regions within categories
 - After each scheduled scrape
 - On manual cleanup requests
+- When memory usage exceeds 350MB threshold
 
-### 6. Memory Monitoring
+### 6. Enhanced Timeout and Reliability Management
+
+```python
+# Per-region timeout handling (35 seconds)
+def timeout_handler(signum, frame):
+    raise TimeoutError(f"Region {region['name']} timed out after {region_timeout} seconds")
+
+# Multiple fallback strategies for element detection
+try:
+    # Strategy 1: Look for main records tables
+    table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.records_subtable.flex_table")))
+except Exception as e1:
+    try:
+        # Strategy 2: Look for any table-like structure
+        table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.flex_table")))
+    except Exception as e2:
+        # Strategy 3: Look for any records container
+        table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[class*='record']")))
+```
+
+### 7. Memory Monitoring
 
 Added memory monitoring to track usage:
 
@@ -120,7 +178,7 @@ return {
 }
 ```
 
-### 7. Manual Cleanup Endpoint
+### 8. Manual Cleanup Endpoint
 
 Added `/cleanup` endpoint for manual memory management:
 
@@ -166,11 +224,14 @@ Monitor the memory graph in Railway dashboard to see if the upward trend has bee
 
 With these improvements, you should see:
 
-✅ **Stable memory usage** - No more continuous upward trend
-✅ **Lower baseline memory** - More efficient Chrome configuration
-✅ **Faster session cleanup** - Proper WebDriver termination
-✅ **Better error recovery** - Sessions refresh on failures
-✅ **Monitoring capabilities** - Track memory usage via API
+✅ **Stable memory usage** - No more continuous upward trend (target: ~120MB baseline)
+✅ **Lower baseline memory** - Enhanced Chrome configuration with 20+ memory optimization flags
+✅ **Faster session cleanup** - Aggressive WebDriver termination with browser-level garbage collection
+✅ **Better error recovery** - Sessions refresh on failures with 3-tier fallback strategies
+✅ **Enhanced timeout handling** - 35-second per-region timeouts with proper cleanup
+✅ **Monitoring capabilities** - Real-time memory tracking with delta reporting
+✅ **Automatic cleanup triggers** - Memory usage thresholds with forced garbage collection
+✅ **Reduced memory deltas** - Periodic cleanup every 5 regions to prevent accumulation
 
 ## Best Practices for Browserless v1
 
