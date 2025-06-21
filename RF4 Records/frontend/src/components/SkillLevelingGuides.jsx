@@ -38,7 +38,7 @@ const SkillLevelingGuides = () => {
           Skill Leveling Guides
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
-          Comprehensive guides for leveling your skills efficiently in Russian Fishing 4
+          The following guides are the best way to get to higher skill levels without spending too much silver. Using latest unlocked items will always be fastest, but won't be the most cost effective.
         </p>
       </div>
 

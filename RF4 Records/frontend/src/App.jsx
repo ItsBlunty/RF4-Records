@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Header from './components/Header.jsx';
 import Filters from './components/Filters.jsx';
@@ -11,7 +12,10 @@ import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
 
-function App() {
+function AppContent() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +27,11 @@ function App() {
     return saved ? JSON.parse(saved) : true;
   });
   
-  // Navigation state
-  const [currentPage, setCurrentPage] = useState('records');
+  // Get current page from URL
+  const getCurrentPage = () => {
+    if (location.pathname === '/skillguides') return 'guides';
+    return 'records';
+  };
   
   // View mode state
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped', 'fish-grouped', or 'list'
@@ -85,7 +92,11 @@ function App() {
   };
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    if (page === 'records') {
+      navigate('/');
+    } else if (page === 'guides') {
+      navigate('/skillguides');
+    }
   };
 
   // Fetch records from API
@@ -272,11 +283,11 @@ function App() {
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
         onAboutClick={handleAboutClick}
-        currentPage={currentPage}
+        currentPage={getCurrentPage()}
         onPageChange={handlePageChange}
       />
       
-      {currentPage === 'records' ? (
+      {getCurrentPage() === 'records' ? (
         <>
           <Filters
             filters={filters}
@@ -345,7 +356,7 @@ function App() {
             )}
           </div>
         </>
-      ) : currentPage === 'guides' ? (
+      ) : getCurrentPage() === 'guides' ? (
         <SkillLevelingGuides />
       ) : null}
       
@@ -354,6 +365,17 @@ function App() {
         <About onClose={handleAboutClose} />
       )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<AppContent />} />
+        <Route path="/skillguides" element={<AppContent />} />
+      </Routes>
+    </Router>
   );
 }
 
