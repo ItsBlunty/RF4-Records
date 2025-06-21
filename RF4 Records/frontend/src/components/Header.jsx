@@ -25,7 +25,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-            <span className="text-lg text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-full">
+            <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
               Created by ItsBlunty
             </span>
           </div>
@@ -70,24 +70,10 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
 
         {/* Bottom Section - Controls and Info */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          {/* Dark Mode Toggle */}
-          <div className="flex items-center">
-            {onToggleDarkMode && (
-              <button
-                onClick={onToggleDarkMode}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-              >
-                {darkMode ? (
-                  <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                ) : (
-                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                )}
-              </button>
-            )}
-          </div>
+          {/* Empty left side to balance layout */}
+          <div></div>
 
-          {/* Database Info and Refresh */}
+          {/* Database Info and Controls */}
           <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-0">
             {/* Database Info */}
             <div className="text-center sm:text-right">
@@ -111,6 +97,21 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
                 Refresh
+              </button>
+            )}
+
+            {/* Dark Mode Toggle */}
+            {onToggleDarkMode && (
+              <button
+                onClick={onToggleDarkMode}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? (
+                  <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                )}
               </button>
             )}
           </div>
