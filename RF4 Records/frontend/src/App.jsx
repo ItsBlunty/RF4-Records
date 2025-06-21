@@ -26,8 +26,8 @@ function App() {
   
   // Sorting state
   const [sortConfig, setSortConfig] = useState({
-    key: null,
-    direction: null
+    key: 'count',
+    direction: 'descending'
   });
   
   // Filter states
