@@ -196,17 +196,10 @@ def get_driver():
     chrome_options.add_argument('--disable-plugins')
     chrome_options.add_argument('--disable-images')  # Don't load images to save memory
     
-    # Enhanced stability settings (remove VizDisplayCompositor duplicate)
-    chrome_options.add_argument('--disable-web-security')
-    chrome_options.add_argument('--disable-threaded-animation')
-    chrome_options.add_argument('--disable-threaded-scrolling')
+    # Safe memory optimization flags only
     chrome_options.add_argument('--disable-3d-apis')
     chrome_options.add_argument('--disable-accelerated-2d-canvas')
     chrome_options.add_argument('--disable-accelerated-video-decode')
-    
-    # Additional memory-specific flags (remove duplicate --memory-pressure-off)
-    chrome_options.add_argument('--max-unused-resource-memory-usage-percentage=5')
-    chrome_options.add_argument('--purge-memory-button')
     
     # Check if we're running on Railway with Browserless
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
@@ -215,9 +208,7 @@ def get_driver():
     if browser_endpoint:
         logger.info("Using Browserless service for WebDriver")
         
-        # Enhanced timeout settings for Browserless
-        chrome_options.add_argument('--timeout=25000')  # 25 second timeout
-        chrome_options.add_argument('--navigation-timeout=25000')
+        # Safe timeout settings for Browserless
         chrome_options.add_argument('--page-load-strategy=eager')  # Don't wait for all resources
         
         # Add Browserless v1 authentication and configuration
