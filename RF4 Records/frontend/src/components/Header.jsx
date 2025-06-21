@@ -35,11 +35,8 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             {/* Database Info and Controls */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
               <div>
-                <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                  Russian Fishing 4 World Records Database
-                </div>
                 {lastRefresh && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     Last updated: {formatLastRefresh(lastRefresh)}
                   </div>
                 )}
