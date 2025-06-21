@@ -21,61 +21,57 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="mx-auto px-6 py-6">
-        {/* Navigation Buttons - Top Right */}
-        <div className="flex justify-end mb-4 space-x-3">
-          <button
-            onClick={() => onPageChange && onPageChange('records')}
-            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              currentPage === 'records' 
-                ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-            }`}
-          >
-            <Database className="w-4 h-4 mr-2" />
-            Records
-          </button>
+        {/* Top Section - Title and Attribution */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
+            <span className="text-lg text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-full">
+              Created by ItsBlunty
+            </span>
+          </div>
           
-          <button
-            onClick={() => onPageChange && onPageChange('guides')}
-            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-              currentPage === 'guides' 
-                ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-            }`}
-          >
-            <BookOpen className="w-4 h-4 mr-2" />
-            Skill Leveling Guides
-          </button>
-
-          {onAboutClick && (
+          {/* Navigation Buttons - Top Right */}
+          <div className="flex space-x-3 mt-4 sm:mt-0">
             <button
-              onClick={onAboutClick}
-              className="inline-flex items-center px-4 py-2 bg-gray-600 dark:bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              onClick={() => onPageChange && onPageChange('records')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'records' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
             >
-              <Info className="w-4 h-4 mr-2" />
-              About RF4 Records
+              <Database className="w-4 h-4 mr-2" />
+              Records
             </button>
-          )}
+            
+            <button
+              onClick={() => onPageChange && onPageChange('guides')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'guides' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 mr-2" />
+              Skill Leveling Guides
+            </button>
+
+            {onAboutClick && (
+              <button
+                onClick={onAboutClick}
+                className="inline-flex items-center px-4 py-2 bg-gray-600 dark:bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                <Info className="w-4 h-4 mr-2" />
+                About RF4 Records
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Main Header Content */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-          {/* Left Side - Title and Badges */}
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-            <div className="flex items-center space-x-3">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                {filtered} of {total} records
-              </span>
-              <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                Created by ItsBlunty
-              </span>
-            </div>
-          </div>
-
-          {/* Right Side - Controls and Info */}
-          <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
-            {/* Dark Mode Toggle */}
+        {/* Bottom Section - Controls and Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          {/* Dark Mode Toggle */}
+          <div className="flex items-center">
             {onToggleDarkMode && (
               <button
                 onClick={onToggleDarkMode}
@@ -89,7 +85,10 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                 )}
               </button>
             )}
+          </div>
 
+          {/* Database Info and Refresh */}
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-0">
             {/* Database Info */}
             <div className="text-center sm:text-right">
               <div className="text-lg font-medium text-gray-700 dark:text-gray-300">

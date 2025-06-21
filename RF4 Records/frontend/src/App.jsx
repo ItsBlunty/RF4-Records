@@ -297,39 +297,47 @@ function AppContent() {
           />
           <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* View Mode Toggle */}
-            <div className="mb-6 flex justify-between items-center">
-              <div className="flex space-x-4">
-                <button
-                  onClick={() => setViewMode('grouped')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    viewMode === 'grouped'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Grouped by Bait
-                </button>
-                <button
-                  onClick={() => setViewMode('fish-grouped')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    viewMode === 'fish-grouped'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  Grouped by Fish
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    viewMode === 'list'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-                  }`}
-                >
-                  List View
-                </button>
+            <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+              <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+                <div className="flex space-x-4">
+                  <button
+                    onClick={() => setViewMode('grouped')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      viewMode === 'grouped'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Grouped by Bait
+                  </button>
+                  <button
+                    onClick={() => setViewMode('fish-grouped')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      viewMode === 'fish-grouped'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Grouped by Fish
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                      viewMode === 'list'
+                        ? 'bg-primary-600 text-white'
+                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    List View
+                  </button>
+                </div>
+                
+                {/* Record Count */}
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                  {filteredRecords.length} of {records.length} records
+                </span>
               </div>
+              
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {viewMode === 'grouped' || viewMode === 'fish-grouped' ? 'Click on a group to expand/collapse' : 'All records shown'}
               </div>
