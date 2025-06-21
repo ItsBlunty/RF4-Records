@@ -28,9 +28,10 @@ const About = ({ onClose }) => {
             <p>
               This site scrapes Russian Fishing 4 Records, including <span className="font-medium">Weekly Global</span>, 
               <span className="font-medium"> Ultralight</span>, <span className="font-medium">Light</span>, 
-              <span className="font-medium"> Bottom Light</span>, and <span className="font-medium">Telescopic</span>, 
-              every hour normally, and then on Sunday at Reset, scrapes constantly for two days while new records 
-              come in more often.
+              <span className="font-medium"> Bottom Light</span>, and <span className="font-medium">Telescopic</span>. 
+              The scraping schedule adapts based on when new records are most likely: every 15 minutes after completion 
+              during normal times, and every 3 minutes after completion during the high-activity period from Sunday 
+              6PM UTC to Tuesday 6PM UTC when weekly resets bring fresh competition.
             </p>
             
             <p>
