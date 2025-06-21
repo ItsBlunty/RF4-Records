@@ -9,6 +9,7 @@ import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 import About from './components/About.jsx';
 import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
+import AlcoholGuide from './components/AlcoholGuide.jsx';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -32,6 +33,7 @@ function AppContent() {
   const getCurrentPage = () => {
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/wearcalc') return 'wearcalc';
+    if (location.pathname === '/alcohol') return 'alcohol';
     return 'records';
   };
   
@@ -100,6 +102,8 @@ function AppContent() {
       navigate('/skillguides');
     } else if (page === 'wearcalc') {
       navigate('/wearcalc');
+    } else if (page === 'alcohol') {
+      navigate('/alcohol');
     }
   };
 
@@ -372,6 +376,8 @@ function AppContent() {
         <SkillLevelingGuides />
       ) : getCurrentPage() === 'wearcalc' ? (
         <WearCalculator />
+      ) : getCurrentPage() === 'alcohol' ? (
+        <AlcoholGuide />
       ) : null}
       
       {/* About Modal */}
@@ -389,6 +395,7 @@ function App() {
         <Route path="/" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
+        <Route path="/alcohol" element={<AppContent />} />
       </Routes>
     </Router>
   );
