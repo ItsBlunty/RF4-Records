@@ -32,7 +32,7 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+        <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm" style={{ minWidth: '1200px' }}>
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th 
