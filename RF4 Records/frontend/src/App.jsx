@@ -8,6 +8,7 @@ import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 import About from './components/About.jsx';
 import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
+import WearCalculator from './components/WearCalculator.jsx';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -30,6 +31,7 @@ function AppContent() {
   // Get current page from URL
   const getCurrentPage = () => {
     if (location.pathname === '/skillguides') return 'guides';
+    if (location.pathname === '/wearcalc') return 'wearcalc';
     return 'records';
   };
   
@@ -96,6 +98,8 @@ function AppContent() {
       navigate('/');
     } else if (page === 'guides') {
       navigate('/skillguides');
+    } else if (page === 'wearcalc') {
+      navigate('/wearcalc');
     }
   };
 
@@ -366,6 +370,8 @@ function AppContent() {
         </>
       ) : getCurrentPage() === 'guides' ? (
         <SkillLevelingGuides />
+      ) : getCurrentPage() === 'wearcalc' ? (
+        <WearCalculator />
       ) : null}
       
       {/* About Modal */}
@@ -382,6 +388,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
+        <Route path="/wearcalc" element={<AppContent />} />
       </Routes>
     </Router>
   );

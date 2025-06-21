@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Info, Database, BookOpen } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Calculator } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   const formatLastRefresh = (date) => {
@@ -54,6 +54,18 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             >
               <BookOpen className="w-4 h-4 mr-2" />
               Skill Leveling Guides
+            </button>
+
+            <button
+              onClick={() => onPageChange && onPageChange('wearcalc')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'wearcalc' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Calculator className="w-4 h-4 mr-2" />
+              Wear Calculator
             </button>
 
             {onAboutClick && (
