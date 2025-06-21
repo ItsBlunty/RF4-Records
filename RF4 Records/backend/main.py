@@ -108,7 +108,7 @@ def scheduled_scrape():
         process = psutil.Process(os.getpid())
         memory_before = process.memory_info().rss / 1024 / 1024
         
-        frequency = "15-minute" if is_high_frequency_period() else "hourly"
+        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
         logger.info(f"Starting {frequency} scheduled scrape (Memory: {memory_before:.1f} MB)")
         result = scrape_and_update_records()
         
@@ -129,38 +129,62 @@ def scheduled_scrape():
             gc.collect()
         with scraping_lock:
             is_scraping = False
+        
+        # Schedule the next scrape AFTER this one completes
+        schedule_next_scrape()
 
-def update_schedule():
-    """Update the scheduler based on current time period"""
+def schedule_next_scrape():
+    """Schedule the next scrape based on current time period"""
     try:
-        # Remove existing job
+        # Remove any existing scrape job
         if scheduler.get_job('scrape_job'):
             scheduler.remove_job('scrape_job')
         
         if is_high_frequency_period():
-            # High frequency: every 15 minutes
-            scheduler.add_job(
-                scheduled_scrape,
-                'interval',
-                minutes=15,
-                id='scrape_job',
-                next_run_time=datetime.now() + timedelta(hours=1)
-            )
-            frequency = "15-minute"
+            # High frequency: 3 minutes after completion
+            delay_minutes = 3
+            frequency = "3-minute"
         else:
-            # Low frequency: every hour
-            scheduler.add_job(
-                scheduled_scrape,
-                'interval',
-                hours=1,
-                id='scrape_job',
-                next_run_time=datetime.now() + timedelta(hours=1)
-            )
-            frequency = "hourly"
+            # Low frequency: 15 minutes after completion
+            delay_minutes = 15
+            frequency = "15-minute"
+        
+        next_run_time = datetime.now() + timedelta(minutes=delay_minutes)
+        
+        scheduler.add_job(
+            scheduled_scrape,
+            'date',
+            run_date=next_run_time,
+            id='scrape_job'
+        )
+        
+        logger.info(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        
+    except Exception as e:
+        logger.error(f"Error scheduling next scrape: {e}")
+
+def update_schedule():
+    """Update the scheduler based on current time period"""
+    try:
+        # Remove existing jobs
+        if scheduler.get_job('scrape_job'):
+            scheduler.remove_job('scrape_job')
+        
+        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
         
         next_change, next_frequency = get_next_schedule_change()
         logger.info(f"Schedule updated to {frequency} scraping")
         logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+        
+        # Schedule the first scrape (1 hour from now to avoid immediate startup scrape)
+        first_run_time = datetime.now() + timedelta(hours=1)
+        scheduler.add_job(
+            scheduled_scrape,
+            'date',
+            run_date=first_run_time,
+            id='scrape_job'
+        )
+        logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Schedule the next schedule update
         scheduler.add_job(
@@ -230,9 +254,9 @@ def startup_event():
     print("✅ Server ready! Frontend can connect to this URL")
     
     # Show current schedule
-    frequency = "15-minute" if is_high_frequency_period() else "hourly"
+    frequency = "3-minute" if is_high_frequency_period() else "15-minute"
     next_change, next_frequency = get_next_schedule_change()
-    print(f"🔄 Dynamic scheduling active: {frequency} scraping")
+    print(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
     print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
     print("🛑 Press Ctrl+C to gracefully shut down the server")
     
@@ -248,7 +272,7 @@ def shutdown_event():
 @app.get("/api")
 def api_root():
     """API root endpoint"""
-    frequency = "15-minute" if is_high_frequency_period() else "hourly"
+    frequency = "3-minute" if is_high_frequency_period() else "15-minute"
     next_change, next_frequency = get_next_schedule_change()
     
     return {

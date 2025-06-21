@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 def is_high_frequency_period():
     """
     Check if we're in the high-frequency scraping period
-    High frequency: Sunday 6PM UTC to Tuesday 6PM UTC (every 15 minutes)
-    Low frequency: Tuesday 6PM UTC to Sunday 6PM UTC (every hour)
+    High frequency: Sunday 6PM UTC to Tuesday 6PM UTC (3 minutes after completion)
+    Low frequency: Tuesday 6PM UTC to Sunday 6PM UTC (15 minutes after completion)
     """
     now = datetime.now(timezone.utc)
     
@@ -56,7 +56,7 @@ def get_next_schedule_change():
         if current_day != 1 or now.hour >= 18:  # Not Tuesday or already past 6PM
             next_change += timedelta(days=days_to_tuesday)
         
-        return next_change, "hourly"
+        return next_change, "15-minute"
     else:
         # We're in low frequency, next change is Sunday 6PM
         days_to_sunday = (6 - current_day) % 7
@@ -66,7 +66,7 @@ def get_next_schedule_change():
         next_change = now.replace(hour=18, minute=0, second=0, microsecond=0)
         next_change += timedelta(days=days_to_sunday)
         
-        return next_change, "15-minute"
+        return next_change, "3-minute"
 
 def run_scheduled_scrape():
     """Run the scraping with error handling"""
@@ -132,8 +132,8 @@ def start_scheduler():
     """Start the dynamic scheduler"""
     logger.info("🚀 Starting RF4 Records Dynamic Scheduler")
     logger.info("📋 Schedule:")
-    logger.info("   • Sunday 6PM UTC → Tuesday 6PM UTC: Every 15 minutes")
-    logger.info("   • Tuesday 6PM UTC → Sunday 6PM UTC: Every hour")
+    logger.info("   • Sunday 6PM UTC → Tuesday 6PM UTC: 3 minutes after completion")
+    logger.info("   • Tuesday 6PM UTC → Sunday 6PM UTC: 15 minutes after completion")
     
     # Run initial check
     frequency = "15-minute" if is_high_frequency_period() else "hourly"
