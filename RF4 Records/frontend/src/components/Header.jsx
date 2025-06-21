@@ -21,12 +21,12 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="mx-auto px-6 py-6">
-        {/* About Button - Centered at Top */}
-        <div className="flex justify-center mb-4">
+        {/* About Button - Top Right Corner */}
+        <div className="flex justify-end mb-4">
           {onAboutClick && (
             <button
               onClick={onAboutClick}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="inline-flex items-center px-4 py-2 bg-gray-600 dark:bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 dark:hover:bg-gray-700 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
               <Info className="w-4 h-4 mr-2" />
               About RF4 Records
