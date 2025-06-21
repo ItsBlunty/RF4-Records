@@ -314,7 +314,7 @@ function App() {
       </div>
       
       {/* Floating Dark Mode Toggle */}
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed top-6 right-6 z-50">
         <button
           onClick={toggleDarkMode}
           className="group relative flex items-center justify-center w-14 h-8 bg-gray-200 dark:bg-gray-600 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
@@ -339,7 +339,7 @@ function App() {
           </div>
           
           {/* Hover tooltip */}
-          <div className="absolute bottom-full right-0 mb-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+          <div className="absolute top-full right-0 mt-2 px-2 py-1 text-xs text-white bg-gray-900 dark:bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
             {darkMode ? 'Light mode' : 'Dark mode'}
           </div>
         </button>
