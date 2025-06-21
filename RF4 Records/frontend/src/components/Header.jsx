@@ -1,6 +1,7 @@
 import React from 'react';
+import { Sun, Moon } from 'lucide-react';
 
-const Header = ({ total, filtered, onRefresh, lastRefresh }) => {
+const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode }) => {
   const formatLastRefresh = (date) => {
     if (!date) return '';
     const now = new Date();
@@ -26,8 +27,24 @@ const Header = ({ total, filtered, onRefresh, lastRefresh }) => {
             <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
               {filtered} of {total} records
             </span>
+            <span className="ml-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+              RF4 Records created by ItsBlunty
+            </span>
           </div>
           <div className="mt-2 sm:mt-0 flex items-center space-x-4">
+            {onToggleDarkMode && (
+              <button
+                onClick={onToggleDarkMode}
+                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+              >
+                {darkMode ? (
+                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+            )}
             <div className="text-sm text-gray-600 dark:text-gray-400">
               <div>Russian Fishing 4 World Records Database</div>
               {lastRefresh && (

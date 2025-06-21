@@ -249,6 +249,8 @@ function App() {
         filtered={filteredRecords.length} 
         onRefresh={handleRefresh} 
         lastRefresh={lastRefresh}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
       />
       <Filters
         filters={filters}
