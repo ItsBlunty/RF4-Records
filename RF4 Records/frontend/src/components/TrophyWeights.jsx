@@ -7,19 +7,19 @@ const TrophyWeights = () => {
 
   // Fish data from the CSV
   const fishData = [
-    { name: "Albino Barbel", trophy: 8000, superTrophy: 12000, rarity: "Rarest species", stars: 5 },
-    { name: "Albino Catfish", trophy: 100000, superTrophy: 200000, rarity: "Not Rare", stars: 5 },
-    { name: "Albino Grass Carp", trophy: 28000, superTrophy: 40000, rarity: "Rarest species", stars: 5 },
-    { name: "Alfonsino", trophy: 9000, superTrophy: 12000, rarity: "Rare", stars: 4 },
-    { name: "American plaice", trophy: 4000, superTrophy: 5000, rarity: "Not Rare", stars: 3 },
-    { name: "Amur Catfish", trophy: 5000, superTrophy: 7000, rarity: "Not Rare", stars: 2 },
-    { name: "Arctic Char", trophy: 11000, superTrophy: 16000, rarity: "Not Rare", stars: 2 },
-    { name: "Arctic Grayling", trophy: 2000, superTrophy: 2500, rarity: "Not Rare", stars: 2 },
-    { name: "Arctic Omul", trophy: 3000, superTrophy: 4000, rarity: "Not Rare", stars: 2 },
-    { name: "Arctic skate", trophy: 8000, superTrophy: 10000, rarity: "Rare", stars: 4 },
-    { name: "Asian Smelt", trophy: 270, superTrophy: 320, rarity: "Not Rare", stars: 1 },
-    { name: "Asp", trophy: 8000, superTrophy: 13000, rarity: "Not Rare", stars: 2 },
-    { name: "Atlantic bluefin tuna", trophy: 250000, superTrophy: 400000, rarity: "Rarest species", stars: 5 },
+    { name: "Albino Barbel", trophy: 8000, superTrophy: 12000, rarity: "Rarest species", cardValue: 1400, stars: 5 },
+    { name: "Albino Catfish", trophy: 100000, superTrophy: 200000, rarity: "Not Rare", cardValue: null, stars: 5 },
+    { name: "Albino Grass Carp", trophy: 28000, superTrophy: 40000, rarity: "Rarest species", cardValue: 1400, stars: 5 },
+    { name: "Alfonsino", trophy: 9000, superTrophy: 12000, rarity: "Rare", cardValue: 450, stars: 4 },
+    { name: "American plaice", trophy: 4000, superTrophy: 5000, rarity: "Not Rare", cardValue: 170, stars: 3 },
+    { name: "Amur Catfish", trophy: 5000, superTrophy: 7000, rarity: "Not Rare", cardValue: 120, stars: 2 },
+    { name: "Arctic Char", trophy: 11000, superTrophy: 16000, rarity: "Not Rare", cardValue: 140, stars: 2 },
+    { name: "Arctic Grayling", trophy: 2000, superTrophy: 2500, rarity: "Not Rare", cardValue: 120, stars: 2 },
+    { name: "Arctic Omul", trophy: 3000, superTrophy: 4000, rarity: "Not Rare", cardValue: 120, stars: 2 },
+    { name: "Arctic skate", trophy: 8000, superTrophy: 10000, rarity: "Rare", cardValue: 280, stars: 4 },
+    { name: "Asian Smelt", trophy: 270, superTrophy: 320, rarity: "Not Rare", cardValue: 50, stars: 1 },
+    { name: "Asp", trophy: 8000, superTrophy: 13000, rarity: "Not Rare", cardValue: 140, stars: 2 },
+    { name: "Atlantic bluefin tuna", trophy: 250000, superTrophy: 400000, rarity: "Rarest species", cardValue: 1250, stars: 5 },
     { name: "Atlantic cod", trophy: 50000, superTrophy: 65000, rarity: "Not Rare", stars: 3 },
     { name: "Atlantic footballfish", trophy: 7000, superTrophy: 10000, rarity: "Rarest species", stars: 5 },
     { name: "Atlantic halibut", trophy: 150000, superTrophy: 220000, rarity: "Not Rare", stars: 4 },
@@ -334,6 +334,9 @@ const TrophyWeights = () => {
                   Super Trophy Weight
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Card Value
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Rarity
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -353,18 +356,22 @@ const TrophyWeights = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                     {formatWeight(fish.superTrophy)}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                    {fish.cardValue || 'N/A'}
+                  </td>
                   <td className={`px-6 py-4 whitespace-nowrap text-sm ${getRarityColor(fish.rarity)}`}>
                     {fish.rarity}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {fish.stars ? (
-                      <div className="flex items-center">
-                        <Star className={`w-4 h-4 ${getStarColor(fish.stars)} mr-1`} fill="currentColor" />
-                        <span className="text-gray-900 dark:text-white">{fish.stars}</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
+                    <div className="flex items-center">
+                      {[1, 2, 3, 4, 5].map((starNum) => (
+                        <Star 
+                          key={starNum}
+                          className={`w-4 h-4 ${starNum <= (fish.stars || 0) ? getStarColor(fish.stars) : 'text-gray-300 dark:text-gray-600'}`} 
+                          fill="currentColor" 
+                        />
+                      ))}
+                    </div>
                   </td>
                 </tr>
               ))}
