@@ -322,8 +322,12 @@ function App() {
          <button onClick={toggleDarkMode} style={{backgroundColor: 'green', color: 'white', padding: '10px', border: 'none', cursor: 'pointer', marginBottom: '10px', display: 'block'}}>
            DARK MODE TEST - {darkMode ? 'DARK' : 'LIGHT'}
          </button>
-         <div style={{fontSize: '12px'}}>
+         <div style={{fontSize: '12px', marginBottom: '10px'}}>
            HTML Classes: {typeof document !== 'undefined' ? document.documentElement.className : 'N/A'}
+         </div>
+         {/* Tailwind dark mode test */}
+         <div className="bg-blue-500 dark:bg-yellow-500 p-2 text-white dark:text-black text-xs">
+           Tailwind Test: Should be BLUE in light mode, YELLOW in dark mode
          </div>
        </div>
     </div>
