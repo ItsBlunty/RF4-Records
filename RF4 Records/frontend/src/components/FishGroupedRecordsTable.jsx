@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { formatWeight } from '../utils/formatWeight.js';
+import useWindowScroll from '../hooks/useWindowScroll.js';
 
 const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
@@ -87,6 +88,9 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
       a.toLowerCase().localeCompare(b.toLowerCase())
     );
   }
+
+  // Use window scroll for dynamic loading
+  const { visibleData: visibleGroups, hasMore, displayCount, totalCount } = useWindowScroll(sortedGroups, 30, 20);
 
   const toggleGroup = (fish) => {
     setExpandedGroups(prev => {
@@ -189,7 +193,7 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-            {sortedGroups.map(([fish, groupRecords]) => {
+            {visibleGroups.map(([fish, groupRecords]) => {
               const isExpanded = expandedGroups.has(fish);
               const recordCount = groupRecords.length;
               
@@ -284,6 +288,19 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
             })}
           </tbody>
         </table>
+        
+        {/* Loading indicator at bottom */}
+        {hasMore && (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="inline-flex items-center">
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading more groups... ({displayCount} of {totalCount})
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
