@@ -21,17 +21,32 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="mx-auto px-6 py-6">
-        {/* Top Section - Title and Attribution */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-            <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-              Created by ItsBlunty
-            </span>
+        {/* Top Section - Title, Attribution, and Navigation */}
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
+          {/* Left Side - Title, Attribution, and Database Info */}
+          <div className="flex flex-col space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
+              <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                Created by ItsBlunty
+              </span>
+            </div>
+            
+            {/* Database Info */}
+            <div className="text-left">
+              <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                Russian Fishing 4 World Records Database
+              </div>
+              {lastRefresh && (
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  Last updated: {formatLastRefresh(lastRefresh)}
+                </div>
+              )}
+            </div>
           </div>
           
-          {/* Navigation Buttons - Top Right */}
-          <div className="flex space-x-3 mt-4 sm:mt-0">
+          {/* Right Side - Navigation Buttons */}
+          <div className="flex space-x-3 mt-4 lg:mt-0">
             <button
               onClick={() => onPageChange && onPageChange('records')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
@@ -92,25 +107,9 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
           </div>
         </div>
 
-        {/* Bottom Section - Controls and Info */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          {/* Empty left side to balance layout */}
-          <div></div>
-
-          {/* Database Info and Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-4 sm:mt-0">
-            {/* Database Info */}
-            <div className="text-center sm:text-right">
-              <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
-                Russian Fishing 4 World Records Database
-              </div>
-              {lastRefresh && (
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  Last updated: {formatLastRefresh(lastRefresh)}
-                </div>
-              )}
-            </div>
-
+        {/* Bottom Section - Controls */}
+        <div className="flex justify-end">
+          <div className="flex items-center space-x-4">
             {/* Refresh Button */}
             {onRefresh && (
               <button
