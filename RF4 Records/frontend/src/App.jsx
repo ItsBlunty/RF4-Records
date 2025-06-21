@@ -8,6 +8,7 @@ import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 import About from './components/About.jsx';
 import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
+import TrophyWeights from './components/TrophyWeights.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
 
@@ -31,6 +32,7 @@ function AppContent() {
   
   // Get current page from URL
   const getCurrentPage = () => {
+    if (location.pathname === '/trophyweights') return 'trophyweights';
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/wearcalc') return 'wearcalc';
     if (location.pathname === '/alcohol') return 'alcohol';
@@ -98,6 +100,8 @@ function AppContent() {
   const handlePageChange = (page) => {
     if (page === 'records') {
       navigate('/');
+    } else if (page === 'trophyweights') {
+      navigate('/trophyweights');
     } else if (page === 'guides') {
       navigate('/skillguides');
     } else if (page === 'wearcalc') {
@@ -372,6 +376,8 @@ function AppContent() {
             )}
           </div>
         </>
+      ) : getCurrentPage() === 'trophyweights' ? (
+        <TrophyWeights />
       ) : getCurrentPage() === 'guides' ? (
         <SkillLevelingGuides />
       ) : getCurrentPage() === 'wearcalc' ? (
@@ -393,6 +399,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<AppContent />} />
+        <Route path="/trophyweights" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Calculator, Wine } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Calculator, Wine } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   const formatLastRefresh = (date) => {
@@ -89,6 +89,18 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               Records
             </button>
             
+            <button
+              onClick={() => onPageChange && onPageChange('trophyweights')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'trophyweights' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Trophy className="w-4 h-4 mr-2" />
+              Trophy Weights
+            </button>
+
             <button
               onClick={() => onPageChange && onPageChange('guides')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
