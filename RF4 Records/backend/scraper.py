@@ -210,6 +210,7 @@ def get_driver():
     
     # Check if we're running on Railway with Browserless
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
+    browser_token = os.getenv('BROWSER_TOKEN')
     
     if browser_endpoint:
         logger.info("Using Browserless service for WebDriver")
@@ -218,6 +219,12 @@ def get_driver():
         chrome_options.add_argument('--timeout=25000')  # 25 second timeout
         chrome_options.add_argument('--navigation-timeout=25000')
         chrome_options.add_argument('--page-load-strategy=eager')  # Don't wait for all resources
+        
+        # Add Browserless v1 authentication and configuration
+        if browser_token:
+            chrome_options.set_capability('browserless:token', browser_token)
+            chrome_options.set_capability('browserless:timeout', 300000)  # 5 minutes max session
+            chrome_options.set_capability('browserless:blockAds', True)  # Block ads to save memory
         
         # Create remote WebDriver with enhanced timeouts
         driver = webdriver.Remote(
