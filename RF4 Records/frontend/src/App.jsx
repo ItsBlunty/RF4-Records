@@ -6,6 +6,7 @@ import RecordsTable from './components/RecordsTable.jsx';
 import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 import About from './components/About.jsx';
+import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -21,6 +22,9 @@ function App() {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : true;
   });
+  
+  // Navigation state
+  const [currentPage, setCurrentPage] = useState('records');
   
   // View mode state
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped', 'fish-grouped', or 'list'
@@ -78,6 +82,10 @@ function App() {
 
   const handleAboutClose = () => {
     setShowAbout(false);
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
   };
 
   // Fetch records from API
@@ -264,73 +272,82 @@ function App() {
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
         onAboutClick={handleAboutClick}
+        currentPage={currentPage}
+        onPageChange={handlePageChange}
       />
-      <Filters
-        filters={filters}
-        uniqueValues={uniqueValues}
-        onChange={handleFilterChange}
-        onClear={clearFilters}
-      />
-      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* View Mode Toggle */}
-        <div className="mb-6 flex justify-between items-center">
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setViewMode('grouped')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'grouped'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              Grouped by Bait
-            </button>
-            <button
-              onClick={() => setViewMode('fish-grouped')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'fish-grouped'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              Grouped by Fish
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              List View
-            </button>
+      
+      {currentPage === 'records' ? (
+        <>
+          <Filters
+            filters={filters}
+            uniqueValues={uniqueValues}
+            onChange={handleFilterChange}
+            onClear={clearFilters}
+          />
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* View Mode Toggle */}
+            <div className="mb-6 flex justify-between items-center">
+              <div className="flex space-x-4">
+                <button
+                  onClick={() => setViewMode('grouped')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    viewMode === 'grouped'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Grouped by Bait
+                </button>
+                <button
+                  onClick={() => setViewMode('fish-grouped')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    viewMode === 'fish-grouped'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  Grouped by Fish
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  List View
+                </button>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {viewMode === 'grouped' || viewMode === 'fish-grouped' ? 'Click on a group to expand/collapse' : 'All records shown'}
+              </div>
+            </div>
+            
+            {viewMode === 'grouped' ? (
+              <GroupedRecordsTable 
+                records={filteredRecords} 
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+            ) : viewMode === 'fish-grouped' ? (
+              <FishGroupedRecordsTable 
+                records={filteredRecords} 
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+            ) : (
+              <RecordsTable 
+                records={filteredRecords} 
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+            )}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            {viewMode === 'grouped' || viewMode === 'fish-grouped' ? 'Click on a group to expand/collapse' : 'All records shown'}
-          </div>
-        </div>
-        
-        {viewMode === 'grouped' ? (
-          <GroupedRecordsTable 
-            records={filteredRecords} 
-            sortConfig={sortConfig}
-            onSort={handleSort}
-          />
-        ) : viewMode === 'fish-grouped' ? (
-          <FishGroupedRecordsTable 
-            records={filteredRecords} 
-            sortConfig={sortConfig}
-            onSort={handleSort}
-          />
-        ) : (
-          <RecordsTable 
-            records={filteredRecords} 
-            sortConfig={sortConfig}
-            onSort={handleSort}
-          />
-        )}
-      </div>
+        </>
+      ) : currentPage === 'guides' ? (
+        <SkillLevelingGuides />
+      ) : null}
       
       {/* About Modal */}
       {showAbout && (

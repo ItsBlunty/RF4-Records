@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sun, Moon, Info } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen } from 'lucide-react';
 
-const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick }) => {
+const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   const formatLastRefresh = (date) => {
     if (!date) return '';
     const now = new Date();
@@ -21,8 +21,32 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="mx-auto px-6 py-6">
-        {/* About Button - Top Right Corner */}
-        <div className="flex justify-end mb-4">
+        {/* Navigation Buttons - Top Right */}
+        <div className="flex justify-end mb-4 space-x-3">
+          <button
+            onClick={() => onPageChange && onPageChange('records')}
+            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              currentPage === 'records' 
+                ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+            }`}
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Records
+          </button>
+          
+          <button
+            onClick={() => onPageChange && onPageChange('guides')}
+            className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              currentPage === 'guides' 
+                ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+            }`}
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Skill Leveling Guides
+          </button>
+
           {onAboutClick && (
             <button
               onClick={onAboutClick}
