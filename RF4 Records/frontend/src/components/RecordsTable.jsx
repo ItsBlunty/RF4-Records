@@ -17,13 +17,13 @@ const RecordsTable = ({ records }) => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Fish</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Bait</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Weight</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Location</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Player</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Region</th>
+                          <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Fish</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Bait</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Weight</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Location</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Date</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Player</th>
+            <th scope="col" className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">Region</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
@@ -38,15 +38,15 @@ const RecordsTable = ({ records }) => {
                   }`
                 }
               >
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">{record.fish || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.bait_display || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap font-semibold text-blue-800 dark:text-blue-400">
-                  {formatWeight(record.weight)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.waterbody || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.date || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.player || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.region || '-'}</td>
+                            <td className="px-6 py-2.5 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">{record.fish || '-'}</td>
+            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.bait_display || '-'}</td>
+            <td className="px-6 py-2.5 whitespace-nowrap font-semibold text-blue-800 dark:text-blue-400">
+              {formatWeight(record.weight)}
+            </td>
+            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.waterbody || '-'}</td>
+            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.date || '-'}</td>
+            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.player || '-'}</td>
+            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.region || '-'}</td>
               </tr>
             ))}
           </tbody>
