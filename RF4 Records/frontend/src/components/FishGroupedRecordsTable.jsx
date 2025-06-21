@@ -108,27 +108,27 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
   };
 
   const getColumnHeaderClass = (columnKey) => {
-    const baseClass = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none";
+    const baseClass = "px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer select-none";
     if (sortConfig.key === columnKey) {
-      return `${baseClass} bg-gray-100`;
+      return `${baseClass} bg-gray-100 dark:bg-gray-600`;
     }
     return baseClass;
   };
 
   if (!records || records.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
-        <p className="text-gray-500 text-lg">No records found matching your criteria.</p>
-        <p className="text-gray-400 text-sm mt-2">Try adjusting your filters to see more results.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8 text-center">
+        <p className="text-gray-500 dark:text-gray-400 text-lg">No records found matching your criteria.</p>
+        <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">Try adjusting your filters to see more results.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th 
                 scope="col" 
@@ -188,7 +188,7 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {sortedGroups.map(([fish, groupRecords]) => {
               const isExpanded = expandedGroups.has(fish);
               const recordCount = groupRecords.length;
@@ -205,36 +205,36 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                 <React.Fragment key={fish}>
                   {/* Group Header Row */}
                   <tr 
-                    className="bg-gray-50 hover:bg-gray-100 cursor-pointer border-b-2 border-gray-200"
+                    className="bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer border-b-2 border-gray-200 dark:border-gray-600"
                     onClick={() => toggleGroup(fish)}
                   >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                       <div className="flex items-center">
                         <span className="mr-2">{isExpanded ? '▼' : '▶'}</span>
                         <span>{fish}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                      <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs font-medium">
                         {recordCount}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {largestFish?.bait_display || largestFish?.bait || groupRecords[0]?.bait_display || groupRecords[0]?.bait || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                                       {formatWeight(largestFish?.weight)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.waterbody || groupRecords[0]?.waterbody || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.date || groupRecords[0]?.date || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.player || groupRecords[0]?.player || '-'}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.region || groupRecords[0]?.region || '-'}
                     </td>
                   </tr>
@@ -252,29 +252,29 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       return index > 0;
                     })
                     .map((record, index) => (
-                    <tr key={`${fish}-${index}`} className="hover:bg-gray-50 bg-gray-25">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 pl-12">
+                    <tr key={`${fish}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700 bg-gray-25 dark:bg-gray-850">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300 pl-12">
                         {record.fish || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         -
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.bait_display || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                                             {formatWeight(record.weight)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.waterbody || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.date || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.player || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.region || '-'}
                       </td>
                     </tr>

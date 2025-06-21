@@ -15,6 +15,12 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
+  // Dark mode state
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+  
   // View mode state
   const [viewMode, setViewMode] = useState('grouped'); // 'grouped', 'fish-grouped', or 'list'
   
@@ -43,6 +49,20 @@ function App() {
   
   // Auto-refresh state
   const [lastRefresh, setLastRefresh] = useState(null);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+  }, [darkMode]);
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
 
   // Fetch records from API
     const fetchRecords = async () => {
@@ -191,10 +211,10 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading records...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading records...</p>
         </div>
       </div>
     );
@@ -202,14 +222,14 @@ function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Connection Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Connection Error</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700"
+            className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
           >
             Retry
           </button>
@@ -219,8 +239,15 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header total={records.length} filtered={filteredRecords.length} onRefresh={handleRefresh} lastRefresh={lastRefresh} />
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <Header 
+        total={records.length} 
+        filtered={filteredRecords.length} 
+        onRefresh={handleRefresh} 
+        lastRefresh={lastRefresh}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
+      />
       <Filters
         filters={filters}
         uniqueValues={uniqueValues}
@@ -236,7 +263,7 @@ function App() {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 viewMode === 'grouped'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Grouped by Bait
@@ -246,7 +273,7 @@ function App() {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 viewMode === 'fish-grouped'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               Grouped by Fish
@@ -256,13 +283,13 @@ function App() {
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 viewMode === 'list'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               }`}
             >
               List View
             </button>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             {viewMode === 'grouped' || viewMode === 'fish-grouped' ? 'Click on a group to expand/collapse' : 'All records shown'}
           </div>
         </div>
