@@ -52,15 +52,19 @@ function App() {
 
   // Dark mode effect
   useEffect(() => {
+    console.log('Dark mode useEffect triggered:', darkMode);
     if (darkMode) {
       document.documentElement.classList.add('dark');
+      console.log('Added dark class. Current classes:', document.documentElement.className);
     } else {
       document.documentElement.classList.remove('dark');
+      console.log('Removed dark class. Current classes:', document.documentElement.className);
     }
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
   const toggleDarkMode = () => {
+    console.log('Toggle dark mode clicked. Current:', darkMode, 'Will become:', !darkMode);
     setDarkMode(!darkMode);
   };
 
@@ -313,12 +317,15 @@ function App() {
         )}
       </div>
       
-      {/* DEBUG: Simple test button */}
-      <div style={{position: 'fixed', top: '10px', right: '10px', zIndex: 9999, backgroundColor: 'red', padding: '20px', color: 'white', fontSize: '20px'}}>
-        <button onClick={toggleDarkMode} style={{backgroundColor: 'green', color: 'white', padding: '10px', border: 'none', cursor: 'pointer'}}>
-          DARK MODE TEST - {darkMode ? 'DARK' : 'LIGHT'}
-        </button>
-      </div>
+             {/* DEBUG: Simple test button */}
+       <div style={{position: 'fixed', top: '10px', right: '10px', zIndex: 9999, backgroundColor: 'red', padding: '20px', color: 'white', fontSize: '16px'}}>
+         <button onClick={toggleDarkMode} style={{backgroundColor: 'green', color: 'white', padding: '10px', border: 'none', cursor: 'pointer', marginBottom: '10px', display: 'block'}}>
+           DARK MODE TEST - {darkMode ? 'DARK' : 'LIGHT'}
+         </button>
+         <div style={{fontSize: '12px'}}>
+           HTML Classes: {typeof document !== 'undefined' ? document.documentElement.className : 'N/A'}
+         </div>
+       </div>
     </div>
   );
 }
