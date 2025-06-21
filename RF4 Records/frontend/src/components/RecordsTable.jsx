@@ -35,7 +35,7 @@ const RecordsTable = ({ records }) => {
                 }
               >
                 <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{record.fish || '-'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700">{record.bait_display || record.bait || '-'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700">{record.bait_display || '-'}</td>
                 <td className="px-6 py-4 whitespace-nowrap font-semibold text-blue-800">
                   {formatWeight(record.weight)}
                 </td>

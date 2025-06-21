@@ -66,7 +66,7 @@ function App() {
         // Extract unique values for filters
         const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
         const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
-      const bait = [...new Set(response.data.map(r => r.bait_display || r.bait).filter(Boolean))].sort();
+              const bait = [...new Set(response.data.map(r => r.bait_display).filter(Boolean))].sort();
         
       setUniqueValues({ fish, waterbody, bait });
         setFilteredRecords(response.data);
@@ -114,10 +114,9 @@ function App() {
       );
     }
     if (filters.bait) {
-      filtered = filtered.filter(r => {
-        const baitText = r.bait_display || r.bait;
-        return baitText && baitText.toLowerCase().includes(filters.bait.toLowerCase());
-      });
+      filtered = filtered.filter(r => 
+        r.bait_display && r.bait_display.toLowerCase().includes(filters.bait.toLowerCase())
+      );
     }
 
     // Apply sorting

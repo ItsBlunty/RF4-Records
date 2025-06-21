@@ -260,7 +260,7 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         -
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {record.bait_display || record.bait || '-'}
+                        {record.bait_display || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                                             {formatWeight(record.weight)}

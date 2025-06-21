@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -26,6 +27,9 @@ app = FastAPI(
     description="API for Russian Fishing 4 records data",
     version="1.0.0"
 )
+
+# Add compression middleware (should be added before CORS)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # Add CORS middleware for frontend
 app.add_middleware(
@@ -283,20 +287,15 @@ def get_records():
                 # Single bait
                 bait_display = representative.bait1 or representative.bait or ""
             
+            # Optimized response - only send data actually used by frontend
             result.append({
-                "id": representative.id,
                 "player": representative.player,
                 "fish": representative.fish,
                 "weight": representative.weight,
                 "waterbody": representative.waterbody,
-                "bait": representative.bait,  # Keep original for backward compatibility
-                "bait1": representative.bait1,
-                "bait2": representative.bait2,
-                "bait_display": bait_display,  # Formatted for display
+                "bait_display": bait_display,
                 "date": representative.date,
-                "region": representative.region,
-                "categories": categories,  # List of all categories this record appears in
-                "category_count": len(categories)  # How many categories this record is in
+                "region": representative.region
             })
         
         db.close()

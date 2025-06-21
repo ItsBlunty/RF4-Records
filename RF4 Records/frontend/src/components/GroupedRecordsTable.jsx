@@ -6,7 +6,7 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
 
   // Group records by bait
   const groupedRecords = records.reduce((groups, record) => {
-    const bait = record.bait_display || record.bait || 'Unknown Bait';
+    const bait = record.bait_display || 'Unknown Bait';
     if (!groups[bait]) {
       groups[bait] = [];
     }
@@ -260,7 +260,7 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         -
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {record.bait_display || record.bait || '-'}
+                        {record.bait_display || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
                                             {formatWeight(record.weight)}
