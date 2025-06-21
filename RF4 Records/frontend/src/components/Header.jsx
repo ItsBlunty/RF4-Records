@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Info } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick }) => {
   const formatLastRefresh = (date) => {
@@ -20,18 +20,38 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-            <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-              {filtered} of {total} records
-            </span>
-            <span className="ml-3 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-              RF4 Records created by ItsBlunty
-            </span>
+      <div className="mx-auto px-6 py-6">
+        {/* About Button - Centered at Top */}
+        <div className="flex justify-center mb-4">
+          {onAboutClick && (
+            <button
+              onClick={onAboutClick}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white text-sm font-medium rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <Info className="w-4 h-4 mr-2" />
+              About RF4 Records
+            </button>
+          )}
+        </div>
+
+        {/* Main Header Content */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+          {/* Left Side - Title and Badges */}
+          <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
+            <div className="flex items-center space-x-3">
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                {filtered} of {total} records
+              </span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                Created by ItsBlunty
+              </span>
+            </div>
           </div>
-          <div className="mt-2 sm:mt-0 flex items-center space-x-4">
+
+          {/* Right Side - Controls and Info */}
+          <div className="mt-4 lg:mt-0 flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            {/* Dark Mode Toggle */}
             {onToggleDarkMode && (
               <button
                 onClick={onToggleDarkMode}
@@ -39,43 +59,37 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                 title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
               >
                 {darkMode ? (
-                  <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 ) : (
-                  <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                 )}
               </button>
             )}
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <div>Russian Fishing 4 World Records Database</div>
+
+            {/* Database Info */}
+            <div className="text-center sm:text-right">
+              <div className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                Russian Fishing 4 World Records Database
+              </div>
               {lastRefresh && (
-                <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
                   Last updated: {formatLastRefresh(lastRefresh)}
                 </div>
               )}
             </div>
-            <div className="flex flex-col items-end space-y-2">
-              {onAboutClick && (
-                <button
-                  onClick={onAboutClick}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline"
-                >
-                  About
-                </button>
-              )}
-              <div className="flex items-center space-x-2">
-                {onRefresh && (
-                  <button
-                    onClick={onRefresh}
-                    className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                    </svg>
-                    Refresh
-                  </button>
-                )}
-              </div>
-            </div>
+
+            {/* Refresh Button */}
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+            )}
           </div>
         </div>
       </div>
