@@ -5,6 +5,7 @@ import Filters from './components/Filters.jsx';
 import RecordsTable from './components/RecordsTable.jsx';
 import GroupedRecordsTable from './components/GroupedRecordsTable.jsx';
 import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
+import About from './components/About.jsx';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -49,6 +50,9 @@ function App() {
   
   // Auto-refresh state
   const [lastRefresh, setLastRefresh] = useState(null);
+  
+  // About modal state
+  const [showAbout, setShowAbout] = useState(false);
 
   // Dark mode effect
   useEffect(() => {
@@ -66,6 +70,14 @@ function App() {
   const toggleDarkMode = () => {
     console.log('Toggle dark mode clicked. Current:', darkMode, 'Will become:', !darkMode);
     setDarkMode(!darkMode);
+  };
+
+  const handleAboutClick = () => {
+    setShowAbout(true);
+  };
+
+  const handleAboutClose = () => {
+    setShowAbout(false);
   };
 
   // Fetch records from API
@@ -251,6 +263,7 @@ function App() {
         lastRefresh={lastRefresh}
         darkMode={darkMode}
         onToggleDarkMode={toggleDarkMode}
+        onAboutClick={handleAboutClick}
       />
       <Filters
         filters={filters}
@@ -318,6 +331,11 @@ function App() {
           />
         )}
       </div>
+      
+      {/* About Modal */}
+      {showAbout && (
+        <About onClose={handleAboutClose} />
+      )}
     </div>
   );
 }
