@@ -49,8 +49,8 @@ app.add_middleware(
 # Serve static files (built frontend) in production
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.exists(frontend_dist_path):
-    app.mount("/static", StaticFiles(directory=frontend_dist_path), name="static")
-    logger.info(f"Serving static files from {frontend_dist_path}")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_path, "assets")), name="assets")
+    logger.info(f"Serving static assets from {os.path.join(frontend_dist_path, 'assets')}")
 else:
     logger.warning(f"Frontend dist directory not found at {frontend_dist_path}")
 
