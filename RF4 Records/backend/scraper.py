@@ -13,6 +13,7 @@ import time
 import random
 import logging
 from datetime import datetime, timezone
+from bulk_operations import BulkRecordInserter, OptimizedRecordChecker
 import os
 import signal
 import sys
@@ -751,6 +752,10 @@ def scrape_and_update_records():
     category_failures = 0  # Track how many categories had failures
     failed_cleanups = 0  # Track failed driver cleanup attempts
     
+    # Initialize bulk operations for performance
+    bulk_inserter = BulkRecordInserter(batch_size=50)  # Smaller batches for frequent commits
+    record_checker = OptimizedRecordChecker(db)
+    
     try:
         # Get initial database count
         initial_count = db.query(Record).count()
@@ -819,8 +824,8 @@ def scrape_and_update_records():
                                 all_unique_fish.add(data['fish'])
                             # Only add records that have at least some meaningful data
                             if data['fish'] and data['player'] and data['weight']:
-                                if not record_exists(db, data):
-                                    db.add(Record(**data))
+                                if not record_checker.record_exists(data):
+                                    bulk_inserter.add_record(data)
                                     region_new_records += 1
                                     total_new_records += 1
                         except Exception as e:
@@ -842,7 +847,8 @@ def scrape_and_update_records():
                     if regions_scraped % 10 == 0:  # Every 10 regions, restart Chrome completely
                         logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
                         try:
-                            # Commit database session before Chrome restart to prevent large transactions
+                            # Flush bulk inserter and commit database session before Chrome restart
+                            bulk_inserter.flush()
                             db.commit()
                             
                             cleanup_success = cleanup_driver(driver)
@@ -900,9 +906,11 @@ def scrape_and_update_records():
             
             # Commit and refresh database session between categories
             try:
+                bulk_inserter.flush()  # Flush any pending records
                 db.commit()
                 db.close()
                 db = SessionLocal()  # Fresh database session
+                record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
             except Exception as db_error:
                 logger.error(f"Database session refresh error: {db_error}")
                 # Ensure we have a valid database session
@@ -967,6 +975,10 @@ def scrape_and_update_records():
     finally:
         # Aggressive cleanup to prevent memory leaks
         try:
+            # Flush any remaining bulk operations
+            if 'bulk_inserter' in locals():
+                bulk_inserter.close()
+            
             # Close database session properly
             if db:
                 db.rollback()  # Rollback any pending transactions

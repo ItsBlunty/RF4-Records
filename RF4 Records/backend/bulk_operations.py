@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""
+Optimized bulk database operations for PostgreSQL performance.
+Replaces individual inserts with efficient bulk operations.
+"""
+
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
+from database import Record, SessionLocal
+import logging
+
+logger = logging.getLogger(__name__)
+
+class BulkRecordInserter:
+    """Efficient bulk record insertion with PostgreSQL UPSERT"""
+    
+    def __init__(self, batch_size=100):
+        self.batch_size = batch_size
+        self.pending_records = []
+        self.db = SessionLocal()
+        
+    def add_record(self, record_data):
+        """Add a record to the pending batch"""
+        self.pending_records.append(record_data)
+        
+        # Auto-flush when batch is full
+        if len(self.pending_records) >= self.batch_size:
+            self.flush()
+    
+    def flush(self):
+        """Insert all pending records using bulk UPSERT"""
+        if not self.pending_records:
+            return 0
+        
+        try:
+            # Use PostgreSQL UPSERT (ON CONFLICT DO NOTHING)
+            stmt = insert(Record).values(self.pending_records)
+            
+            # Define the conflict resolution - if duplicate exists, do nothing
+            conflict_columns = ['player', 'fish', 'weight', 'waterbody', 'bait1', 'bait2', 'date', 'region', 'category']
+            stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
+            
+            result = self.db.execute(stmt)
+            self.db.commit()
+            
+            inserted_count = len(self.pending_records)  # PostgreSQL doesn't return affected rows for ON CONFLICT DO NOTHING
+            logger.debug(f"Bulk inserted {inserted_count} records")
+            
+            self.pending_records.clear()
+            return inserted_count
+            
+        except Exception as e:
+            logger.error(f"Bulk insert failed: {e}")
+            self.db.rollback()
+            
+            # Fallback to individual inserts for error recovery
+            return self._fallback_individual_inserts()
+    
+    def _fallback_individual_inserts(self):
+        """Fallback to individual inserts if bulk insert fails"""
+        logger.warning("Falling back to individual inserts due to bulk insert failure")
+        
+        inserted_count = 0
+        failed_records = []
+        
+        for record_data in self.pending_records:
+            try:
+                # Check if record exists using the composite index
+                exists = self.db.query(Record).filter(
+                    Record.player == record_data['player'],
+                    Record.fish == record_data['fish'],
+                    Record.weight == record_data['weight'],
+                    Record.waterbody == record_data['waterbody'],
+                    Record.bait1 == record_data['bait1'],
+                    Record.bait2 == record_data['bait2'],
+                    Record.date == record_data['date'],
+                    Record.region == record_data['region'],
+                    Record.category == record_data['category']
+                ).first()
+                
+                if not exists:
+                    self.db.add(Record(**record_data))
+                    inserted_count += 1
+                    
+            except Exception as e:
+                logger.error(f"Failed to insert individual record: {e}")
+                failed_records.append(record_data)
+        
+        try:
+            self.db.commit()
+        except Exception as e:
+            logger.error(f"Failed to commit individual inserts: {e}")
+            self.db.rollback()
+            inserted_count = 0
+        
+        self.pending_records.clear()
+        
+        if failed_records:
+            logger.warning(f"Failed to insert {len(failed_records)} records during fallback")
+        
+        return inserted_count
+    
+    def close(self):
+        """Flush remaining records and close the session"""
+        inserted = self.flush()
+        self.db.close()
+        return inserted
+
+class OptimizedRecordChecker:
+    """Optimized record existence checking using bulk queries"""
+    
+    def __init__(self, db_session):
+        self.db = db_session
+        self._cache = {}
+        self._cache_size = 0
+        self.max_cache_size = 1000
+    
+    def record_exists(self, record_data):
+        """Check if record exists using optimized caching and bulk queries"""
+        
+        # Create a cache key from the record data
+        cache_key = (
+            record_data['player'],
+            record_data['fish'], 
+            record_data['weight'],
+            record_data['waterbody'],
+            record_data['bait1'],
+            record_data['bait2'],
+            record_data['date'],
+            record_data['region'],
+            record_data['category']
+        )
+        
+        # Check cache first
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # Query database (this will use our composite index)
+        exists = self.db.query(Record).filter(
+            Record.player == record_data['player'],
+            Record.fish == record_data['fish'],
+            Record.weight == record_data['weight'],
+            Record.waterbody == record_data['waterbody'],
+            Record.bait1 == record_data['bait1'],
+            Record.bait2 == record_data['bait2'],
+            Record.date == record_data['date'],
+            Record.region == record_data['region'],
+            Record.category == record_data['category']
+        ).first() is not None
+        
+        # Cache the result
+        self._cache[cache_key] = exists
+        self._cache_size += 1
+        
+        # Prevent cache from growing too large
+        if self._cache_size > self.max_cache_size:
+            # Clear half the cache
+            items_to_remove = list(self._cache.keys())[:self.max_cache_size // 2]
+            for key in items_to_remove:
+                del self._cache[key]
+            self._cache_size = len(self._cache)
+        
+        return exists
+    
+    def clear_cache(self):
+        """Clear the existence cache"""
+        self._cache.clear()
+        self._cache_size = 0
+
+def bulk_upsert_records(records_data, batch_size=100):
+    """
+    Standalone function for bulk upserting records.
+    Returns the number of records processed.
+    """
+    if not records_data:
+        return 0
+    
+    inserter = BulkRecordInserter(batch_size)
+    
+    try:
+        for record_data in records_data:
+            inserter.add_record(record_data)
+        
+        # Flush any remaining records
+        final_count = inserter.close()
+        return len(records_data)
+        
+    except Exception as e:
+        logger.error(f"Bulk upsert failed: {e}")
+        inserter.close()
+        return 0 

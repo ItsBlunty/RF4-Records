@@ -268,6 +268,30 @@ def startup_event():
         logger.warning(f"Error running database performance fix: {e}")
         # Don't return here - this is not critical for startup
     
+    # Add critical database indexes for performance
+    try:
+        from add_indexes import add_critical_indexes
+        index_success = add_critical_indexes()
+        if index_success:
+            logger.info("Database indexes optimization completed successfully")
+        else:
+            logger.warning("Database indexes optimization failed - continuing anyway")
+    except Exception as e:
+        logger.warning(f"Error running database indexes optimization: {e}")
+        # Don't return here - this is not critical for startup
+    
+    # Run database maintenance for optimal performance
+    try:
+        from db_maintenance import run_database_maintenance
+        maintenance_success = run_database_maintenance()
+        if maintenance_success:
+            logger.info("Database maintenance completed successfully")
+        else:
+            logger.warning("Database maintenance failed - continuing anyway")
+    except Exception as e:
+        logger.warning(f"Error running database maintenance: {e}")
+        # Don't return here - this is not critical for startup
+    
     # Create/verify database tables
     try:
         create_tables()
