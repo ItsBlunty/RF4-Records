@@ -11,6 +11,7 @@ import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 import TrophyWeights from './components/TrophyWeights.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
+import { isWithinAgeRange } from './utils/dateUtils.js';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -52,7 +53,8 @@ function AppContent() {
   const [filters, setFilters] = useState({
     fish: '',
     waterbody: '',
-    bait: ''
+    bait: '',
+    dataAge: ''
   });
   
   // Unique values for dropdowns
@@ -185,6 +187,11 @@ function AppContent() {
         r.bait_display && r.bait_display.toLowerCase().includes(filters.bait.toLowerCase())
       );
     }
+    if (filters.dataAge) {
+      filtered = filtered.filter(r => 
+        isWithinAgeRange(r.date, filters.dataAge)
+      );
+    }
 
     // Apply sorting
     if (sortConfig.key && sortConfig.direction) {
@@ -230,7 +237,8 @@ function AppContent() {
     setFilters({
       fish: '',
       waterbody: '',
-      bait: ''
+      bait: '',
+      dataAge: ''
     });
   };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Clock } from 'lucide-react';
 
 const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
   const handleInputChange = (field, value) => {
@@ -104,6 +104,47 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                   className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                 >
                   <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Data Age Filter */}
+          <div className="flex-1 min-w-[200px]">
+            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <Clock className="inline h-3 w-3 mr-1" />
+              Data Age
+            </label>
+            <div className="relative">
+              <select
+                value={filters.dataAge || ''}
+                onChange={e => handleInputChange('dataAge', e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+              >
+                <option value="">All Time</option>
+                <option value="since-reset">Since Last Record Reset</option>
+                <option value="1-hour">Last 1 Hour</option>
+                <option value="6-hours">Last 6 Hours</option>
+                <option value="12-hours">Last 12 Hours</option>
+                <option value="1-day">Last 1 Day</option>
+                <option value="3-days">Last 3 Days</option>
+                <option value="7-days">Last 7 Days</option>
+                <option value="30-days">Last 30 Days</option>
+                <option value="90-days">Last 90 Days</option>
+              </select>
+              {/* Custom dropdown arrow */}
+              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+              {filters.dataAge && (
+                <button
+                  type="button"
+                  onClick={() => clearFilter('dataAge')}
+                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <X className="h-3 w-3" />
                 </button>
               )}
             </div>
