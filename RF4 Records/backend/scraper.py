@@ -164,47 +164,49 @@ def get_driver():
     """Create and configure Chrome WebDriver for Docker container, Browserless, or local development"""
     chrome_options = Options()
     
-    # Memory optimization flags
-    chrome_options.add_argument('--memory-pressure-off')
-    chrome_options.add_argument('--max_old_space_size=4096')
-    chrome_options.add_argument('--disable-background-timer-throttling')
-    chrome_options.add_argument('--disable-backgrounding-occluded-windows')
-    chrome_options.add_argument('--disable-breakpad')
-    chrome_options.add_argument('--disable-component-extensions-with-background-pages')
-    chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees,VizDisplayCompositor')
-    chrome_options.add_argument('--disable-ipc-flooding-protection')
-    chrome_options.add_argument('--disable-renderer-backgrounding')
-    chrome_options.add_argument('--enable-features=NetworkService,NetworkServiceInProcess')
-    chrome_options.add_argument('--force-color-profile=srgb')
-    chrome_options.add_argument('--hide-scrollbars')
-    chrome_options.add_argument('--metrics-recording-only')
-    chrome_options.add_argument('--mute-audio')
-    chrome_options.add_argument('--headless')
+    # Core performance and memory optimization flags
+    chrome_options.add_argument('--headless=new')  # Use new headless mode (faster)
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-gpu')
+    chrome_options.add_argument('--disable-dev-shm-usage')
     chrome_options.add_argument('--disable-software-rasterizer')
-    chrome_options.add_argument('--window-size=1280,720')  # Smaller window to save memory
+    chrome_options.add_argument('--window-size=1024,768')  # Smaller window for less memory
     
-    # Additional memory management
-    chrome_options.add_argument('--aggressive-cache-discard')
+    # Aggressive memory optimization
+    chrome_options.add_argument('--memory-pressure-off')
+    chrome_options.add_argument('--max_old_space_size=2048')  # Reduced from 4096
+    chrome_options.add_argument('--disable-background-timer-throttling')
+    chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+    chrome_options.add_argument('--disable-renderer-backgrounding')
     chrome_options.add_argument('--disable-background-networking')
+    chrome_options.add_argument('--aggressive-cache-discard')
+    
+    # Speed optimization flags
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--disable-plugins')
+    chrome_options.add_argument('--disable-images')  # Don't load images for speed
+    chrome_options.add_argument('--disable-javascript-harmony-shipping')
+    chrome_options.add_argument('--disable-component-extensions-with-background-pages')
     chrome_options.add_argument('--disable-default-apps')
     chrome_options.add_argument('--disable-sync')
     chrome_options.add_argument('--no-first-run')
-    chrome_options.add_argument('--disable-plugins')
-    chrome_options.add_argument('--disable-images')  # Don't load images to save memory
+    chrome_options.add_argument('--disable-breakpad')
+    chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees')
+    chrome_options.add_argument('--enable-features=NetworkService,NetworkServiceInProcess')
     
-    # Safe memory optimization flags only
+    # Resource optimization
     chrome_options.add_argument('--disable-3d-apis')
     chrome_options.add_argument('--disable-accelerated-2d-canvas')
     chrome_options.add_argument('--disable-accelerated-video-decode')
+    chrome_options.add_argument('--hide-scrollbars')
+    chrome_options.add_argument('--mute-audio')
+    chrome_options.add_argument('--metrics-recording-only')
     
     # Docker container specific flags
     chrome_options.add_argument('--disable-setuid-sandbox')
     chrome_options.add_argument('--disable-web-security')
     chrome_options.add_argument('--allow-running-insecure-content')
+    chrome_options.add_argument('--disable-ipc-flooding-protection')
     
     # Check deployment environment
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
@@ -246,9 +248,9 @@ def get_driver():
         service = Service(executable_path=chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set timeouts for container environment
-        driver.set_page_load_timeout(30)
-        driver.implicitly_wait(10)
+        # Set aggressive timeouts for container environment (faster scraping)
+        driver.set_page_load_timeout(20)  # Reduced from 30
+        driver.implicitly_wait(5)  # Reduced from 10
         
     else:
         # Local development
@@ -443,8 +445,8 @@ def parse_table_selenium(driver, region_info):
     """Parse the records table using Selenium after JavaScript loads with enhanced timeout handling"""
     global should_stop_scraping
     
-    # Shorter initial wait for faster processing
-    time.sleep(2)
+    # Minimal wait for faster processing in Docker container
+    time.sleep(1)  # Reduced from 2 seconds
     
     # Check for interruption
     if should_stop_scraping:
@@ -799,9 +801,13 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # Periodic memory cleanup between regions
-                    if regions_scraped % 10 == 0:  # Every 10 regions, do cleanup
+                    # More aggressive memory cleanup for Docker container
+                    if regions_scraped % 5 == 0:  # Every 5 regions (more frequent)
                         force_garbage_collection()
+                        # Additional Docker-specific cleanup
+                        if chrome_bin and chromedriver_path:  # In Docker container
+                            import gc
+                            gc.collect(2)  # Force old generation cleanup
                     
                     time.sleep(2)
                 except Exception as e:

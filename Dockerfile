@@ -58,13 +58,13 @@ RUN mkdir -p /app/logs
 # Set working directory to backend
 WORKDIR /app/backend
 
-# Create a startup script
+# Create a startup script with optimized Xvfb settings
 RUN echo '#!/bin/bash\n\
-# Start Xvfb for headless display\n\
-Xvfb :99 -screen 0 1280x720x24 &\n\
+# Start Xvfb with minimal memory footprint\n\
+Xvfb :99 -screen 0 1024x768x16 -ac -nolisten tcp -dpi 96 +extension GLX +render -noreset &\n\
 \n\
 # Wait a moment for Xvfb to start\n\
-sleep 2\n\
+sleep 1\n\
 \n\
 # Start the Python application\n\
 exec python "$@"' > /app/start.sh \
