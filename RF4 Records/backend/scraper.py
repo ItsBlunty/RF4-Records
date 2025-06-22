@@ -805,7 +805,8 @@ def scrape_and_update_records():
                     if regions_scraped % 5 == 0:  # Every 5 regions (more frequent)
                         force_garbage_collection()
                         # Additional Docker-specific cleanup
-                        if chrome_bin and chromedriver_path:  # In Docker container
+                        chrome_bin = os.getenv('CHROME_BIN')
+                        if chrome_bin:  # In Docker container
                             import gc
                             gc.collect(2)  # Force old generation cleanup
                     
