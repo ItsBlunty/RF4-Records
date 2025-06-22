@@ -431,6 +431,18 @@ def get_records():
         logger.error(f"Error retrieving records: {e}")
         return {"error": "Failed to retrieve records"}
 
+@app.get("/refresh")
+def refresh_info():
+    """Information about the refresh endpoint"""
+    return {
+        "message": "Manual scrape endpoint",
+        "method": "POST",
+        "description": "Send a POST request to this endpoint to trigger a manual scrape",
+        "example": "curl -X POST https://your-domain.com/refresh",
+        "current_status": "scraping" if is_scraping else "idle",
+        "note": "GET requests to this endpoint only show this information"
+    }
+
 @app.post("/refresh")
 def refresh():
     """Manually trigger a scrape"""
@@ -530,8 +542,9 @@ def get_status():
 @app.get("/{path:path}")
 def serve_frontend(path: str):
     """Serve the frontend application for all non-API routes"""
-    # Don't serve frontend for API paths
-    if path.startswith("api") or path == "health":
+    # Don't serve frontend for API paths and endpoints
+    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records"]
+    if path.startswith("api") or path in api_endpoints:
         raise HTTPException(status_code=404, detail="Not found")
     
     frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
