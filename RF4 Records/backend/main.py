@@ -176,15 +176,20 @@ def update_schedule():
         logger.info(f"Schedule updated to {frequency} scraping")
         logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
         
-        # Schedule the first scrape (1 hour from now to avoid immediate startup scrape)
-        first_run_time = datetime.now() + timedelta(hours=1)
+        # Schedule the first scrape based on current frequency period
+        if is_high_frequency_period():
+            delay_minutes = 3
+        else:
+            delay_minutes = 15
+        
+        first_run_time = datetime.now() + timedelta(minutes=delay_minutes)
         scheduler.add_job(
             scheduled_scrape,
             'date',
             run_date=first_run_time,
             id='scrape_job'
         )
-        logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} ({delay_minutes}-minute delay)")
         
         # Schedule the next schedule update
         scheduler.add_job(
