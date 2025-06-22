@@ -350,7 +350,6 @@ def shutdown_event():
     scheduler.shutdown()
     logger.info("Scheduler shutdown complete")
 
-@app.get("/")
 @app.get("/health")
 def health_check():
     """Health check endpoint for Railway and monitoring"""
@@ -527,12 +526,12 @@ def get_status():
         logger.error(f"Error getting status: {e}")
         return {"error": "Failed to get status"}
 
-# Serve the frontend for all other routes (SPA routing) - but not for root health check
+# Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
     """Serve the frontend application for all non-API routes"""
-    # Don't serve frontend for health check paths
-    if path in ["health"]:
+    # Don't serve frontend for API paths
+    if path.startswith("api") or path == "health":
         raise HTTPException(status_code=404, detail="Not found")
     
     frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
