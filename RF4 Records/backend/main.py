@@ -271,21 +271,12 @@ def startup_event():
         except Exception as e:
             logger.warning(f"Error running database migration: {e}")
         
-        # Run performance fix for created_at column with timeout
-        try:
-            logger.info("Running created_at performance fix...")
-            from fix_created_at_default import fix_created_at_default
-            fix_success = fix_created_at_default()
-            if fix_success:
-                logger.info("Database performance fix completed successfully")
-            else:
-                logger.warning("Database performance fix failed - continuing anyway")
-        except Exception as e:
-            logger.warning(f"Error running database performance fix: {e}")
+        # Only run non-blocking optimizations during deployment
+        # This prevents hanging during zero-downtime deployments
         
-        # Add critical database indexes for performance
+        # Add critical database indexes for performance (uses CONCURRENTLY - non-blocking)
         try:
-            logger.info("Adding critical database indexes...")
+            logger.info("Adding critical database indexes (non-blocking)...")
             from add_indexes import add_critical_indexes
             index_success = add_critical_indexes()
             if index_success:
@@ -295,17 +286,9 @@ def startup_event():
         except Exception as e:
             logger.warning(f"Error running database indexes optimization: {e}")
         
-        # Run database maintenance for optimal performance
-        try:
-            logger.info("Running database maintenance...")
-            from db_maintenance import run_database_maintenance
-            maintenance_success = run_database_maintenance()
-            if maintenance_success:
-                logger.info("Database maintenance completed successfully")
-            else:
-                logger.warning("Database maintenance failed - continuing anyway")
-        except Exception as e:
-            logger.warning(f"Error running database maintenance: {e}")
+        # Skip potentially blocking operations during deployment
+        logger.info("Skipping blocking database operations during deployment")
+        logger.info("Performance fix and maintenance can be run manually if needed")
         
         logger.info("Background database optimizations completed")
     
@@ -326,6 +309,7 @@ def startup_event():
     print("   GET  /         - Server status")
     print("   GET  /records  - Get all fishing records")
     print("   POST /refresh  - Trigger manual scrape")
+    print("   POST /optimize - Run database performance optimizations")
     print("   GET  /status   - Server and DB status")
     print("   GET  /docs     - Interactive API documentation")
     print("✅ Server ready! Frontend can connect to this URL")
@@ -470,6 +454,34 @@ def refresh():
     finally:
         with scraping_lock:
             is_scraping = False
+
+@app.post("/optimize")
+def run_database_optimizations():
+    """Manually run database performance optimizations"""
+    try:
+        results = {}
+        
+        # Run created_at performance fix
+        try:
+            from fix_created_at_default import fix_created_at_default
+            results['performance_fix'] = fix_created_at_default()
+        except Exception as e:
+            results['performance_fix'] = f"Failed: {e}"
+        
+        # Run database maintenance
+        try:
+            from db_maintenance import run_database_maintenance
+            results['maintenance'] = run_database_maintenance()
+        except Exception as e:
+            results['maintenance'] = f"Failed: {e}"
+        
+        return {
+            "message": "Database optimizations completed",
+            "results": results
+        }
+        
+    except Exception as e:
+        return {"error": "Database optimizations failed", "details": str(e)}
 
 @app.post("/cleanup")
 def force_cleanup():
