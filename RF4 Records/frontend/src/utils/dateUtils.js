@@ -48,7 +48,8 @@ function parseDateString(dateString) {
       year += 1900;
     }
     
-    return new Date(year, month, day);
+    // Create date at noon to avoid timezone issues with day comparisons
+    return new Date(year, month, day, 12, 0, 0, 0);
   }
   
   // Fallback to standard Date parsing
@@ -72,28 +73,44 @@ export function isWithinAgeRange(dateString, ageRange) {
       return recordDate >= lastReset;
     
     case '1-hour':
-      return (now - recordDate) <= (1 * 60 * 60 * 1000);
+      return (now.getTime() - recordDate.getTime()) <= (1 * 60 * 60 * 1000);
     
     case '6-hours':
-      return (now - recordDate) <= (6 * 60 * 60 * 1000);
+      return (now.getTime() - recordDate.getTime()) <= (6 * 60 * 60 * 1000);
     
     case '12-hours':
-      return (now - recordDate) <= (12 * 60 * 60 * 1000);
+      return (now.getTime() - recordDate.getTime()) <= (12 * 60 * 60 * 1000);
     
     case '1-day':
-      return (now - recordDate) <= (1 * 24 * 60 * 60 * 1000);
+      // For day-based comparisons, compare calendar days rather than 24-hour periods
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recordDay = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      const daysDiff = Math.floor((today.getTime() - recordDay.getTime()) / (24 * 60 * 60 * 1000));
+      return daysDiff <= 1;
     
     case '3-days':
-      return (now - recordDate) <= (3 * 24 * 60 * 60 * 1000);
+      const today3 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recordDay3 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      const daysDiff3 = Math.floor((today3.getTime() - recordDay3.getTime()) / (24 * 60 * 60 * 1000));
+      return daysDiff3 <= 3;
     
     case '7-days':
-      return (now - recordDate) <= (7 * 24 * 60 * 60 * 1000);
+      const today7 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recordDay7 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      const daysDiff7 = Math.floor((today7.getTime() - recordDay7.getTime()) / (24 * 60 * 60 * 1000));
+      return daysDiff7 <= 7;
     
     case '30-days':
-      return (now - recordDate) <= (30 * 24 * 60 * 60 * 1000);
+      const today30 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recordDay30 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      const daysDiff30 = Math.floor((today30.getTime() - recordDay30.getTime()) / (24 * 60 * 60 * 1000));
+      return daysDiff30 <= 30;
     
     case '90-days':
-      return (now - recordDate) <= (90 * 24 * 60 * 60 * 1000);
+      const today90 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const recordDay90 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
+      const daysDiff90 = Math.floor((today90.getTime() - recordDay90.getTime()) / (24 * 60 * 60 * 1000));
+      return daysDiff90 <= 90;
     
     default:
       return true; // No filter

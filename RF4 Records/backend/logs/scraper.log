@@ -19514,3 +19514,15 @@ Stacktrace:
 2025-06-22 15:51:26,990 - INFO - Added job "update_schedule" to job store "default"
 2025-06-22 15:51:26,991 - INFO - Added job "schedule_monitor" to job store "default"
 2025-06-22 15:51:26,991 - INFO - Dynamic scheduler started - frequency based on weekly schedule
+2025-06-22 17:36:24,265 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-22 17:36:24,276 - INFO - Scheduler started
+2025-06-22 17:36:24,277 - INFO - Schedule updated to 3-minute scraping
+2025-06-22 17:36:24,277 - INFO - Next schedule change: 2025-06-24 18:00 UTC -> 15-minute
+2025-06-22 17:36:24,278 - INFO - Added job "scheduled_scrape" to job store "default"
+2025-06-22 17:36:24,278 - INFO - First scrape scheduled for 2025-06-22 22:39:24 (3-minute delay)
+2025-06-22 17:36:24,279 - INFO - Added job "update_schedule" to job store "default"
+2025-06-22 17:36:24,279 - INFO - Added job "schedule_monitor" to job store "default"
+2025-06-22 17:36:24,280 - INFO - Dynamic scheduler started - frequency based on weekly schedule
+2025-06-22 17:36:24,401 - INFO - === SERVER STARTUP ===
+2025-06-22 17:36:24,406 - INFO - Database tables created/verified successfully
+2025-06-22 17:36:24,407 - INFO - Server started successfully - dynamic scheduled scraping active
