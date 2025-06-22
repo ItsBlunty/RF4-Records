@@ -257,9 +257,9 @@ def get_driver():
         service = Service(executable_path=chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set aggressive timeouts for container environment (faster scraping)
-        driver.set_page_load_timeout(20)  # Reduced from 30
-        driver.implicitly_wait(5)  # Reduced from 10
+        # Set reasonable timeouts for container environment  
+        driver.set_page_load_timeout(45)  # Same as local for database stability
+        driver.implicitly_wait(15)  # Same as local for database stability
         
     else:
         # Local development
