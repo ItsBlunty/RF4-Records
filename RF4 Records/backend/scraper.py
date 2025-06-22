@@ -161,10 +161,10 @@ def split_bait_string(bait_string):
         return bait_string.strip(), None
 
 def get_driver():
-    """Create and configure Chrome WebDriver for Browserless or local development with proper memory management"""
+    """Create and configure Chrome WebDriver for Docker container, Browserless, or local development"""
     chrome_options = Options()
     
-    # Memory optimization flags for Browserless
+    # Memory optimization flags
     chrome_options.add_argument('--memory-pressure-off')
     chrome_options.add_argument('--max_old_space_size=4096')
     chrome_options.add_argument('--disable-background-timer-throttling')
@@ -201,11 +201,19 @@ def get_driver():
     chrome_options.add_argument('--disable-accelerated-2d-canvas')
     chrome_options.add_argument('--disable-accelerated-video-decode')
     
-    # Check if we're running on Railway with Browserless
+    # Docker container specific flags
+    chrome_options.add_argument('--disable-setuid-sandbox')
+    chrome_options.add_argument('--disable-web-security')
+    chrome_options.add_argument('--allow-running-insecure-content')
+    
+    # Check deployment environment
     browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
     browser_token = os.getenv('BROWSER_TOKEN')
+    chrome_bin = os.getenv('CHROME_BIN')  # Docker container Chrome path
+    chromedriver_path = os.getenv('CHROMEDRIVER_PATH')  # Docker container ChromeDriver path
     
     if browser_endpoint:
+        # Using Browserless service
         logger.info("Using Browserless service for WebDriver")
         
         # Safe timeout settings for Browserless
@@ -226,6 +234,21 @@ def get_driver():
         # Set aggressive timeouts for better reliability
         driver.set_page_load_timeout(25)  # 25 seconds max page load
         driver.implicitly_wait(10)  # 10 seconds implicit wait
+        
+    elif chrome_bin and chromedriver_path:
+        # Running in Docker container with pre-installed Chrome
+        logger.info("Using Docker container Chrome installation")
+        
+        # Set Chrome binary location
+        chrome_options.binary_location = chrome_bin
+        
+        # Create service with specific ChromeDriver path
+        service = Service(executable_path=chromedriver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        # Set timeouts for container environment
+        driver.set_page_load_timeout(30)
+        driver.implicitly_wait(10)
         
     else:
         # Local development
