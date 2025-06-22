@@ -239,11 +239,24 @@ logger.info("Dynamic scheduler started - frequency based on weekly schedule")
 
 @app.on_event("startup")
 def startup_event():
-    """Server startup - create tables and start scheduler"""
+    """Server startup - run migrations and start scheduler"""
     logger.info("=== SERVER STARTUP ===")
     print("🚀 FastAPI server is starting up...")
     
-    # Create database tables
+    # Run database migration
+    try:
+        from migrate_production import migrate_production
+        migration_success = migrate_production()
+        if migration_success:
+            logger.info("Database migration completed successfully")
+        else:
+            logger.error("Database migration failed")
+            return
+    except Exception as e:
+        logger.error(f"Error running database migration: {e}")
+        return
+    
+    # Create/verify database tables
     try:
         create_tables()
         logger.info("Database tables created/verified successfully")
