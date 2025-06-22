@@ -256,41 +256,60 @@ def startup_event():
         logger.error(f"Error running database migration: {e}")
         return
     
-    # Run performance fix for created_at column
-    try:
-        from fix_created_at_default import fix_created_at_default
-        fix_success = fix_created_at_default()
-        if fix_success:
-            logger.info("Database performance fix completed successfully")
-        else:
-            logger.warning("Database performance fix failed - continuing anyway")
-    except Exception as e:
-        logger.warning(f"Error running database performance fix: {e}")
-        # Don't return here - this is not critical for startup
+    # Run performance optimizations in background to avoid blocking startup
+    # This prevents hanging during zero-downtime deployments
+    def run_background_optimizations():
+        """Run database optimizations in background thread"""
+        import time
+        import threading
+        
+        # Wait a bit for server to fully start
+        time.sleep(5)
+        
+        logger.info("Starting background database optimizations...")
+        
+        # Run performance fix for created_at column with timeout
+        try:
+            logger.info("Running created_at performance fix...")
+            from fix_created_at_default import fix_created_at_default
+            fix_success = fix_created_at_default()
+            if fix_success:
+                logger.info("Database performance fix completed successfully")
+            else:
+                logger.warning("Database performance fix failed - continuing anyway")
+        except Exception as e:
+            logger.warning(f"Error running database performance fix: {e}")
+        
+        # Add critical database indexes for performance
+        try:
+            logger.info("Adding critical database indexes...")
+            from add_indexes import add_critical_indexes
+            index_success = add_critical_indexes()
+            if index_success:
+                logger.info("Database indexes optimization completed successfully")
+            else:
+                logger.warning("Database indexes optimization failed - continuing anyway")
+        except Exception as e:
+            logger.warning(f"Error running database indexes optimization: {e}")
+        
+        # Run database maintenance for optimal performance
+        try:
+            logger.info("Running database maintenance...")
+            from db_maintenance import run_database_maintenance
+            maintenance_success = run_database_maintenance()
+            if maintenance_success:
+                logger.info("Database maintenance completed successfully")
+            else:
+                logger.warning("Database maintenance failed - continuing anyway")
+        except Exception as e:
+            logger.warning(f"Error running database maintenance: {e}")
+        
+        logger.info("Background database optimizations completed")
     
-    # Add critical database indexes for performance
-    try:
-        from add_indexes import add_critical_indexes
-        index_success = add_critical_indexes()
-        if index_success:
-            logger.info("Database indexes optimization completed successfully")
-        else:
-            logger.warning("Database indexes optimization failed - continuing anyway")
-    except Exception as e:
-        logger.warning(f"Error running database indexes optimization: {e}")
-        # Don't return here - this is not critical for startup
-    
-    # Run database maintenance for optimal performance
-    try:
-        from db_maintenance import run_database_maintenance
-        maintenance_success = run_database_maintenance()
-        if maintenance_success:
-            logger.info("Database maintenance completed successfully")
-        else:
-            logger.warning("Database maintenance failed - continuing anyway")
-    except Exception as e:
-        logger.warning(f"Error running database maintenance: {e}")
-        # Don't return here - this is not critical for startup
+    # Start optimizations in background thread
+    optimization_thread = threading.Thread(target=run_background_optimizations, daemon=True)
+    optimization_thread.start()
+    logger.info("Database optimizations started in background thread")
     
     # Create/verify database tables
     try:

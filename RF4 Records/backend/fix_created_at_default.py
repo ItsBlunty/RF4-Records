@@ -19,7 +19,12 @@ def fix_created_at_default():
     database_url = get_database_url()
     print(f"🗄️  Database: {database_url.split('@')[0] if '@' in database_url else database_url}")
     
-    engine = create_engine(database_url)
+    # Set connection timeout to prevent hanging during deployments
+    connect_args = {}
+    if 'postgresql' in database_url.lower() or 'postgres' in database_url.lower():
+        connect_args['connect_timeout'] = 10
+    
+    engine = create_engine(database_url, connect_args=connect_args)
     
     try:
         # Check if we're using PostgreSQL
