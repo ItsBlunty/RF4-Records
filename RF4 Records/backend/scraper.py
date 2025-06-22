@@ -172,6 +172,15 @@ def get_driver():
     chrome_options.add_argument('--disable-software-rasterizer')
     chrome_options.add_argument('--window-size=1024,768')  # Smaller window for less memory
     
+    # Chrome stability flags for Docker container
+    chrome_options.add_argument('--disable-hang-monitor')  # Prevent hang detection timeout
+    chrome_options.add_argument('--disable-prompt-on-repost')
+    chrome_options.add_argument('--disable-client-side-phishing-detection')
+    chrome_options.add_argument('--disable-web-security')  # Reduce security overhead
+    chrome_options.add_argument('--disable-features=VizDisplayCompositor')
+    chrome_options.add_argument('--disable-ipc-flooding-protection')  # Prevent IPC timeout
+    chrome_options.add_argument('--disable-renderer-accessibility')  # Reduce renderer load
+    
     # Aggressive memory optimization
     chrome_options.add_argument('--memory-pressure-off')
     chrome_options.add_argument('--max_old_space_size=2048')  # Reduced from 4096
@@ -258,9 +267,9 @@ def get_driver():
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set timeouts for local development
-        driver.set_page_load_timeout(30)
-        driver.implicitly_wait(10)
+        # Set timeouts - more generous for Docker container stability
+        driver.set_page_load_timeout(45)  # Increased from 30 to handle renderer delays
+        driver.implicitly_wait(15)  # Increased from 10 to handle slow responses
     
     return driver
 
@@ -281,14 +290,23 @@ def cleanup_driver(driver):
     cleanup_success = True
     cleanup_errors = []
     
-    # Step 1: Clear browser data
+    # Step 1: Clear browser data with timeout handling
     try:
         logger.debug(f"Session {session_id}: Clearing cookies...")
+        # Set a shorter timeout for cleanup operations to prevent hanging
+        driver.set_page_load_timeout(10)
+        driver.implicitly_wait(5)
         driver.delete_all_cookies()
         logger.debug(f"Session {session_id}: Cookies cleared successfully")
     except Exception as e:
-        cleanup_errors.append(f"delete_cookies: {str(e)[:100]}")
-        logger.warning(f"Session {session_id}: Failed to clear cookies: {e}")
+        # Check if it's a renderer timeout - these are expected during high load
+        error_str = str(e)
+        if "timeout" in error_str.lower() and "renderer" in error_str.lower():
+            logger.debug(f"Session {session_id}: Cookie cleanup timeout (expected during high load)")
+            cleanup_errors.append(f"delete_cookies: renderer_timeout")
+        else:
+            cleanup_errors.append(f"delete_cookies: {str(e)[:100]}")
+            logger.warning(f"Session {session_id}: Failed to clear cookies: {e}")
         cleanup_success = False
     
     try:
@@ -357,9 +375,22 @@ def cleanup_driver(driver):
         logger.warning(f"Session {session_id}: Failed to get/close window handles: {e}")
         cleanup_success = False
     
-    # Step 4: Final quit
+    # Step 4: Final quit with timeout handling
     try:
         logger.debug(f"Session {session_id}: Calling driver.quit()...")
+        
+        # For renderer timeout situations, try a force quit approach
+        if any("renderer_timeout" in error for error in cleanup_errors):
+            logger.debug(f"Session {session_id}: Renderer timeout detected, using force quit strategy")
+            # Try to kill the session more aggressively
+            try:
+                driver.service.process.terminate()  # Terminate Chrome process
+                import time
+                time.sleep(1)
+                driver.service.process.kill()  # Force kill if still running
+            except Exception:
+                pass  # Best effort
+        
         driver.quit()
         logger.debug(f"Session {session_id}: driver.quit() completed successfully")
         
@@ -369,8 +400,14 @@ def cleanup_driver(driver):
         logger.debug(f"Session {session_id}: Cleanup wait completed")
         
     except Exception as e:
-        cleanup_errors.append(f"driver_quit: {str(e)[:100]}")
-        logger.error(f"Session {session_id}: CRITICAL - driver.quit() failed: {e}")
+        error_str = str(e)
+        if "timeout" in error_str.lower() and "renderer" in error_str.lower():
+            logger.debug(f"Session {session_id}: Quit timeout (expected during high load)")
+            cleanup_errors.append(f"driver_quit: renderer_timeout")
+            # Even if quit times out, the process termination above should help
+        else:
+            cleanup_errors.append(f"driver_quit: {str(e)[:100]}")
+            logger.error(f"Session {session_id}: CRITICAL - driver.quit() failed: {e}")
         cleanup_success = False
     
     # Final cleanup summary
