@@ -11,3 +11,4 @@ alwaysApply: true
  - Once changes are made, test them as possible, but remember that you're on windows and using powershell, and the goal is for a railway deploy, so it may not totally work locally.
  - Once tested, commit and push changes unless the user asks specifically not to.
  - Use proper powershell syntax
+ - When you run git commands in powershell, you get hung forever waiting because the command doesnt "resolve".

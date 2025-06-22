@@ -842,6 +842,9 @@ def scrape_and_update_records():
                     if regions_scraped % 10 == 0:  # Every 10 regions, restart Chrome completely
                         logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
                         try:
+                            # Commit database session before Chrome restart to prevent large transactions
+                            db.commit()
+                            
                             cleanup_success = cleanup_driver(driver)
                             if not cleanup_success:
                                 failed_cleanups += 1
@@ -851,6 +854,11 @@ def scrape_and_update_records():
                             logger.info("Chrome session restarted successfully")
                         except Exception as restart_error:
                             logger.error(f"Failed to restart Chrome session: {restart_error}")
+                            # Ensure database is still in good state
+                            try:
+                                db.rollback()
+                            except Exception:
+                                pass
                     elif regions_scraped % 5 == 0:  # Every 5 regions, just garbage collect
                         force_garbage_collection()
                         # Additional Docker-specific cleanup
