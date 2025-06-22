@@ -437,22 +437,22 @@ const TrophyWeights = () => {
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {sortedAndFilteredFish.map((fish, index) => (
                 <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {fish.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                     {formatWeight(fish.trophy)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                     {formatWeight(fish.superTrophy)}
                   </td>
-                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${getRarityColor(fish.rarity)}`}>
+                  <td className={`px-6 py-2.5 whitespace-nowrap text-sm ${getRarityColor(fish.rarity)}`}>
                     {fish.rarity}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                     {fish.cardValue || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm">
                     <div className="flex items-center">
                       {[1, 2, 3, 4, 5].map((starNum) => (
                         <Star 
