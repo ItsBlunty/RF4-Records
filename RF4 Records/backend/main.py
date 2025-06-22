@@ -108,7 +108,7 @@ def scheduled_scrape():
         process = psutil.Process(os.getpid())
         memory_before = process.memory_info().rss / 1024 / 1024
         
-        frequency = "5-minute" if is_high_frequency_period() else "15-minute"
+        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
         logger.info(f"Starting {frequency} scheduled scrape (Memory: {memory_before:.1f} MB)")
         result = scrape_and_update_records()
         
@@ -141,9 +141,9 @@ def schedule_next_scrape():
             scheduler.remove_job('scrape_job')
         
         if is_high_frequency_period():
-            # High frequency: 5 minutes after completion (reduced from 3 for Docker container stability)
-            delay_minutes = 5
-            frequency = "5-minute"
+            # High frequency: 3 minutes after completion
+            delay_minutes = 3
+            frequency = "3-minute"
         else:
             # Low frequency: 15 minutes after completion
             delay_minutes = 15
@@ -170,7 +170,7 @@ def update_schedule():
         if scheduler.get_job('scrape_job'):
             scheduler.remove_job('scrape_job')
         
-        frequency = "5-minute" if is_high_frequency_period() else "15-minute"
+        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
         
         next_change, next_frequency = get_next_schedule_change()
         logger.info(f"Schedule updated to {frequency} scraping")
@@ -178,7 +178,7 @@ def update_schedule():
         
         # Schedule the first scrape based on current frequency period
         if is_high_frequency_period():
-            delay_minutes = 5  # Reduced from 3 for Docker container stability
+            delay_minutes = 3
         else:
             delay_minutes = 15
         

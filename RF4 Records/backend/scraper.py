@@ -838,8 +838,20 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # More aggressive memory cleanup for Docker container
-                    if regions_scraped % 5 == 0:  # Every 5 regions (more frequent)
+                    # More aggressive Chrome session management for Docker container
+                    if regions_scraped % 10 == 0:  # Every 10 regions, restart Chrome completely
+                        logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
+                        try:
+                            cleanup_success = cleanup_driver(driver)
+                            if not cleanup_success:
+                                failed_cleanups += 1
+                                logger.warning("Driver cleanup failed during proactive restart - potential memory leak risk")
+                            force_garbage_collection()
+                            driver = get_driver()
+                            logger.info("Chrome session restarted successfully")
+                        except Exception as restart_error:
+                            logger.error(f"Failed to restart Chrome session: {restart_error}")
+                    elif regions_scraped % 5 == 0:  # Every 5 regions, just garbage collect
                         force_garbage_collection()
                         # Additional Docker-specific cleanup
                         chrome_bin = os.getenv('CHROME_BIN')

@@ -19505,3 +19505,12 @@ Stacktrace:
 2025-06-22 15:31:01,378 - INFO - Driver [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
 2025-06-22 15:31:02,516 - INFO - [CLEANUP] Starting driver cleanup for session: 6115e0d7336c5362b8ac4848355e7550
 2025-06-22 15:31:05,881 - INFO - [SUCCESS] Driver cleanup completed successfully for session: 6115e0d7336c5362b8ac4848355e7550
+2025-06-22 15:51:26,985 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-22 15:51:26,988 - INFO - Scheduler started
+2025-06-22 15:51:26,989 - INFO - Schedule updated to 3-minute scraping
+2025-06-22 15:51:26,989 - INFO - Next schedule change: 2025-06-24 18:00 UTC -> 15-minute
+2025-06-22 15:51:26,990 - INFO - Added job "scheduled_scrape" to job store "default"
+2025-06-22 15:51:26,990 - INFO - First scrape scheduled for 2025-06-22 20:54:26 (3-minute delay)
+2025-06-22 15:51:26,990 - INFO - Added job "update_schedule" to job store "default"
+2025-06-22 15:51:26,991 - INFO - Added job "schedule_monitor" to job store "default"
+2025-06-22 15:51:26,991 - INFO - Dynamic scheduler started - frequency based on weekly schedule
