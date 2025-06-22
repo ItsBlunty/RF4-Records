@@ -133,75 +133,8 @@ def scheduled_scrape():
         # Schedule the next scrape AFTER this one completes
         schedule_next_scrape()
 
-def is_in_browserless_redeploy_window(check_time):
-    """Check if a given time falls within a Browserless redeploy window"""
-    # Browserless redeploys every 3 hours at 0:00, 3:00, 6:00, 9:00, 12:00, 15:00, 18:00, 21:00 UTC
-    # Avoid scheduling from 10 minutes before to 3 minutes after each redeploy time
-    
-    # Convert to UTC if not already
-    if check_time.tzinfo is None:
-        check_time = check_time.replace(tzinfo=timezone.utc)
-    elif check_time.tzinfo != timezone.utc:
-        check_time = check_time.astimezone(timezone.utc)
-    
-    # Get the current hour and minute
-    hour = check_time.hour
-    minute = check_time.minute
-    
-    # Redeploy happens at hours: 0, 3, 6, 9, 12, 15, 18, 21
-    redeploy_hours = [0, 3, 6, 9, 12, 15, 18, 21]
-    
-    for redeploy_hour in redeploy_hours:
-        # Check if we're in the window: 10 minutes before to 3 minutes after
-        if hour == redeploy_hour:
-            # Same hour as redeploy - check if we're in the danger zone (50-59 minutes or 0-3 minutes)
-            if minute >= 50 or minute <= 3:
-                return True, redeploy_hour
-        elif hour == (redeploy_hour - 1) % 24:
-            # Hour before redeploy - check if we're in the last 10 minutes (50-59)
-            if minute >= 50:
-                return True, redeploy_hour
-    
-    return False, None
-
-def get_next_safe_time(base_time, delay_minutes):
-    """Get the next safe time to schedule, avoiding Browserless redeploy windows"""
-    candidate_time = base_time + timedelta(minutes=delay_minutes)
-    
-    # Check if the candidate time is in a redeploy window
-    in_window, redeploy_hour = is_in_browserless_redeploy_window(candidate_time)
-    
-    if not in_window:
-        return candidate_time, delay_minutes
-    
-    # If we're in a redeploy window, schedule for 3 minutes after the detected redeploy hour
-    # All times should already be in UTC
-    safe_time = base_time.replace(hour=redeploy_hour, minute=3, second=0, microsecond=0)
-    
-    # If the safe time is in the past, it means we need the next occurrence of this redeploy hour
-    if safe_time <= base_time:
-        # Find the next redeploy hour
-        redeploy_hours = [0, 3, 6, 9, 12, 15, 18, 21]
-        next_redeploy_hour = None
-        
-        for hour in redeploy_hours:
-            if hour > redeploy_hour:
-                next_redeploy_hour = hour
-                break
-        
-        if next_redeploy_hour is None:
-            # Wrap to next day
-            safe_time = safe_time.replace(hour=0, minute=3) + timedelta(days=1)
-        else:
-            safe_time = safe_time.replace(hour=next_redeploy_hour, minute=3)
-    
-    # Calculate the actual delay
-    actual_delay = (safe_time - base_time).total_seconds() / 60
-    
-    return safe_time, int(actual_delay)
-
 def schedule_next_scrape():
-    """Schedule the next scrape based on current time period, avoiding Browserless redeploy windows"""
+    """Schedule the next scrape based on current time period"""
     try:
         # Remove any existing scrape job
         if scheduler.get_job('scrape_job'):
@@ -216,8 +149,7 @@ def schedule_next_scrape():
             delay_minutes = 15
             frequency = "15-minute"
         
-        base_time = datetime.now(timezone.utc)
-        next_run_time, actual_delay = get_next_safe_time(base_time, delay_minutes)
+        next_run_time = datetime.now(timezone.utc) + timedelta(minutes=delay_minutes)
         
         scheduler.add_job(
             scheduled_scrape,
@@ -226,10 +158,7 @@ def schedule_next_scrape():
             id='scrape_job'
         )
         
-        if actual_delay != delay_minutes:
-            logger.info(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')} (delayed {actual_delay}min to avoid Browserless redeploy)")
-        else:
-            logger.info(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        logger.info(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
         
     except Exception as e:
         logger.error(f"Error scheduling next scrape: {e}")
@@ -247,14 +176,13 @@ def update_schedule():
         logger.info(f"Schedule updated to {frequency} scraping")
         logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
         
-        # Schedule the first scrape based on current frequency period, avoiding Browserless redeploy windows
+        # Schedule the first scrape based on current frequency period
         if is_high_frequency_period():
             delay_minutes = 3
         else:
             delay_minutes = 15
         
-        base_time = datetime.now(timezone.utc)
-        first_run_time, actual_delay = get_next_safe_time(base_time, delay_minutes)
+        first_run_time = datetime.now(timezone.utc) + timedelta(minutes=delay_minutes)
         scheduler.add_job(
             scheduled_scrape,
             'date',
@@ -262,10 +190,7 @@ def update_schedule():
             id='scrape_job'
         )
         
-        if actual_delay != delay_minutes:
-            logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} (delayed {actual_delay}min to avoid Browserless redeploy)")
-        else:
-            logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} ({delay_minutes}-minute delay)")
+        logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} ({delay_minutes}-minute delay)")
         
         # Schedule the next schedule update
         scheduler.add_job(

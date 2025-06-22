@@ -19480,3 +19480,12 @@ Stacktrace:
 2025-06-22 07:21:46,394 - INFO - Get LATEST chromedriver version for google-chrome
 2025-06-22 07:21:46,509 - INFO - Driver [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
 2025-06-22 07:21:47,511 - INFO - Memory usage after Light category: 112.5 MB
+2025-06-22 11:36:49,979 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-22 11:36:49,989 - INFO - Scheduler started
+2025-06-22 11:36:49,990 - INFO - Schedule updated to 15-minute scraping
+2025-06-22 11:36:49,990 - INFO - Next schedule change: 2025-06-22 18:00 UTC -> 3-minute
+2025-06-22 11:36:49,991 - INFO - Added job "scheduled_scrape" to job store "default"
+2025-06-22 11:36:49,992 - INFO - First scrape scheduled for 2025-06-22 16:51:49 (15-minute delay)
+2025-06-22 11:36:49,992 - INFO - Added job "update_schedule" to job store "default"
+2025-06-22 11:36:49,993 - INFO - Added job "schedule_monitor" to job store "default"
+2025-06-22 11:36:49,993 - INFO - Dynamic scheduler started - frequency based on weekly schedule
