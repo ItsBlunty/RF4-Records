@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js for frontend build
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
 # Add Google Chrome repository and install Chrome
@@ -50,7 +50,7 @@ COPY ["RF4 Records/frontend/", "./frontend/"]
 
 # Build frontend
 WORKDIR /app/frontend
-RUN npm install && npm run build
+RUN npm install && chmod +x node_modules/.bin/vite && npm run build
 
 # Create logs directory
 RUN mkdir -p /app/logs
