@@ -102,7 +102,7 @@ def run_database_maintenance():
         with engine.connect() as conn:
             result = conn.execute(text("""
                 SELECT 
-                    indexname,
+                    indexrelname as indexname,
                     idx_scan as scans,
                     idx_tup_read as tuples_read,
                     idx_tup_fetch as tuples_fetched
