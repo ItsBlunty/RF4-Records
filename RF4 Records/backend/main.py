@@ -243,18 +243,9 @@ def startup_event():
     logger.info("=== SERVER STARTUP ===")
     print("🚀 FastAPI server is starting up...")
     
-    # Run database migration
-    try:
-        from migrate_production import migrate_production
-        migration_success = migrate_production()
-        if migration_success:
-            logger.info("Database migration completed successfully")
-        else:
-            logger.error("Database migration failed")
-            return
-    except Exception as e:
-        logger.error(f"Error running database migration: {e}")
-        return
+    # Skip database migration during startup to prevent hanging
+    # Migration will be handled in background thread
+    logger.info("Database migration moved to background thread to prevent startup hanging")
     
     # Run performance optimizations in background to avoid blocking startup
     # This prevents hanging during zero-downtime deployments
@@ -266,7 +257,19 @@ def startup_event():
         # Wait a bit for server to fully start
         time.sleep(5)
         
-        logger.info("Starting background database optimizations...")
+        logger.info("Starting background database migration and optimizations...")
+        
+        # Run database migration first
+        try:
+            logger.info("Running database migration...")
+            from migrate_production import migrate_production
+            migration_success = migrate_production()
+            if migration_success:
+                logger.info("Database migration completed successfully")
+            else:
+                logger.warning("Database migration failed - continuing with optimizations anyway")
+        except Exception as e:
+            logger.warning(f"Error running database migration: {e}")
         
         # Run performance fix for created_at column with timeout
         try:
