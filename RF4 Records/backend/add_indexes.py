@@ -87,29 +87,52 @@ def add_critical_indexes():
         created_count = 0
         skipped_count = 0
         
-        with engine.connect() as conn:
-            for idx in indexes_to_create:
-                if idx['name'] in existing_indexes:
-                    print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
-                    skipped_count += 1
-                    continue
-                
-                try:
-                    print(f"  🔨 Creating {idx['name']} - {idx['description']}")
-                    conn.execute(text(idx['sql']))
-                    
-                    if is_postgres:
-                        conn.commit()  # PostgreSQL needs explicit commit for CONCURRENTLY
-                    
-                    created_count += 1
-                    print(f"  ✅ Created {idx['name']}")
-                    
-                except Exception as e:
-                    print(f"  ❌ Failed to create {idx['name']}: {e}")
-                    # Continue with other indexes
-                    continue
+        # For PostgreSQL CONCURRENTLY indexes, we need autocommit mode (no transaction)
+        if is_postgres:
+            # Create connection with autocommit for CONCURRENTLY operations
+            conn = engine.connect()
+            conn = conn.execution_options(autocommit=True)
             
-            if not is_postgres:
+            try:
+                for idx in indexes_to_create:
+                    if idx['name'] in existing_indexes:
+                        print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
+                        skipped_count += 1
+                        continue
+                    
+                    try:
+                        print(f"  🔨 Creating {idx['name']} - {idx['description']}")
+                        # Execute in autocommit mode (outside transaction)
+                        conn.execute(text(idx['sql']))
+                        created_count += 1
+                        print(f"  ✅ Created {idx['name']}")
+                        
+                    except Exception as e:
+                        print(f"  ❌ Failed to create {idx['name']}: {e}")
+                        # Continue with other indexes
+                        continue
+            finally:
+                conn.close()
+        else:
+            # SQLite doesn't support CONCURRENTLY, use regular transaction
+            with engine.connect() as conn:
+                for idx in indexes_to_create:
+                    if idx['name'] in existing_indexes:
+                        print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
+                        skipped_count += 1
+                        continue
+                    
+                    try:
+                        print(f"  🔨 Creating {idx['name']} - {idx['description']}")
+                        conn.execute(text(idx['sql']))
+                        created_count += 1
+                        print(f"  ✅ Created {idx['name']}")
+                        
+                    except Exception as e:
+                        print(f"  ❌ Failed to create {idx['name']}: {e}")
+                        # Continue with other indexes
+                        continue
+                
                 conn.commit()  # SQLite commit at the end
         
         print(f"\n📊 Index creation summary:")
