@@ -68,11 +68,12 @@ export function isWithinAgeRange(record, ageRange) {
   
   switch (ageRange) {
     case 'since-reset':
-      // Use fishing date for reset comparison
-      const fishingDate = parseDateString(record.date);
-      if (!fishingDate || isNaN(fishingDate.getTime())) return true;
+      // Use created_at (scrape time) for reset comparison - show data scraped since last reset
+      if (!record.created_at) return true; // No scrape timestamp, include it
+      const resetScrapedDate = new Date(record.created_at);
+      if (isNaN(resetScrapedDate.getTime())) return true;
       const lastReset = getLastRecordResetDate();
-      return fishingDate >= lastReset;
+      return resetScrapedDate >= lastReset;
     
     case '1-hour':
     case '6-hours':
