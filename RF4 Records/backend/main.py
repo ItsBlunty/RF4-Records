@@ -256,6 +256,18 @@ def startup_event():
         logger.error(f"Error running database migration: {e}")
         return
     
+    # Run performance fix for created_at column
+    try:
+        from fix_created_at_default import fix_created_at_default
+        fix_success = fix_created_at_default()
+        if fix_success:
+            logger.info("Database performance fix completed successfully")
+        else:
+            logger.warning("Database performance fix failed - continuing anyway")
+    except Exception as e:
+        logger.warning(f"Error running database performance fix: {e}")
+        # Don't return here - this is not critical for startup
+    
     # Create/verify database tables
     try:
         create_tables()
