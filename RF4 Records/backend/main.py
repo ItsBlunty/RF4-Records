@@ -174,21 +174,16 @@ def get_next_safe_time(base_time, delay_minutes):
     if not in_window:
         return candidate_time, delay_minutes
     
-    # If we're in a redeploy window, calculate when it's safe to run
-    # Convert candidate_time to UTC for calculation
-    if candidate_time.tzinfo is None:
-        candidate_utc = candidate_time.replace(tzinfo=timezone.utc)
-    else:
-        candidate_utc = candidate_time.astimezone(timezone.utc)
+    # If we're in a redeploy window, schedule for 3 minutes after the detected redeploy hour
+    # All times should already be in UTC
+    safe_time = base_time.replace(hour=redeploy_hour, minute=3, second=0, microsecond=0)
     
-    # Calculate the end of the redeploy window (3 minutes after redeploy_hour:00)
-    safe_time = candidate_utc.replace(hour=redeploy_hour, minute=3, second=0, microsecond=0)
-    
-    # If we're already past this redeploy window, move to the next one
-    if candidate_utc > safe_time:
+    # If the safe time is in the past, it means we need the next occurrence of this redeploy hour
+    if safe_time <= base_time:
         # Find the next redeploy hour
-        next_redeploy_hour = None
         redeploy_hours = [0, 3, 6, 9, 12, 15, 18, 21]
+        next_redeploy_hour = None
+        
         for hour in redeploy_hours:
             if hour > redeploy_hour:
                 next_redeploy_hour = hour
@@ -196,16 +191,9 @@ def get_next_safe_time(base_time, delay_minutes):
         
         if next_redeploy_hour is None:
             # Wrap to next day
-            next_redeploy_hour = 0
             safe_time = safe_time.replace(hour=0, minute=3) + timedelta(days=1)
         else:
             safe_time = safe_time.replace(hour=next_redeploy_hour, minute=3)
-    
-    # Convert back to local time if needed
-    if base_time.tzinfo is None:
-        safe_time = safe_time.replace(tzinfo=None)
-    elif base_time.tzinfo != timezone.utc:
-        safe_time = safe_time.astimezone(base_time.tzinfo)
     
     # Calculate the actual delay
     actual_delay = (safe_time - base_time).total_seconds() / 60
@@ -228,7 +216,7 @@ def schedule_next_scrape():
             delay_minutes = 15
             frequency = "15-minute"
         
-        base_time = datetime.now()
+        base_time = datetime.now(timezone.utc)
         next_run_time, actual_delay = get_next_safe_time(base_time, delay_minutes)
         
         scheduler.add_job(
@@ -265,7 +253,7 @@ def update_schedule():
         else:
             delay_minutes = 15
         
-        base_time = datetime.now()
+        base_time = datetime.now(timezone.utc)
         first_run_time, actual_delay = get_next_safe_time(base_time, delay_minutes)
         scheduler.add_job(
             scheduled_scrape,
