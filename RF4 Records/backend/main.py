@@ -345,7 +345,8 @@ def get_records():
                 "weight": representative.weight,
                 "waterbody": representative.waterbody,
                 "bait_display": bait_display,
-                "date": representative.date,
+                "date": representative.date,  # Fishing date from leaderboard
+                "created_at": representative.created_at.isoformat() if representative.created_at else None,  # When we scraped this
                 "region": representative.region
             })
         

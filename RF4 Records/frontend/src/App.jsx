@@ -189,7 +189,7 @@ function AppContent() {
     }
     if (filters.dataAge) {
       filtered = filtered.filter(r => 
-        isWithinAgeRange(r.date, filters.dataAge)
+        isWithinAgeRange(r, filters.dataAge)
       );
     }
 

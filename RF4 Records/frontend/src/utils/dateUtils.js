@@ -57,60 +57,54 @@ function parseDateString(dateString) {
 }
 
 /**
- * Check if a date string is within the specified age range
+ * Check if a record is within the specified age range
+ * For time-based filters (hours), use created_at (when we scraped it)
+ * For day-based filters, use date (when the fish was caught)
  */
-export function isWithinAgeRange(dateString, ageRange) {
-  if (!dateString || !ageRange) return true;
-  
-  const recordDate = parseDateString(dateString);
-  if (!recordDate || isNaN(recordDate.getTime())) return true; // Invalid date, don't filter
+export function isWithinAgeRange(record, ageRange) {
+  if (!record || !ageRange) return true;
   
   const now = new Date();
   
   switch (ageRange) {
     case 'since-reset':
+      // Use fishing date for reset comparison
+      const fishingDate = parseDateString(record.date);
+      if (!fishingDate || isNaN(fishingDate.getTime())) return true;
       const lastReset = getLastRecordResetDate();
-      return recordDate >= lastReset;
+      return fishingDate >= lastReset;
     
     case '1-hour':
-      return (now.getTime() - recordDate.getTime()) <= (1 * 60 * 60 * 1000);
-    
     case '6-hours':
-      return (now.getTime() - recordDate.getTime()) <= (6 * 60 * 60 * 1000);
-    
     case '12-hours':
-      return (now.getTime() - recordDate.getTime()) <= (12 * 60 * 60 * 1000);
+      // Use created_at (scrape time) for hour-based filters
+      if (!record.created_at) return true; // No scrape timestamp, include it
+      const scrapedDate = new Date(record.created_at);
+      if (isNaN(scrapedDate.getTime())) return true;
+      
+      const hours = ageRange === '1-hour' ? 1 : (ageRange === '6-hours' ? 6 : 12);
+      return (now.getTime() - scrapedDate.getTime()) <= (hours * 60 * 60 * 1000);
     
     case '1-day':
+    case '3-days':
+    case '7-days':
+    case '30-days':
+    case '90-days':
+      // Use fishing date for day-based filters
+      const recordDate = parseDateString(record.date);
+      if (!recordDate || isNaN(recordDate.getTime())) return true;
+      
       // For day-based comparisons, compare calendar days rather than 24-hour periods
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const recordDay = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
       const daysDiff = Math.floor((today.getTime() - recordDay.getTime()) / (24 * 60 * 60 * 1000));
-      return daysDiff <= 1;
-    
-    case '3-days':
-      const today3 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const recordDay3 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
-      const daysDiff3 = Math.floor((today3.getTime() - recordDay3.getTime()) / (24 * 60 * 60 * 1000));
-      return daysDiff3 <= 3;
-    
-    case '7-days':
-      const today7 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const recordDay7 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
-      const daysDiff7 = Math.floor((today7.getTime() - recordDay7.getTime()) / (24 * 60 * 60 * 1000));
-      return daysDiff7 <= 7;
-    
-    case '30-days':
-      const today30 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const recordDay30 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
-      const daysDiff30 = Math.floor((today30.getTime() - recordDay30.getTime()) / (24 * 60 * 60 * 1000));
-      return daysDiff30 <= 30;
-    
-    case '90-days':
-      const today90 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const recordDay90 = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
-      const daysDiff90 = Math.floor((today90.getTime() - recordDay90.getTime()) / (24 * 60 * 60 * 1000));
-      return daysDiff90 <= 90;
+      
+      const maxDays = ageRange === '1-day' ? 1 : 
+                     ageRange === '3-days' ? 3 :
+                     ageRange === '7-days' ? 7 :
+                     ageRange === '30-days' ? 30 : 90;
+      
+      return daysDiff <= maxDays;
     
     default:
       return true; // No filter

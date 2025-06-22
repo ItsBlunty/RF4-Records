@@ -12,7 +12,7 @@ from sqlalchemy import and_
 import time
 import random
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import signal
 import sys
@@ -808,7 +808,8 @@ def scrape_and_update_records():
                                 'bait': bait_text,  # Keep original for backward compatibility
                                 'bait1': bait1,
                                 'bait2': bait2,
-                                'date': rec.get('date', ''),
+                                'date': rec.get('date', ''),  # Fishing date from leaderboard
+                                'created_at': datetime.now(timezone.utc),  # When we scraped this record
                                 'region': rec.get('region', region['name']),
                                 'category': category_key
                             }

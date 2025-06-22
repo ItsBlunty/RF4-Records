@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from datetime import datetime, timezone
 import os
 
 Base = declarative_base()
@@ -15,7 +16,8 @@ class Record(Base):
     bait = Column(String)  # Keep for backward compatibility
     bait1 = Column(String)  # Primary bait for sandwich baits
     bait2 = Column(String)  # Secondary bait for sandwich baits (None if single bait)
-    date = Column(String)  # Use String for now, can convert to DateTime if format is known
+    date = Column(String)  # Fishing date from RF4 leaderboard (e.g., "21.06.25")
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))  # When we scraped this record
     region = Column(String)  # Add region field to track which region the record is from
     category = Column(String)  # Add category field to track fishing type (normal, ultralight, light, bottomlight, telescopic)
 
