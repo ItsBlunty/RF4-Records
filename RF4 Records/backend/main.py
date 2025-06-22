@@ -359,7 +359,7 @@ def get_records():
                 "waterbody": representative.waterbody,
                 "bait_display": bait_display,
                 "date": representative.date,  # Fishing date from leaderboard
-                "created_at": representative.created_at.isoformat() if representative.created_at else None,  # When we scraped this
+                "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,  # When we scraped this
                 "region": representative.region
             })
         
