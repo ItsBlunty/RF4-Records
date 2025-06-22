@@ -293,9 +293,8 @@ def cleanup_driver(driver):
     # Step 1: Clear browser data with timeout handling
     try:
         logger.debug(f"Session {session_id}: Clearing cookies...")
-        # Set a shorter timeout for cleanup operations to prevent hanging
-        driver.set_page_load_timeout(10)
-        driver.implicitly_wait(5)
+        # Don't change timeouts during cleanup - they persist and affect next scrape session!
+        # Just use existing timeouts for cleanup operations
         driver.delete_all_cookies()
         logger.debug(f"Session {session_id}: Cookies cleared successfully")
     except Exception as e:
