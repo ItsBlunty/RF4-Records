@@ -268,33 +268,41 @@ def cleanup_driver(driver):
     
     try:
         logger.debug(f"Session {session_id}: Clearing localStorage...")
-        driver.execute_script("window.localStorage.clear();")
+        driver.execute_script("try { window.localStorage.clear(); } catch(e) { /* Storage disabled */ }")
         logger.debug(f"Session {session_id}: localStorage cleared successfully")
     except Exception as e:
-        cleanup_errors.append(f"localStorage: {str(e)[:100]}")
-        logger.warning(f"Session {session_id}: Failed to clear localStorage: {e}")
-        cleanup_success = False
+        # Only treat as error if it's not a storage-disabled issue
+        if "Storage is disabled" not in str(e):
+            cleanup_errors.append(f"localStorage: {str(e)[:100]}")
+            logger.warning(f"Session {session_id}: Failed to clear localStorage: {e}")
+            cleanup_success = False
+        else:
+            logger.debug(f"Session {session_id}: localStorage disabled (data: URL) - skipping")
     
     try:
         logger.debug(f"Session {session_id}: Clearing sessionStorage...")
-        driver.execute_script("window.sessionStorage.clear();")
+        driver.execute_script("try { window.sessionStorage.clear(); } catch(e) { /* Storage disabled */ }")
         logger.debug(f"Session {session_id}: sessionStorage cleared successfully")
     except Exception as e:
-        cleanup_errors.append(f"sessionStorage: {str(e)[:100]}")
-        logger.warning(f"Session {session_id}: Failed to clear sessionStorage: {e}")
-        cleanup_success = False
+        # Only treat as error if it's not a storage-disabled issue
+        if "Storage is disabled" not in str(e):
+            cleanup_errors.append(f"sessionStorage: {str(e)[:100]}")
+            logger.warning(f"Session {session_id}: Failed to clear sessionStorage: {e}")
+            cleanup_success = False
+        else:
+            logger.debug(f"Session {session_id}: sessionStorage disabled (data: URL) - skipping")
     
     # Step 2: Advanced storage cleanup (non-critical)
     try:
         logger.debug(f"Session {session_id}: Clearing IndexedDB...")
-        driver.execute_script("window.indexedDB.deleteDatabase();")
+        driver.execute_script("try { if (window.indexedDB) { window.indexedDB.deleteDatabase(''); } } catch(e) { /* Not available */ }")
         logger.debug(f"Session {session_id}: IndexedDB cleared successfully")
     except Exception as e:
         logger.debug(f"Session {session_id}: IndexedDB cleanup failed (non-critical): {e}")
     
     try:
         logger.debug(f"Session {session_id}: Clearing caches...")
-        driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        driver.execute_script("try { if (window.caches) { window.caches.keys().then(names => names.forEach(name => caches.delete(name))); } } catch(e) { /* Not available */ }")
         logger.debug(f"Session {session_id}: Caches cleared successfully")
     except Exception as e:
         logger.debug(f"Session {session_id}: Cache cleanup failed (non-critical): {e}")
