@@ -38,14 +38,14 @@ RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1-3)
 WORKDIR /app
 
 # Copy requirements first for better caching
-COPY "RF4 Records/backend/requirements.txt" .
+COPY ["RF4 Records/backend/requirements.txt", "."]
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY "RF4 Records/backend/" ./backend/
-COPY "RF4 Records/frontend/" ./frontend/
+COPY ["RF4 Records/backend/", "./backend/"]
+COPY ["RF4 Records/frontend/", "./frontend/"]
 
 # Build frontend
 WORKDIR /app/frontend
