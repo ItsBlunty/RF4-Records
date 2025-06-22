@@ -4,6 +4,7 @@ import { Search, Trophy, Star } from 'lucide-react';
 const TrophyWeights = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [rarityFilter, setRarityFilter] = useState('All');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   // Fish data from the CSV
   const fishData = [
@@ -258,21 +259,68 @@ const TrophyWeights = () => {
     }
   };
 
-  const getStarColor = (stars) => {
-    if (stars >= 5) return 'text-purple-500';
-    if (stars >= 4) return 'text-blue-500';
-    if (stars >= 3) return 'text-green-500';
-    if (stars >= 2) return 'text-yellow-500';
-    return 'text-gray-400';
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
   };
 
-  const filteredFish = useMemo(() => {
-    return fishData.filter(fish => {
+  const getSortIndicator = (columnKey) => {
+    if (sortConfig.key !== columnKey) return '↕';
+    if (sortConfig.direction === 'ascending') return '↑';
+    if (sortConfig.direction === 'descending') return '↓';
+    return '↕';
+  };
+
+  const getColumnHeaderClass = (columnKey) => {
+    const baseClass = "px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-600";
+    if (sortConfig.key === columnKey) {
+      return `${baseClass} bg-gray-100 dark:bg-gray-600`;
+    }
+    return baseClass;
+  };
+
+  const sortedAndFilteredFish = useMemo(() => {
+    const filtered = fishData.filter(fish => {
       const matchesSearch = fish.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesRarity = rarityFilter === 'All' || fish.rarity === rarityFilter;
       return matchesSearch && matchesRarity;
     });
-  }, [searchTerm, rarityFilter]);
+
+    if (!sortConfig.key) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle null/undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return sortConfig.direction === 'ascending' ? 1 : -1;
+      if (bValue == null) return sortConfig.direction === 'ascending' ? -1 : 1;
+
+      // Convert to numbers for numeric columns
+      if (['trophy', 'superTrophy', 'cardValue', 'stars'].includes(sortConfig.key)) {
+        aValue = Number(aValue) || 0;
+        bValue = Number(bValue) || 0;
+      }
+
+      // Convert to strings for text comparison
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [searchTerm, rarityFilter, sortConfig]);
 
   const rarityOptions = ['All', 'Not Rare', 'Rare', 'Rarest species'];
 
@@ -314,7 +362,7 @@ const TrophyWeights = () => {
       {/* Results Count */}
       <div className="mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Showing {filteredFish.length} of {fishData.length} fish
+          Showing {sortedAndFilteredFish.length} of {fishData.length} fish
         </p>
       </div>
 
@@ -324,28 +372,46 @@ const TrophyWeights = () => {
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Fish Name
+                <th 
+                  className={getColumnHeaderClass('name')}
+                  onClick={() => handleSort('name')}
+                >
+                  Fish Name <span className="ml-1">{getSortIndicator('name')}</span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Trophy Weight
+                <th 
+                  className={getColumnHeaderClass('trophy')}
+                  onClick={() => handleSort('trophy')}
+                >
+                  Trophy Weight <span className="ml-1">{getSortIndicator('trophy')}</span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Super Trophy Weight
+                <th 
+                  className={getColumnHeaderClass('superTrophy')}
+                  onClick={() => handleSort('superTrophy')}
+                >
+                  Super Trophy Weight <span className="ml-1">{getSortIndicator('superTrophy')}</span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Card Value
+                <th 
+                  className={getColumnHeaderClass('rarity')}
+                  onClick={() => handleSort('rarity')}
+                >
+                  Rarity <span className="ml-1">{getSortIndicator('rarity')}</span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Rarity
+                <th 
+                  className={getColumnHeaderClass('cardValue')}
+                  onClick={() => handleSort('cardValue')}
+                >
+                  Card Value <span className="ml-1">{getSortIndicator('cardValue')}</span>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Stars
+                <th 
+                  className={getColumnHeaderClass('stars')}
+                  onClick={() => handleSort('stars')}
+                >
+                  Stars <span className="ml-1">{getSortIndicator('stars')}</span>
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredFish.map((fish, index) => (
+              {sortedAndFilteredFish.map((fish, index) => (
                 <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {fish.name}
@@ -356,18 +422,18 @@ const TrophyWeights = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
                     {formatWeight(fish.superTrophy)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
-                    {fish.cardValue || 'N/A'}
-                  </td>
                   <td className={`px-6 py-4 whitespace-nowrap text-sm ${getRarityColor(fish.rarity)}`}>
                     {fish.rarity}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white font-mono">
+                    {fish.cardValue || 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex items-center">
                       {[1, 2, 3, 4, 5].map((starNum) => (
                         <Star 
                           key={starNum}
-                          className={`w-4 h-4 ${starNum <= (fish.stars || 0) ? getStarColor(fish.stars) : 'text-gray-300 dark:text-gray-600'}`} 
+                          className={`w-4 h-4 ${starNum <= (fish.stars || 0) ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} 
                           fill="currentColor" 
                         />
                       ))}
@@ -380,7 +446,7 @@ const TrophyWeights = () => {
         </div>
       </div>
 
-      {filteredFish.length === 0 && (
+      {sortedAndFilteredFish.length === 0 && (
         <div className="text-center py-12">
           <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-500 dark:text-gray-400">No fish found matching your criteria</p>
