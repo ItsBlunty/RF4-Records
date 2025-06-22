@@ -240,45 +240,117 @@ def get_driver():
     return driver
 
 def cleanup_driver(driver):
-    """Aggressively cleanup WebDriver session to prevent memory leaks"""
+    """Aggressively cleanup WebDriver session to prevent memory leaks with comprehensive logging"""
     if not driver:
+        logger.debug("cleanup_driver: No driver to cleanup")
         return
     
+    # Get session ID for tracking if possible
+    session_id = "unknown"
     try:
-        # Clear all browser data to free memory
+        session_id = driver.session_id if hasattr(driver, 'session_id') else "unknown"
+    except Exception:
+        pass
+    
+    logger.info(f"[CLEANUP] Starting driver cleanup for session: {session_id}")
+    cleanup_success = True
+    cleanup_errors = []
+    
+    # Step 1: Clear browser data
+    try:
+        logger.debug(f"Session {session_id}: Clearing cookies...")
         driver.delete_all_cookies()
+        logger.debug(f"Session {session_id}: Cookies cleared successfully")
+    except Exception as e:
+        cleanup_errors.append(f"delete_cookies: {str(e)[:100]}")
+        logger.warning(f"Session {session_id}: Failed to clear cookies: {e}")
+        cleanup_success = False
+    
+    try:
+        logger.debug(f"Session {session_id}: Clearing localStorage...")
         driver.execute_script("window.localStorage.clear();")
+        logger.debug(f"Session {session_id}: localStorage cleared successfully")
+    except Exception as e:
+        cleanup_errors.append(f"localStorage: {str(e)[:100]}")
+        logger.warning(f"Session {session_id}: Failed to clear localStorage: {e}")
+        cleanup_success = False
+    
+    try:
+        logger.debug(f"Session {session_id}: Clearing sessionStorage...")
         driver.execute_script("window.sessionStorage.clear();")
-        
-        # Essential storage cleanup only
-        try:
-            driver.execute_script("window.indexedDB.deleteDatabase();")
-            driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
-        except Exception:
-            pass
-        
-        # Close all windows and tabs
+        logger.debug(f"Session {session_id}: sessionStorage cleared successfully")
+    except Exception as e:
+        cleanup_errors.append(f"sessionStorage: {str(e)[:100]}")
+        logger.warning(f"Session {session_id}: Failed to clear sessionStorage: {e}")
+        cleanup_success = False
+    
+    # Step 2: Advanced storage cleanup (non-critical)
+    try:
+        logger.debug(f"Session {session_id}: Clearing IndexedDB...")
+        driver.execute_script("window.indexedDB.deleteDatabase();")
+        logger.debug(f"Session {session_id}: IndexedDB cleared successfully")
+    except Exception as e:
+        logger.debug(f"Session {session_id}: IndexedDB cleanup failed (non-critical): {e}")
+    
+    try:
+        logger.debug(f"Session {session_id}: Clearing caches...")
+        driver.execute_script("window.caches.keys().then(names => names.forEach(name => caches.delete(name)));")
+        logger.debug(f"Session {session_id}: Caches cleared successfully")
+    except Exception as e:
+        logger.debug(f"Session {session_id}: Cache cleanup failed (non-critical): {e}")
+    
+    # Step 3: Close all windows and tabs
+    try:
+        logger.debug(f"Session {session_id}: Getting window handles...")
         handles = driver.window_handles.copy()
-        for handle in handles:
+        logger.debug(f"Session {session_id}: Found {len(handles)} window handles")
+        
+        windows_closed = 0
+        for i, handle in enumerate(handles):
             try:
                 driver.switch_to.window(handle)
                 driver.close()
-            except Exception:
-                pass
-                
+                windows_closed += 1
+                logger.debug(f"Session {session_id}: Closed window {i+1}/{len(handles)}")
+            except Exception as e:
+                cleanup_errors.append(f"close_window_{i}: {str(e)[:100]}")
+                logger.warning(f"Session {session_id}: Failed to close window {i+1}: {e}")
+                cleanup_success = False
+        
+        logger.debug(f"Session {session_id}: Successfully closed {windows_closed}/{len(handles)} windows")
+        
     except Exception as e:
-        logger.debug(f"Error during driver cleanup: {e}")
+        cleanup_errors.append(f"window_handles: {str(e)[:100]}")
+        logger.warning(f"Session {session_id}: Failed to get/close window handles: {e}")
+        cleanup_success = False
     
+    # Step 4: Final quit
     try:
-        # Final quit with timeout
+        logger.debug(f"Session {session_id}: Calling driver.quit()...")
         driver.quit()
+        logger.debug(f"Session {session_id}: driver.quit() completed successfully")
         
         # Give system time to clean up processes
         import time
         time.sleep(0.5)  # Wait for cleanup
+        logger.debug(f"Session {session_id}: Cleanup wait completed")
         
     except Exception as e:
-        logger.debug(f"Error during driver quit: {e}")
+        cleanup_errors.append(f"driver_quit: {str(e)[:100]}")
+        logger.error(f"Session {session_id}: CRITICAL - driver.quit() failed: {e}")
+        cleanup_success = False
+    
+    # Final cleanup summary
+    if cleanup_success:
+        logger.info(f"[SUCCESS] Driver cleanup completed successfully for session: {session_id}")
+    else:
+        logger.error(f"[FAILED] Driver cleanup FAILED for session: {session_id}")
+        logger.error(f"Session {session_id}: Cleanup errors: {'; '.join(cleanup_errors)}")
+        
+        # Log this as a potential memory leak source
+        logger.warning(f"[MEMORY LEAK RISK] Session {session_id} cleanup failed - may cause accumulation")
+    
+    return cleanup_success
 
 def is_driver_alive(driver):
     """Check if WebDriver session is still alive"""
@@ -608,6 +680,7 @@ def scrape_and_update_records():
     errors_occurred = False
     consecutive_region_failures = 0  # Track consecutive failures within a category
     category_failures = 0  # Track how many categories had failures
+    failed_cleanups = 0  # Track failed driver cleanup attempts
     
     try:
         # Get initial database count
@@ -639,7 +712,10 @@ def scrape_and_update_records():
                 try:
                     # Check if driver is still alive before using it
                     if not is_driver_alive(driver):
-                        cleanup_driver(driver)
+                        cleanup_success = cleanup_driver(driver)
+                        if not cleanup_success:
+                            failed_cleanups += 1
+                            logger.warning("Driver cleanup failed - potential memory leak risk")
                         driver = get_driver()
                     
                     driver.get(region['url'])
@@ -706,7 +782,10 @@ def scrape_and_update_records():
                     if consecutive_region_failures == 1:
                         # Try to refresh the WebDriver session after first failure
                         try:
-                            cleanup_driver(driver)
+                            cleanup_success = cleanup_driver(driver)
+                            if not cleanup_success:
+                                failed_cleanups += 1
+                                logger.warning("Driver cleanup failed during error recovery - potential memory leak risk")
                             driver = get_driver()
                         except Exception as refresh_error:
                             logger.error(f"Failed to refresh WebDriver session: {refresh_error}")
@@ -739,7 +818,10 @@ def scrape_and_update_records():
             
             # Refresh WebDriver session between categories to prevent staleness and memory leaks
             try:
-                cleanup_driver(driver)
+                cleanup_success = cleanup_driver(driver)
+                if not cleanup_success:
+                    failed_cleanups += 1
+                    logger.warning(f"Driver cleanup failed between categories ({category_info['name']}) - potential memory leak risk")
                 force_garbage_collection()  # Force garbage collection between categories
                 driver = get_driver()
                 
@@ -778,6 +860,12 @@ def scrape_and_update_records():
         memory_change = final_memory - initial_memory if 'initial_memory' in locals() else 0
         logger.info(f"📊 Final: {regions_scraped} regions, +{total_new_records} new records, {total_duration:.1f}s")
         logger.info(f"🧠 Memory: {final_memory} MB (Δ{memory_change:+.1f} MB)")
+        
+        # Log cleanup failures summary
+        if failed_cleanups > 0:
+            logger.error(f"[CLEANUP FAILURES] {failed_cleanups} driver cleanup attempts failed - HIGH MEMORY LEAK RISK!")
+        else:
+            logger.info("[SUCCESS] All driver cleanup attempts successful")
     except Exception as e:
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
@@ -793,7 +881,10 @@ def scrape_and_update_records():
             logger.debug(f"Error closing database session: {e}")
         
         # Clean up WebDriver
-        cleanup_driver(driver)
+        cleanup_success = cleanup_driver(driver)
+        if not cleanup_success:
+            failed_cleanups += 1
+            logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
         driver = None
         
         # Clear large variables
@@ -812,7 +903,8 @@ def scrape_and_update_records():
         'duration_seconds': total_duration if 'total_duration' in locals() else 0,
         'errors_occurred': errors_occurred,
         'interrupted': should_stop_scraping,
-        'category_failures': category_failures
+        'category_failures': category_failures,
+        'failed_cleanups': failed_cleanups if 'failed_cleanups' in locals() else 0
     }
 
 def scrape_limited_regions():
@@ -947,7 +1039,9 @@ def scrape_limited_regions():
         print(f"Error during scraping: {e}")
     finally:
         if driver:
-            driver.quit()
+            cleanup_success = cleanup_driver(driver)
+            if not cleanup_success:
+                print("WARNING: Driver cleanup failed in scrape_limited_regions - potential memory leak risk!")
         db.close()
     
     print(f"Multi-category scraping complete. Added {total_new_records} new records from {regions_scraped} regions across multiple categories.")

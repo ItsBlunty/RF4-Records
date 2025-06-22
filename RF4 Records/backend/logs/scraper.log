@@ -19446,3 +19446,37 @@ Stacktrace:
 2025-06-21 07:50:14,251 - INFO - Added job "schedule_monitor" to job store "default"
 2025-06-21 07:50:14,251 - INFO - Dynamic scheduler started - frequency based on weekly schedule
 2025-06-21 07:50:14,356 - INFO - Memory usage test: 76.7 MB
+2025-06-22 07:16:12,143 - INFO - === STARTING SCHEDULED SCRAPE at 2025-06-22 07:16:12.143556 ===
+2025-06-22 07:16:12,225 - INFO - Memory usage before scrape: 59.5 MB
+2025-06-22 07:16:12,247 - INFO - Using local ChromeDriver
+2025-06-22 07:16:12,248 - INFO - ====== WebDriver manager ======
+2025-06-22 07:16:14,824 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:16:15,090 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:16:15,209 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:16:15,505 - INFO - WebDriver version 137.0.7151.119 selected
+2025-06-22 07:16:15,510 - INFO - Modern chrome version https://storage.googleapis.com/chrome-for-testing-public/137.0.7151.119/win32/chromedriver-win32.zip
+2025-06-22 07:16:15,510 - INFO - About to download new driver from https://storage.googleapis.com/chrome-for-testing-public/137.0.7151.119/win32/chromedriver-win32.zip
+2025-06-22 07:16:15,711 - INFO - Driver downloading response is 200
+2025-06-22 07:16:16,222 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:16:16,696 - INFO - Driver has been saved in cache [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119]
+2025-06-22 07:17:49,280 - INFO - Normal: 10/10 regions, 11380 total records
+2025-06-22 07:17:53,286 - INFO - Using local ChromeDriver
+2025-06-22 07:17:53,287 - INFO - ====== WebDriver manager ======
+2025-06-22 07:17:54,578 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:17:54,712 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:17:54,835 - INFO - Driver [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
+2025-06-22 07:17:56,005 - INFO - Memory usage after Normal category: 109.0 MB
+2025-06-22 07:19:19,940 - INFO - Ultralight: 10/10 regions, 17776 total records
+2025-06-22 07:19:23,301 - INFO - Using local ChromeDriver
+2025-06-22 07:19:23,301 - INFO - ====== WebDriver manager ======
+2025-06-22 07:19:24,414 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:19:24,528 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:19:24,737 - INFO - Driver [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
+2025-06-22 07:19:25,857 - INFO - Memory usage after Ultralight category: 106.0 MB
+2025-06-22 07:21:41,325 - INFO - Light: 10/10 regions, 29156 total records
+2025-06-22 07:21:44,761 - INFO - Using local ChromeDriver
+2025-06-22 07:21:44,761 - INFO - ====== WebDriver manager ======
+2025-06-22 07:21:46,273 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:21:46,394 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-22 07:21:46,509 - INFO - Driver [C:\Users\patri\.wdm\drivers\chromedriver\win64\137.0.7151.119\chromedriver-win32/chromedriver.exe] found in cache
+2025-06-22 07:21:47,511 - INFO - Memory usage after Light category: 112.5 MB

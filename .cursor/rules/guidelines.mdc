@@ -8,3 +8,6 @@ alwaysApply: true
  - Dont forget to chmod for vite in the build phase
  - This project has 10 regions and 5 categories. Always be sure that you include all these in changes to the scraping.
  - We always need to handle these weight types on scraping "9.747 kg" "341 g" "1 079.839 kg".
+ - Once changes are made, test them as possible, but remember that you're on windows and using powershell, and the goal is for a railway deploy, so it may not totally work locally.
+ - Once tested, commit and push changes unless the user asks specifically not to.
+ - Use proper powershell syntax
