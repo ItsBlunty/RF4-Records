@@ -28,12 +28,42 @@ export function getLastRecordResetDate() {
 }
 
 /**
+ * Parse date string in DD.MM.YY format to a proper Date object
+ */
+function parseDateString(dateString) {
+  if (!dateString) return null;
+  
+  // Handle DD.MM.YY format (e.g., "21.06.25")
+  const parts = dateString.split('.');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // JavaScript months are 0-based
+    let year = parseInt(parts[2], 10);
+    
+    // Convert 2-digit year to 4-digit year
+    // Assume years 00-50 are 2000-2050, years 51-99 are 1951-1999
+    if (year <= 50) {
+      year += 2000;
+    } else if (year < 100) {
+      year += 1900;
+    }
+    
+    return new Date(year, month, day);
+  }
+  
+  // Fallback to standard Date parsing
+  return new Date(dateString);
+}
+
+/**
  * Check if a date string is within the specified age range
  */
 export function isWithinAgeRange(dateString, ageRange) {
   if (!dateString || !ageRange) return true;
   
-  const recordDate = new Date(dateString);
+  const recordDate = parseDateString(dateString);
+  if (!recordDate || isNaN(recordDate.getTime())) return true; // Invalid date, don't filter
+  
   const now = new Date();
   
   switch (ageRange) {
