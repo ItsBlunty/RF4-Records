@@ -979,8 +979,8 @@ def scrape_and_update_records():
     category_failures = 0  # Track how many categories had failures
     failed_cleanups = 0  # Track failed driver cleanup attempts
     
-    # Initialize bulk operations for performance
-    bulk_inserter = BulkRecordInserter(db, batch_size=50)  # Use shared database session
+    # Initialize bulk operations for performance with smaller batch sizes to prevent memory accumulation
+    bulk_inserter = BulkRecordInserter(db, batch_size=25)  # Smaller batch size to prevent memory leaks
     record_checker = OptimizedRecordChecker(db)
     
     try:
@@ -1083,6 +1083,25 @@ def scrape_and_update_records():
                     
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
+                    
+                    # AGGRESSIVE MEMORY MANAGEMENT - Clear Python objects every region to prevent accumulation
+                    if regions_scraped % 1 == 0:  # Every single region - prevent memory accumulation
+                        # Flush pending records immediately to prevent accumulation
+                        bulk_inserter.flush()
+                        db.commit()
+                        
+                        # Clear bulk inserter pending records
+                        bulk_inserter.pending_records.clear()
+                        
+                        # Clear record checker cache every region
+                        record_checker.clear_cache()
+                        
+                        # Force database session cleanup
+                        db.expunge_all()  # Remove all objects from session
+                        
+                        # Quick garbage collection
+                        import gc
+                        gc.collect()
                     
                     # Simple and reliable: Every 10 regions (1 complete category), kill ALL Chrome processes
                     if regions_scraped % 10 == 0:
@@ -1188,7 +1207,7 @@ def scrape_and_update_records():
                 
                 db.close()  # Close the current session
                 db = SessionLocal()  # Fresh database session
-                bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
+                bulk_inserter = BulkRecordInserter(db, batch_size=25)  # Smaller batch size to prevent memory leaks
                 record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
                 
                 # Force garbage collection after session refresh
@@ -1205,7 +1224,7 @@ def scrape_and_update_records():
                             record_checker.clear_cache()  # Clear cache before closing
                         db.close()  # Close the problematic session
                     db = SessionLocal()
-                    bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
+                    bulk_inserter = BulkRecordInserter(db, batch_size=25)  # Smaller batch size to prevent memory leaks
                     record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
                     
                     # Force garbage collection after fallback session refresh

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class BulkRecordInserter:
     """Efficient bulk record insertion with PostgreSQL UPSERT"""
     
-    def __init__(self, db_session, batch_size=100):
+    def __init__(self, db_session, batch_size=25):  # Smaller batch size to prevent memory accumulation
         self.batch_size = batch_size
         self.pending_records = []
         self.db = db_session  # Use provided session instead of creating new one
@@ -129,7 +129,7 @@ class OptimizedRecordChecker:
         self.db = db_session
         self._cache = {}
         self._cache_size = 0
-        self.max_cache_size = 1000
+        self.max_cache_size = 100  # Much smaller cache to prevent memory accumulation
     
     def record_exists(self, record_data):
         """Check if record exists using optimized caching and bulk queries"""
@@ -168,13 +168,11 @@ class OptimizedRecordChecker:
         self._cache[cache_key] = exists
         self._cache_size += 1
         
-        # Prevent cache from growing too large
+        # Prevent cache from growing too large - clear completely when full
         if self._cache_size > self.max_cache_size:
-            # Clear half the cache
-            items_to_remove = list(self._cache.keys())[:self.max_cache_size // 2]
-            for key in items_to_remove:
-                del self._cache[key]
-            self._cache_size = len(self._cache)
+            # Clear the entire cache instead of just half
+            self._cache.clear()
+            self._cache_size = 0
         
         return exists
     
