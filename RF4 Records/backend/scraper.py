@@ -721,21 +721,34 @@ def parse_table_selenium(driver, region_info):
         html_content = driver.page_source
         soup = BeautifulSoup(html_content, 'html.parser')
         
+        # IMMEDIATELY clear the large HTML string from memory
+        html_content = None
+        
         # Check for interruption before parsing
         if should_stop_scraping:
+            soup.decompose()
             return []
         
         # Now parse all the records tables
         records = parse_all_records_from_soup(soup, region_info)
         
         # Aggressive memory cleanup - clear large objects immediately
-        html_content = None
         soup.decompose()  # BeautifulSoup method to free memory more aggressively
         soup = None
         
-        # Force garbage collection after processing large HTML
+        # Force Selenium to clear its internal page cache
+        try:
+            # Navigate to a minimal page to force Selenium to release the large HTML
+            driver.execute_script("document.open(); document.write(''); document.close();")
+            # Force browser garbage collection
+            driver.execute_script("if (window.gc) { window.gc(); }")
+        except Exception:
+            pass  # Non-critical
+        
+        # Force Python garbage collection after processing large HTML
         import gc
         gc.collect()
+        gc.collect()  # Second pass for any circular references
         
         return records
         
@@ -1137,6 +1150,16 @@ def scrape_and_update_records():
                         current_memory = get_memory_usage()
                         if current_memory > 200:  # Still high after cleanup
                             logger.warning(f"⚠️ Memory still high after region cleanup: {current_memory}MB - may need additional investigation")
+                            
+                            # If memory is still high, force WebDriver recreation to clear Selenium's internal caches
+                            if regions_scraped % 5 == 0:  # Every 5 regions if memory is high
+                                logger.info(f"🔄 Force recreating WebDriver due to high memory ({current_memory}MB)")
+                                try:
+                                    cleanup_driver(driver)
+                                    driver = get_driver()
+                                    logger.info("✅ WebDriver recreated successfully")
+                                except Exception as e:
+                                    logger.error(f"Failed to recreate WebDriver: {e}")
                     
                     # Simple and reliable: Every 10 regions (1 complete category), kill ALL Chrome processes
                     if regions_scraped % 10 == 0:
