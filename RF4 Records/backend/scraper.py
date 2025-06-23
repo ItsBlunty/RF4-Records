@@ -421,29 +421,46 @@ def cleanup_driver(driver):
     try:
         logger.debug(f"Session {session_id}: Calling driver.quit()...")
         
-        # Get the main process PID before quitting
+        # Get the main process PID and kill child processes BEFORE quitting
         main_pid = None
         if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
             main_pid = driver.service.process.pid
-        
-        driver.quit()
-        logger.debug(f"Session {session_id}: driver.quit() completed successfully")
-        
-        # Kill any remaining child processes after quit
-        if main_pid:
+            
+            # Kill child processes BEFORE calling quit to prevent detachment
             try:
                 import psutil
                 parent = psutil.Process(main_pid)
                 children = parent.children(recursive=True)
-                for child in children:
-                    if child.is_running():
-                        child.terminate()
-                psutil.wait_procs(children, timeout=2)
-                for child in children:
-                    if child.is_running():
-                        child.kill()
                 if children:
-                    logger.debug(f"Session {session_id}: Cleaned up {len(children)} remaining child processes")
+                    logger.debug(f"Session {session_id}: Found {len(children)} child processes to terminate")
+                    for child in children:
+                        child.terminate()
+                    psutil.wait_procs(children, timeout=2)
+                    for child in children:
+                        if child.is_running():
+                            child.kill()
+                    logger.debug(f"Session {session_id}: Terminated {len(children)} child processes before quit")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+        
+        driver.quit()
+        logger.debug(f"Session {session_id}: driver.quit() completed successfully")
+        
+        # Final check for any remaining processes after quit
+        if main_pid:
+            try:
+                import psutil
+                # Check if main process is still running and kill it
+                try:
+                    main_proc = psutil.Process(main_pid)
+                    if main_proc.is_running():
+                        main_proc.terminate()
+                        main_proc.wait(timeout=2)
+                        if main_proc.is_running():
+                            main_proc.kill()
+                        logger.debug(f"Session {session_id}: Terminated lingering main process")
+                except psutil.NoSuchProcess:
+                    pass  # Already gone, good
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
         
@@ -516,8 +533,13 @@ def force_garbage_collection():
     except Exception as e:
         logger.debug(f"Error during garbage collection: {e}")
 
-def kill_orphaned_chrome_processes():
-    """Kill any orphaned Chrome processes that may be consuming memory"""
+def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
+    """Kill any orphaned Chrome processes that may be consuming memory
+    
+    Args:
+        max_age_seconds: Maximum age in seconds before a process is considered orphaned
+        aggressive: If True, kill ALL Chrome processes regardless of age (use with caution)
+    """
     try:
         import psutil
         import time
@@ -530,10 +552,17 @@ def kill_orphaned_chrome_processes():
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
                     total_chrome_processes += 1
-                    # Kill Chrome processes older than 10 minutes (600 seconds)
                     process_age = current_time - proc.info['create_time']
-                    if process_age > 600:
-                        logger.info(f"Killing orphaned Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                    
+                    # Kill if aggressive mode OR if process is older than threshold
+                    should_kill = aggressive or process_age > max_age_seconds
+                    
+                    if should_kill:
+                        if aggressive:
+                            logger.info(f"[AGGRESSIVE] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                        else:
+                            logger.info(f"Killing orphaned Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                        
                         proc.terminate()
                         killed_count += 1
                         
@@ -548,10 +577,12 @@ def kill_orphaned_chrome_processes():
                 continue
         
         if killed_count > 0:
-            logger.info(f"[PROCESS CLEANUP] Killed {killed_count} orphaned Chrome processes (found {total_chrome_processes} total)")
+            mode_str = "AGGRESSIVE" if aggressive else "PROCESS CLEANUP"
+            logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
             force_garbage_collection()  # Clean up after process cleanup
         else:
-            logger.info(f"[PROCESS CLEANUP] No orphaned Chrome processes found (checked {total_chrome_processes} Chrome processes)")
+            mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
+            logger.info(f"[{mode_str}] No Chrome processes to kill (checked {total_chrome_processes} Chrome processes)")
             
     except Exception as e:
         logger.warning(f"Process cleanup failed: {e}")
@@ -1041,10 +1072,10 @@ def scrape_and_update_records():
                             except Exception as gc_error:
                                 logger.debug(f"Chrome GC failed (non-critical): {gc_error}")
                         
-                        # Kill any orphaned Chrome processes (balanced frequency) - works in all environments
-                        if regions_scraped % 14 == 0:  # Every 14 regions - balanced approach
+                        # Kill any orphaned Chrome processes (more frequent cleanup) - works in all environments
+                        if regions_scraped % 10 == 0:  # Every 10 regions - more frequent
                             logger.info(f"Running orphaned process cleanup at region {regions_scraped}")
-                            kill_orphaned_chrome_processes()
+                            kill_orphaned_chrome_processes(max_age_seconds=300)  # 5 minutes instead of 10
                     
                     time.sleep(2)
                 except Exception as e:
@@ -1188,8 +1219,9 @@ def scrape_and_update_records():
             logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
         driver = None
         
-        # Kill any remaining orphaned Chrome processes
-        kill_orphaned_chrome_processes()
+        # Kill any remaining orphaned Chrome processes - be aggressive at end of scraping
+        logger.info("Final aggressive Chrome process cleanup...")
+        kill_orphaned_chrome_processes(max_age_seconds=60, aggressive=False)  # Kill processes older than 1 minute
         
         # Clear large variables
         all_unique_fish = None
