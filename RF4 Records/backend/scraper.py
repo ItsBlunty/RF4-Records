@@ -178,19 +178,21 @@ def get_driver():
         logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
         raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
     
-    # Check memory before creating new driver
+    # Check memory before creating new driver - but be more lenient during active scraping
     current_memory = get_memory_usage()
-    if current_memory > 300:  # High memory threshold
+    if current_memory > 400:  # Increased threshold - only block on truly critical memory
         logger.warning(f"🚨 High memory usage ({current_memory}MB) detected before Chrome creation - performing cleanup")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         force_garbage_collection()
-        time.sleep(2)
+        time.sleep(3)  # Longer wait for cleanup to complete
         
-        # Check again after cleanup
+        # Check again after cleanup - more lenient threshold
         memory_after = get_memory_usage()
-        if memory_after > 350:  # Still too high
-            logger.error(f"🚨 Memory still critical ({memory_after}MB) after cleanup - blocking Chrome creation")
-            raise MemoryError(f"Cannot create Chrome driver - memory usage too high ({memory_after}MB)")
+        if memory_after > 450:  # Higher threshold - only block on extreme memory usage
+            logger.error(f"🚨 Memory critically high ({memory_after}MB) after cleanup - blocking Chrome creation")
+            raise MemoryError(f"Cannot create Chrome driver - memory usage critically high ({memory_after}MB)")
+        else:
+            logger.info(f"✅ Memory acceptable after cleanup: {memory_after}MB - proceeding with Chrome creation")
     
     chrome_options = Options()
     
@@ -621,7 +623,7 @@ def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
     memory_mb = get_memory_usage()
     
-    if memory_mb > 350:  # High memory usage threshold
+    if memory_mb > 400:  # Higher threshold - only cleanup if truly necessary
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
         
         # Kill ALL Chrome processes before starting new scrape
@@ -632,8 +634,8 @@ def check_memory_before_scraping():
         force_garbage_collection()
         force_garbage_collection()  # Double cleanup
         
-        # Wait for cleanup to take effect
-        time.sleep(3)
+        # Wait longer for cleanup to take effect
+        time.sleep(5)
         
         # Check memory again after cleanup
         memory_after_cleanup = get_memory_usage()
@@ -641,10 +643,12 @@ def check_memory_before_scraping():
         
         logger.info(f"Memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
         
-        # If still too high after cleanup, raise warning
-        if memory_after_cleanup > 400:
-            logger.error(f"Memory usage still critical ({memory_after_cleanup}MB) after cleanup - scraping may fail")
-            raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting scrape to prevent system failure")
+        # More lenient threshold - allow scraping to proceed unless memory is extreme
+        if memory_after_cleanup > 500:
+            logger.error(f"Memory usage critically high ({memory_after_cleanup}MB) after cleanup - scraping may fail")
+            raise MemoryError(f"Memory usage critically high ({memory_after_cleanup}MB) - aborting scrape to prevent system failure")
+        elif memory_after_cleanup > 400:
+            logger.warning(f"Memory usage still high ({memory_after_cleanup}MB) after cleanup - proceeding with caution")
     
     return memory_mb
 
@@ -1005,6 +1009,12 @@ def scrape_and_update_records():
                         if not cleanup_success:
                             failed_cleanups += 1
                             logger.warning("Driver cleanup failed - potential memory leak risk")
+                            
+                            # If cleanup failed, force kill all Chrome processes and wait longer
+                            logger.info("Cleanup failed - forcing aggressive Chrome process cleanup")
+                            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                            time.sleep(3)  # Wait for processes to fully terminate
+                        
                         driver = get_driver()
                     
                     # Load page with timeout protection
@@ -1109,11 +1119,11 @@ def scrape_and_update_records():
                             logger.info(f"Running orphaned process cleanup at region {regions_scraped}")
                             kill_orphaned_chrome_processes(max_age_seconds=180)  # 3 minutes instead of 5
                             
-                            # Additional memory check - if memory is high, be more aggressive
+                            # Additional memory check - if memory is very high, be more aggressive
                             current_mem = get_memory_usage()
-                            if current_mem > 250:
+                            if current_mem > 350:  # Higher threshold to avoid disrupting active scraping
                                 logger.warning(f"High memory ({current_mem}MB) during scraping - forcing aggressive cleanup")
-                                kill_orphaned_chrome_processes(max_age_seconds=60, aggressive=False)  # Kill processes older than 1 minute
+                                kill_orphaned_chrome_processes(max_age_seconds=120, aggressive=False)  # Kill processes older than 2 minutes (less aggressive)
                     
                     time.sleep(2)
                 except Exception as e:
