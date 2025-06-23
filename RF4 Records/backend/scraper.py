@@ -21,6 +21,9 @@ import sys
 # Global flag to track if scraping should be stopped
 should_stop_scraping = False
 
+# Global flag to prevent Chrome process creation after scraping is finished
+_scraping_finished = False
+
 def signal_handler(signum, frame):
     """Handle interruption signals during scraping"""
     global should_stop_scraping
@@ -168,6 +171,13 @@ def split_bait_string(bait_string):
 
 def get_driver():
     """Create and configure Chrome WebDriver for Docker container or local development"""
+    global _scraping_finished
+    
+    # Prevent creating new drivers if scraping is finished
+    if _scraping_finished:
+        logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
+        raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
+    
     chrome_options = Options()
     
     # Core performance and memory optimization flags
@@ -335,6 +345,7 @@ def cleanup_driver(driver):
         
         logger.error(f"[FAILED] Driver cleanup FAILED for session: {session_id}")
         logger.error(f"Session {session_id}: Cleanup errors: {'; '.join(cleanup_errors)}")
+        
         logger.warning(f"[MEMORY LEAK RISK] Session {session_id} cleanup failed - may cause accumulation")
         return False
     
@@ -901,10 +912,11 @@ def parse_all_records_from_soup(soup, region_info):
 
 def scrape_and_update_records():
     """Main scraping function with comprehensive logging and error handling"""
-    global should_stop_scraping
+    global should_stop_scraping, _scraping_finished
     
-    # Reset the stop flag at the start of each scraping session
+    # Reset flags at the start of each scraping session
     should_stop_scraping = False
+    _scraping_finished = False
     
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
@@ -1218,25 +1230,75 @@ def scrape_and_update_records():
         except Exception as e:
             logger.debug(f"Error closing database session: {e}")
         
-        # Clean up WebDriver
-        cleanup_success = cleanup_driver(driver)
-        if not cleanup_success:
-            failed_cleanups += 1
-            logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
-        driver = None
+        # Clean up WebDriver with delay to prevent race conditions
+        if driver:
+            try:
+                cleanup_success = cleanup_driver(driver)
+                if not cleanup_success:
+                    failed_cleanups += 1
+                    logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
+            except Exception as e:
+                logger.error(f"Error during final driver cleanup: {e}")
+            finally:
+                driver = None
+        
+        # Wait for any lingering operations to complete
+        logger.info("Waiting for Chrome processes to fully terminate...")
+        time.sleep(5)  # Give Chrome processes time to properly exit
         
         # Kill ALL remaining Chrome processes - scrape is completely finished
         logger.info("Final aggressive Chrome process cleanup - killing ALL Chrome processes...")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)  # Kill ALL Chrome processes
         
-        # Clear large variables
-        all_unique_fish = None
+        # Clear large variables explicitly
+        if 'all_unique_fish' in locals():
+            all_unique_fish.clear()
+            all_unique_fish = None
+        if 'bulk_inserter' in locals():
+            bulk_inserter = None
+        if 'record_checker' in locals():
+            record_checker = None
         
-        # Force multiple garbage collection cycles
+        # Force aggressive garbage collection multiple times
+        logger.info("Running aggressive garbage collection...")
+        import gc
+        gc.collect()
         force_garbage_collection()
         force_garbage_collection()  # Second pass for circular references
+        gc.collect(0)  # Young generation
+        gc.collect(1)  # Middle generation  
+        gc.collect(2)  # Old generation
         
+        # Clear module-level caches if they exist
+        try:
+            import sys
+            if hasattr(sys, '_clear_type_cache'):
+                sys._clear_type_cache()
+        except Exception:
+            pass
+        
+        # Reset global variables and mark scraping as finished
         should_stop_scraping = False
+        _scraping_finished = True  # Prevent any new Chrome processes from being created
+        
+        # Final memory report with detailed breakdown
+        final_memory_after_cleanup = get_memory_usage()
+        logger.info(f"🧹 Post-cleanup memory: {final_memory_after_cleanup} MB")
+        log_detailed_memory_usage("after final cleanup")
+        
+        # If memory is still high, log a warning and investigate
+        if final_memory_after_cleanup > 200:
+            logger.warning(f"⚠️ Memory usage still high after cleanup: {final_memory_after_cleanup} MB")
+            
+            # Try one more aggressive cleanup round
+            logger.info("Attempting additional memory cleanup...")
+            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+            time.sleep(2)
+            gc.collect()
+            gc.collect(2)
+            final_final_memory = get_memory_usage()
+            logger.info(f"🧹 Final memory after additional cleanup: {final_final_memory} MB")
+            log_detailed_memory_usage("after additional cleanup")
     return {
         'success': not errors_occurred and not should_stop_scraping,
         'categories_scraped': len(CATEGORIES),
@@ -1387,6 +1449,53 @@ def scrape_limited_regions():
         db.close()
     
     print(f"Multi-category scraping complete. Added {total_new_records} new records from {regions_scraped} regions across multiple categories.")
+
+def get_detailed_memory_usage():
+    """Get detailed memory usage breakdown"""
+    try:
+        import psutil
+        import os
+        import gc
+        
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        
+        # Get garbage collection stats
+        gc_stats = gc.get_stats()
+        gc_counts = gc.get_count()
+        
+        # Get object counts by type
+        object_counts = {}
+        try:
+            import sys
+            for obj in gc.get_objects():
+                obj_type = type(obj).__name__
+                object_counts[obj_type] = object_counts.get(obj_type, 0) + 1
+        except Exception:
+            object_counts = {"error": "Could not get object counts"}
+        
+        return {
+            "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
+            "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
+            "percent": round(process.memory_percent(), 2),
+            "gc_counts": gc_counts,
+            "gc_stats": gc_stats,
+            "top_objects": dict(sorted(object_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+def log_detailed_memory_usage(context=""):
+    """Log detailed memory usage information"""
+    memory_info = get_detailed_memory_usage()
+    
+    if "error" not in memory_info:
+        logger.info(f"🔍 Detailed memory {context}:")
+        logger.info(f"  RSS: {memory_info['rss_mb']} MB, VMS: {memory_info['vms_mb']} MB ({memory_info['percent']}%)")
+        logger.info(f"  GC counts: {memory_info['gc_counts']}")
+        logger.info(f"  Top objects: {memory_info['top_objects']}")
+    else:
+        logger.warning(f"Could not get detailed memory info: {memory_info['error']}")
 
 if __name__ == '__main__':
     # Run full scraping (all 10 regions - could take 30+ minutes)
