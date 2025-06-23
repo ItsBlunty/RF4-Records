@@ -725,9 +725,14 @@ def parse_table_selenium(driver, region_info):
         # Now parse all the records tables
         records = parse_all_records_from_soup(soup, region_info)
         
-        # Clear the HTML content from memory immediately
+        # Aggressive memory cleanup - clear large objects immediately
         html_content = None
+        soup.decompose()  # BeautifulSoup method to free memory more aggressively
         soup = None
+        
+        # Force garbage collection after processing large HTML
+        import gc
+        gc.collect()
         
         return records
         
@@ -1076,6 +1081,23 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
+                    # Proactive memory monitoring every 3 regions
+                    if regions_scraped % 3 == 0:
+                        current_memory = get_memory_usage()
+                        if current_memory > 300:  # Early warning threshold
+                            logger.debug(f"Memory check at region {regions_scraped}: {current_memory}MB")
+                            if current_memory > 350:  # Proactive cleanup threshold
+                                logger.info(f"Proactive memory cleanup at region {regions_scraped}: {current_memory}MB")
+                                force_garbage_collection()
+                                
+                                # Clear browser caches if driver is available
+                                try:
+                                    if driver and is_driver_alive(driver):
+                                        driver.execute_script("if (window.gc) { window.gc(); }")  # Chrome GC
+                                        driver.execute_script("if (window.performance && window.performance.clearResourceTimings) { window.performance.clearResourceTimings(); }")
+                                except Exception:
+                                    pass  # Non-critical
+                    
                     # More aggressive Chrome session management for Docker container
                     if regions_scraped % 15 == 0:  # Every 15 regions, restart Chrome completely (reduced cleanup frequency to minimize timeout risk)
                         logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
@@ -1161,8 +1183,13 @@ def scrape_and_update_records():
                 bulk_inserter.flush()  # Flush any pending records
                 db.commit()
                 
-                # Clear cache before closing session to free memory
-                record_checker.clear_cache()
+                # Clear cache and flush bulk operations to free memory
+                if 'record_checker' in locals() and record_checker:
+                    record_checker.clear_cache()
+                
+                # Force immediate database write and clear pending operations
+                db.flush()  # Write pending operations to database
+                db.expunge_all()  # Remove all objects from session to free memory
                 
                 db.close()  # Close the current session
                 db = SessionLocal()  # Fresh database session
