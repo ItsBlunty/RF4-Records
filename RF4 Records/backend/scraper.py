@@ -275,7 +275,7 @@ def get_driver():
     return driver
 
 def cleanup_driver(driver):
-    """Aggressively cleanup WebDriver session to prevent memory leaks with comprehensive logging"""
+    """Aggressively cleanup WebDriver session to prevent memory leaks with fast-fail on renderer timeouts"""
     if not driver:
         logger.debug("cleanup_driver: No driver to cleanup")
         return True
@@ -290,8 +290,51 @@ def cleanup_driver(driver):
     logger.info(f"[CLEANUP] Starting driver cleanup for session: {session_id}")
     cleanup_success = True
     cleanup_errors = []
+    renderer_timeout_detected = False
     
-    # Step 1: Clear browser data with timeout handling
+    # Step 1: Quick responsiveness test - if this fails, skip to process termination
+    try:
+        # Set a very short timeout for responsiveness test
+        driver.set_page_load_timeout(2)  # 2 second test
+        _ = driver.current_url  # Quick test
+        logger.debug(f"Session {session_id}: Renderer responsive, proceeding with cleanup")
+    except Exception as e:
+        if "timeout" in str(e).lower():
+            logger.warning(f"Session {session_id}: Renderer unresponsive, switching to fast termination")
+            renderer_timeout_detected = True
+        else:
+            logger.debug(f"Session {session_id}: Responsiveness test failed: {e}")
+    
+    # If renderer is unresponsive, skip cleanup and go straight to process termination
+    if renderer_timeout_detected:
+        logger.info(f"[FAST-FAIL] Session {session_id}: Skipping cleanup operations due to renderer timeout")
+        cleanup_errors.append("renderer_unresponsive: skipped_cleanup_for_speed")
+        cleanup_success = False
+        
+        # Go straight to process termination
+        try:
+            if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
+                logger.info(f"Session {session_id}: Force terminating Chrome process")
+                driver.service.process.terminate()
+                import time
+                time.sleep(0.5)
+                if driver.service.process.poll() is None:  # Still running
+                    driver.service.process.kill()
+                    time.sleep(0.2)
+                logger.info(f"Session {session_id}: Chrome process terminated successfully")
+            else:
+                # Fallback: try driver.quit() with very short timeout
+                driver.quit()
+        except Exception as e:
+            logger.warning(f"Session {session_id}: Process termination failed: {e}")
+        
+        logger.error(f"[FAILED] Driver cleanup FAILED for session: {session_id}")
+        logger.error(f"Session {session_id}: Cleanup errors: {'; '.join(cleanup_errors)}")
+        logger.warning(f"[MEMORY LEAK RISK] Session {session_id} cleanup failed - may cause accumulation")
+        return False
+    
+    # Normal cleanup path - renderer is responsive
+    # Step 2: Clear browser data with timeout handling
     try:
         logger.debug(f"Session {session_id}: Clearing cookies...")
         driver.delete_all_cookies()
@@ -333,47 +376,48 @@ def cleanup_driver(driver):
         else:
             logger.debug(f"Session {session_id}: sessionStorage disabled (data: URL) - skipping")
     
-    # Step 2: Advanced storage cleanup (non-critical)
-    try:
-        logger.debug(f"Session {session_id}: Clearing IndexedDB...")
-        driver.execute_script("try { if (window.indexedDB) { window.indexedDB.deleteDatabase(''); } } catch(e) { /* Not available */ }")
-        logger.debug(f"Session {session_id}: IndexedDB cleared successfully")
-    except Exception as e:
-        logger.debug(f"Session {session_id}: IndexedDB cleanup failed (non-critical): {e}")
-    
-    try:
-        logger.debug(f"Session {session_id}: Clearing caches...")
-        driver.execute_script("try { if (window.caches) { window.caches.keys().then(names => names.forEach(name => caches.delete(name))); } } catch(e) { /* Not available */ }")
-        logger.debug(f"Session {session_id}: Caches cleared successfully")
-    except Exception as e:
-        logger.debug(f"Session {session_id}: Cache cleanup failed (non-critical): {e}")
-    
-    # Step 3: Close all windows and tabs
-    try:
-        logger.debug(f"Session {session_id}: Getting window handles...")
-        handles = driver.window_handles.copy()
-        logger.debug(f"Session {session_id}: Found {len(handles)} window handles")
+    # Step 3: Advanced storage cleanup (non-critical) - skip if any timeouts occurred
+    if cleanup_success:
+        try:
+            logger.debug(f"Session {session_id}: Clearing IndexedDB...")
+            driver.execute_script("try { if (window.indexedDB) { window.indexedDB.deleteDatabase(''); } } catch(e) { /* Not available */ }")
+            logger.debug(f"Session {session_id}: IndexedDB cleared successfully")
+        except Exception as e:
+            logger.debug(f"Session {session_id}: IndexedDB cleanup failed (non-critical): {e}")
         
-        windows_closed = 0
-        for i, handle in enumerate(handles):
-            try:
-                driver.switch_to.window(handle)
-                driver.close()
-                windows_closed += 1
-                logger.debug(f"Session {session_id}: Closed window {i+1}/{len(handles)}")
-            except Exception as e:
-                cleanup_errors.append(f"close_window_{i}: {str(e)[:50]}")
-                logger.warning(f"Session {session_id}: Failed to close window {i+1}: {e}")
-                cleanup_success = False
+        try:
+            logger.debug(f"Session {session_id}: Clearing caches...")
+            driver.execute_script("try { if (window.caches) { window.caches.keys().then(names => names.forEach(name => caches.delete(name))); } } catch(e) { /* Not available */ }")
+            logger.debug(f"Session {session_id}: Caches cleared successfully")
+        except Exception as e:
+            logger.debug(f"Session {session_id}: Cache cleanup failed (non-critical): {e}")
         
-        logger.debug(f"Session {session_id}: Successfully closed {windows_closed}/{len(handles)} windows")
-        
-    except Exception as e:
-        cleanup_errors.append(f"window_handles: {str(e)[:100]}")
-        logger.warning(f"Session {session_id}: Failed to get/close window handles: {e}")
-        cleanup_success = False
+        # Step 4: Close all windows and tabs
+        try:
+            logger.debug(f"Session {session_id}: Getting window handles...")
+            handles = driver.window_handles.copy()
+            logger.debug(f"Session {session_id}: Found {len(handles)} window handles")
+            
+            windows_closed = 0
+            for i, handle in enumerate(handles):
+                try:
+                    driver.switch_to.window(handle)
+                    driver.close()
+                    windows_closed += 1
+                    logger.debug(f"Session {session_id}: Closed window {i+1}/{len(handles)}")
+                except Exception as e:
+                    cleanup_errors.append(f"close_window_{i}: {str(e)[:50]}")
+                    logger.warning(f"Session {session_id}: Failed to close window {i+1}: {e}")
+                    cleanup_success = False
+            
+            logger.debug(f"Session {session_id}: Successfully closed {windows_closed}/{len(handles)} windows")
+            
+        except Exception as e:
+            cleanup_errors.append(f"window_handles: {str(e)[:100]}")
+            logger.warning(f"Session {session_id}: Failed to get/close window handles: {e}")
+            cleanup_success = False
     
-    # Step 4: Final quit - but with process termination fallback for timeouts
+    # Step 5: Final quit - but with process termination fallback for timeouts
     try:
         logger.debug(f"Session {session_id}: Calling driver.quit()...")
         driver.quit()
@@ -847,7 +891,7 @@ def scrape_and_update_records():
                     regions_scraped += 1
                     
                     # More aggressive Chrome session management for Docker container
-                    if regions_scraped % 10 == 0:  # Every 10 regions, restart Chrome completely (restored from 3 to reduce memory churn)
+                    if regions_scraped % 15 == 0:  # Every 15 regions, restart Chrome completely (reduced cleanup frequency to minimize timeout risk)
                         logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
                         try:
                             # Flush bulk inserter and commit database session before Chrome restart
@@ -868,7 +912,7 @@ def scrape_and_update_records():
                                 db.rollback()
                             except Exception:
                                 pass
-                    elif regions_scraped % 5 == 0:  # Every 5 regions, garbage collect (restored from 2 to reduce overhead)
+                    elif regions_scraped % 7 == 0:  # Every 7 regions, garbage collect (reduced from 5 to reduce overhead)
                         force_garbage_collection()
                         # Additional Docker-specific cleanup
                         chrome_bin = os.getenv('CHROME_BIN')
