@@ -58,7 +58,7 @@ else:
 is_scraping = False
 scraping_lock = threading.Lock()
 
-# Initialize scheduler
+# Initialize scheduler but don't start it yet
 scheduler = BackgroundScheduler()
 
 def signal_handler(signum, frame):
@@ -221,41 +221,38 @@ def schedule_monitor():
     except Exception as e:
         logger.error(f"Error in schedule monitor: {e}")
 
-# Initialize the dynamic scheduler
-scheduler.start()
-
-# Set up dynamic scheduling based on current time
-update_schedule()
-
-# Add hourly monitoring job as fallback
-scheduler.add_job(
-    schedule_monitor,
-    'interval',
-    hours=1,
-    id='schedule_monitor_job'
-)
-
-logger.info("Dynamic scheduler started - frequency based on weekly schedule")
-
 @app.on_event("startup")
 def startup_event():
     """Server startup - run migrations and start scheduler"""
     logger.info("=== SERVER STARTUP ===")
     print("🚀 FastAPI server is starting up...")
     
-    # Skip database migration during startup to prevent hanging
-    # Migration will be handled in background thread
-    logger.info("Database migration moved to background thread to prevent startup hanging")
-    
-    # Run performance optimizations in background to avoid blocking startup
-    # This prevents hanging during zero-downtime deployments
-    # Create/verify database tables
+    # Create/verify database tables first
     try:
         create_tables()
         logger.info("Database tables created/verified successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}")
+    
+    # Now start the scheduler after database is ready
+    try:
+        scheduler.start()
+        
+        # Set up dynamic scheduling based on current time
+        update_schedule()
+        
+        # Add hourly monitoring job as fallback
+        scheduler.add_job(
+            schedule_monitor,
+            'interval',
+            hours=1,
+            id='schedule_monitor_job'
+        )
+        
+        logger.info("Dynamic scheduler started - frequency based on weekly schedule")
+    except Exception as e:
+        logger.error(f"Error starting scheduler: {e}")
     
     print("📊 Available endpoints:")
     print("   GET  /         - Server status")
