@@ -20,11 +20,11 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      <div className="mx-auto px-6 py-6">
+      <div className="mx-auto px-6 py-3">
         {/* Top Section - Title, Attribution, and Navigation */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3">
           {/* Left Side - Title, Attribution, Database Info, and Controls */}
-          <div className="flex flex-col space-y-3">
+          <div className="flex flex-col space-y-2">
             <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
               <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">

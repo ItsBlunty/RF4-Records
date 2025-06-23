@@ -15,7 +15,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+    <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
       <div className="max-w-7xl mx-auto">
         {/* Horizontal Filter Layout */}
         <div className="flex flex-wrap gap-4 items-center">

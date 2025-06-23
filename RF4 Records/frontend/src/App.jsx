@@ -315,9 +315,9 @@ function AppContent() {
             onChange={handleFilterChange}
             onClear={clearFilters}
           />
-          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {/* View Mode Toggle */}
-            <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
+            <div className="mb-4 flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-4 sm:space-y-0">
               <div className="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
                 <div className="flex space-x-4">
                   <button
