@@ -1102,8 +1102,29 @@ def scrape_and_update_records():
                         logger.info("Killing ALL Chrome processes...")
                         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
                         
-                        # Force garbage collection
+                        # AGGRESSIVE PYTHON MEMORY CLEANUP - Clear all large data structures
+                        logger.info("🧹 Aggressive Python memory cleanup...")
+                        
+                        # Clear large data structures
+                        all_unique_fish.clear()
+                        
+                        # Clear bulk inserter completely
+                        bulk_inserter.pending_records.clear()
+                        
+                        # Clear record checker cache
+                        record_checker.clear_cache()
+                        
+                        # Force database session cleanup
+                        db.expunge_all()  # Remove all objects from session
+                        db.flush()
+                        
+                        # Multiple rounds of garbage collection
+                        import gc
+                        gc.collect()
                         force_garbage_collection()
+                        gc.collect(0)  # Young generation
+                        gc.collect(1)  # Middle generation
+                        gc.collect(2)  # Old generation
                         
                         # Start fresh with new Chrome instance
                         try:
@@ -1285,32 +1306,84 @@ def scrape_and_update_records():
         logger.info("Final aggressive Chrome process cleanup - killing ALL Chrome processes...")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)  # Kill ALL Chrome processes
         
+        # COMPREHENSIVE PYTHON MEMORY CLEANUP - Return to baseline
+        logger.info("🧹🧹🧹 COMPREHENSIVE Python memory cleanup - returning to baseline...")
+        
         # Clear large variables explicitly
         if 'all_unique_fish' in locals():
             all_unique_fish.clear()
             all_unique_fish = None
+        
+        # Clear bulk inserter completely
         if 'bulk_inserter' in locals():
+            if hasattr(bulk_inserter, 'pending_records'):
+                bulk_inserter.pending_records.clear()
+            if hasattr(bulk_inserter, 'close'):
+                bulk_inserter.close()
             bulk_inserter = None
+        
+        # Clear record checker cache completely
         if 'record_checker' in locals():
+            if hasattr(record_checker, 'clear_cache'):
+                record_checker.clear_cache()
+            if hasattr(record_checker, '_cache'):
+                record_checker._cache.clear()
             record_checker = None
         
-        # Force aggressive garbage collection multiple times
-        logger.info("Running aggressive garbage collection...")
-        import gc
-        gc.collect()
-        force_garbage_collection()
-        force_garbage_collection()  # Second pass for circular references
-        gc.collect(0)  # Young generation
-        gc.collect(1)  # Middle generation  
-        gc.collect(2)  # Old generation
+        # Comprehensive database cleanup
+        if 'db' in locals() and db:
+            try:
+                db.expunge_all()  # Remove ALL objects from session
+                db.close()  # Close the session
+                db = None
+            except Exception as e:
+                logger.debug(f"Database cleanup error: {e}")
         
-        # Clear module-level caches if they exist
+        # Clear any remaining large objects
+        import gc
+        
+        # Get memory before final cleanup
+        memory_before_final = get_memory_usage()
+        logger.info(f"📊 Memory before final cleanup: {memory_before_final}MB")
+        
+        # Multiple aggressive garbage collection rounds
+        logger.info("Running comprehensive garbage collection (5 rounds)...")
+        for i in range(5):
+            gc.collect()
+            force_garbage_collection()
+            gc.collect(0)  # Young generation
+            gc.collect(1)  # Middle generation  
+            gc.collect(2)  # Old generation
+            if i < 4:  # Don't sleep on the last iteration
+                time.sleep(0.5)  # Give time for cleanup between rounds
+        
+        # Clear module-level caches
         try:
             import sys
             if hasattr(sys, '_clear_type_cache'):
                 sys._clear_type_cache()
         except Exception:
             pass
+        
+        # Clear import caches
+        try:
+            import importlib
+            importlib.invalidate_caches()
+        except Exception:
+            pass
+        
+        # Get memory after final cleanup
+        memory_after_final = get_memory_usage()
+        memory_freed_final = memory_before_final - memory_after_final
+        logger.info(f"📊 Memory after final cleanup: {memory_after_final}MB (freed {memory_freed_final:.1f}MB)")
+        
+        # Check if we successfully returned to baseline
+        if memory_after_final <= initial_memory + 50:  # Allow 50MB tolerance
+            logger.info(f"✅ SUCCESS: Memory returned to near baseline ({initial_memory}MB + 50MB tolerance)")
+        else:
+            logger.warning(f"⚠️ Memory still elevated: {memory_after_final}MB vs baseline {initial_memory}MB (diff: {memory_after_final - initial_memory:.1f}MB)")
+            # Show final memory breakdown to identify what's still consuming memory
+            log_detailed_memory_usage("final cleanup analysis")
         
         # Reset global variables (scraping already marked as finished above)
         should_stop_scraping = False
