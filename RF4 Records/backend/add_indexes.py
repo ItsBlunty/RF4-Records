@@ -87,32 +87,78 @@ def add_critical_indexes():
         created_count = 0
         skipped_count = 0
         
-        # For PostgreSQL CONCURRENTLY indexes, we need autocommit mode (no transaction)
+        # For PostgreSQL CONCURRENTLY indexes, we need a raw connection without transactions
         if is_postgres:
-            # Create connection with autocommit for CONCURRENTLY operations
-            conn = engine.connect()
-            conn = conn.execution_options(autocommit=True)
+            import psycopg2
+            from urllib.parse import urlparse
+            
+            # Parse the database URL to get connection parameters
+            parsed = urlparse(database_url)
             
             try:
-                for idx in indexes_to_create:
-                    if idx['name'] in existing_indexes:
-                        print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
-                        skipped_count += 1
-                        continue
-                    
-                    try:
-                        print(f"  🔨 Creating {idx['name']} - {idx['description']}")
-                        # Execute in autocommit mode (outside transaction)
-                        conn.execute(text(idx['sql']))
-                        created_count += 1
-                        print(f"  ✅ Created {idx['name']}")
+                # Create raw psycopg2 connection (no SQLAlchemy transaction management)
+                raw_conn = psycopg2.connect(
+                    host=parsed.hostname,
+                    port=parsed.port or 5432,
+                    database=parsed.path[1:],  # Remove leading slash
+                    user=parsed.username,
+                    password=parsed.password,
+                    connect_timeout=10
+                )
+                
+                # Set autocommit mode
+                raw_conn.autocommit = True
+                
+                with raw_conn.cursor() as cursor:
+                    for idx in indexes_to_create:
+                        if idx['name'] in existing_indexes:
+                            print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
+                            skipped_count += 1
+                            continue
                         
-                    except Exception as e:
-                        print(f"  ❌ Failed to create {idx['name']}: {e}")
-                        # Continue with other indexes
-                        continue
-            finally:
-                conn.close()
+                        try:
+                            print(f"  🔨 Creating {idx['name']} - {idx['description']}")
+                            # Execute directly with psycopg2 cursor (no transaction)
+                            cursor.execute(idx['sql'])
+                            created_count += 1
+                            print(f"  ✅ Created {idx['name']}")
+                            
+                        except Exception as e:
+                            print(f"  ❌ Failed to create {idx['name']}: {e}")
+                            # Continue with other indexes
+                            continue
+                
+                raw_conn.close()
+                
+            except Exception as e:
+                print(f"❌ Failed to create raw PostgreSQL connection: {e}")
+                print("   Falling back to regular indexes without CONCURRENTLY")
+                
+                # Fallback: create indexes without CONCURRENTLY
+                fallback_indexes = []
+                for idx in indexes_to_create:
+                    fallback_idx = idx.copy()
+                    fallback_idx['sql'] = fallback_idx['sql'].replace('CONCURRENTLY ', '')
+                    fallback_indexes.append(fallback_idx)
+                
+                with engine.connect() as conn:
+                    for idx in fallback_indexes:
+                        if idx['name'] in existing_indexes:
+                            print(f"  ⏭️  {idx['name']} already exists - {idx['description']}")
+                            skipped_count += 1
+                            continue
+                        
+                        try:
+                            print(f"  🔨 Creating {idx['name']} (non-concurrent) - {idx['description']}")
+                            conn.execute(text(idx['sql']))
+                            created_count += 1
+                            print(f"  ✅ Created {idx['name']}")
+                            
+                        except Exception as e:
+                            print(f"  ❌ Failed to create {idx['name']}: {e}")
+                            continue
+                    
+                    conn.commit()
         else:
             # SQLite doesn't support CONCURRENTLY, use regular transaction
             with engine.connect() as conn:
