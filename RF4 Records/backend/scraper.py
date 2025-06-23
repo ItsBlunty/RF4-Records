@@ -566,11 +566,11 @@ def force_garbage_collection():
         logger.debug(f"Error during garbage collection: {e}")
 
 def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
-    """Kill any orphaned Chrome processes that may be consuming memory
+    """Kill orphaned Chrome processes
     
     Args:
-        max_age_seconds: Maximum age in seconds before a process is considered orphaned
-        aggressive: If True, kill ALL Chrome processes regardless of age (use with caution)
+        max_age_seconds: Maximum age in seconds before a process is considered orphaned (ignored if aggressive=True)
+        aggressive: If True, kill ALL Chrome processes regardless of age or memory usage
     """
     try:
         import psutil
@@ -580,38 +580,22 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
         total_chrome_processes = 0
         current_time = time.time()
         
-        # Memory thresholds for killing processes during scraping
-        # During scraping: kill processes using >300MB
-        # Outside scraping: kill processes using >400MB
-        memory_threshold_mb = 300 if scraping_in_progress else 400
-        
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time', 'memory_info']):
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
                     total_chrome_processes += 1
                     process_age = current_time - proc.info['create_time']
                     
-                    # Get memory usage
-                    memory_mb = proc.info['memory_info'].rss / 1024 / 1024
-                    
-                    # Kill if aggressive mode, scraping finished, process is older than threshold, OR using too much memory
+                    # Kill if aggressive mode, scraping finished, OR process is older than threshold
                     should_kill = (aggressive or 
                                  _scraping_finished or 
-                                 process_age > max_age_seconds or
-                                 memory_mb > memory_threshold_mb)
+                                 process_age > max_age_seconds)
                     
                     if should_kill:
-                        # Determine reason for killing
                         if aggressive:
-                            reason = f"aggressive mode (age: {process_age:.1f}s, memory: {memory_mb:.1f}MB)"
-                        elif _scraping_finished:
-                            reason = f"scraping finished (age: {process_age:.1f}s, memory: {memory_mb:.1f}MB)"
-                        elif process_age > max_age_seconds:
-                            reason = f"age: {process_age:.1f}s (memory: {memory_mb:.1f}MB)"
+                            logger.info(f"[AGGRESSIVE CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
                         else:
-                            reason = f"memory: {memory_mb:.1f}MB (age: {process_age:.1f}s)"
-                        
-                        logger.info(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} ({reason})")
+                            logger.info(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
                         
                         proc.terminate()
                         killed_count += 1
@@ -627,10 +611,10 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
                 continue
         
         if killed_count > 0:
-            mode_str = "AGGRESSIVE" if aggressive else "PROCESS CLEANUP"
+            mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
             logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
             force_garbage_collection()  # Clean up after process cleanup
-            time.sleep(2)  # Give processes time to die and memory to be freed
+            time.sleep(3)  # Give processes time to die and memory to be freed
         else:
             mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
             logger.info(f"[{mode_str}] No Chrome processes to kill (checked {total_chrome_processes} Chrome processes)")
@@ -1100,49 +1084,31 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # Proactive memory monitoring every 3 regions
-                    if regions_scraped % 3 == 0:
-                        current_memory = get_memory_usage()
-                        if current_memory > 300:  # Early warning threshold
-                            logger.info(f"💾 Memory check at region {regions_scraped}: {current_memory}MB")
-                            # Show detailed breakdown to identify if Chrome or Python is the issue
-                            log_detailed_memory_usage(f"at region {regions_scraped}")
-                            
-                            if current_memory > 350:  # Proactive cleanup threshold
-                                logger.info(f"🧹 Proactive memory cleanup at region {regions_scraped}: {current_memory}MB")
-                                
-                                # Kill high-memory Chrome processes first - this is often the main culprit
-                                kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False)  # Use memory-based killing
-                                
-                                force_garbage_collection()
-                                
-                                # Clear browser caches if driver is available
-                                try:
-                                    if driver and is_driver_alive(driver):
-                                        driver.execute_script("if (window.gc) { window.gc(); }")  # Chrome GC
-                                        driver.execute_script("if (window.performance && window.performance.clearResourceTimings) { window.performance.clearResourceTimings(); }")
-                                except Exception:
-                                    pass  # Non-critical
-                                
-                                # Log memory after cleanup to see the effect
-                                cleanup_memory = get_memory_usage()
-                                logger.info(f"✅ Memory after proactive cleanup: {cleanup_memory}MB (freed {current_memory - cleanup_memory:.1f}MB)")
-                    
-                    # More aggressive Chrome session management for Docker container
-                    if regions_scraped % 15 == 0:  # Every 15 regions, restart Chrome completely (reduced cleanup frequency to minimize timeout risk)
-                        logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
+                    # Simple and reliable: Every 10 regions (1 complete category), kill ALL Chrome processes
+                    if regions_scraped % 10 == 0:
+                        logger.info(f"🧹 Complete Chrome cleanup after {regions_scraped} regions (1 category complete)")
+                        
+                        # Flush database before cleanup
+                        bulk_inserter.flush()
+                        db.commit()
+                        
+                        # Clean up current driver
+                        cleanup_success = cleanup_driver(driver)
+                        if not cleanup_success:
+                            failed_cleanups += 1
+                            logger.warning("Driver cleanup failed during category cleanup")
+                        
+                        # Kill ALL Chrome processes - no guessing, no age/memory checks
+                        logger.info("Killing ALL Chrome processes...")
+                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        
+                        # Force garbage collection
+                        force_garbage_collection()
+                        
+                        # Start fresh with new Chrome instance
                         try:
-                            # Flush bulk inserter and commit database session before Chrome restart
-                            bulk_inserter.flush()
-                            db.commit()
-                            
-                            cleanup_success = cleanup_driver(driver)
-                            if not cleanup_success:
-                                failed_cleanups += 1
-                                logger.warning("Driver cleanup failed during proactive restart - potential memory leak risk")
-                            force_garbage_collection()
                             driver = get_driver()
-                            logger.info("Chrome session restarted successfully")
+                            logger.info("✅ Fresh Chrome session started")
                         except Exception as restart_error:
                             logger.error(f"Failed to restart Chrome session: {restart_error}")
                             # Ensure database is still in good state
@@ -1150,38 +1116,10 @@ def scrape_and_update_records():
                                 db.rollback()
                             except Exception:
                                 pass
-                    elif regions_scraped % 7 == 0:  # Every 7 regions, garbage collect (reduced from 5 to reduce overhead)
-                        force_garbage_collection()
-                        # Additional Docker-specific cleanup
-                        chrome_bin = os.getenv('CHROME_BIN')
-                        if chrome_bin:  # In Docker container
-                            import gc
-                            gc.collect(2)  # Force old generation cleanup
-                            
-                            # Clear Chrome's internal caches more frequently
-                            try:
-                                if driver and is_driver_alive(driver):
-                                    driver.execute_script("window.stop();")  # Stop any pending requests
-                                    driver.execute_script("if (window.gc) { window.gc(); }")  # Chrome garbage collection
-                            except Exception as gc_error:
-                                logger.debug(f"Chrome GC failed (non-critical): {gc_error}")
                         
-                        # Kill any orphaned Chrome processes (more frequent cleanup) - works in all environments
-                        if regions_scraped % 7 == 0:  # Every 7 regions - even more frequent
-                            logger.info(f"Running orphaned process cleanup at region {regions_scraped}")
-                            kill_orphaned_chrome_processes(max_age_seconds=180)  # 3 minutes instead of 5
-                            
-                            # Additional memory check - if memory is very high, be more aggressive
-                            current_mem = get_memory_usage()
-                            if current_mem > 350:  # Higher threshold to avoid disrupting active scraping
-                                logger.warning(f"🚨 High memory ({current_mem}MB) during scraping - forcing aggressive cleanup")
-                                # Show breakdown to see if Chrome processes are the culprit
-                                log_detailed_memory_usage(f"before aggressive cleanup at region {regions_scraped}")
-                                kill_orphaned_chrome_processes(max_age_seconds=120, aggressive=False)  # Kill processes older than 2 minutes (less aggressive)
-                                
-                                # Check memory after aggressive cleanup
-                                after_mem = get_memory_usage()
-                                logger.info(f"✅ Memory after aggressive cleanup: {after_mem}MB (freed {current_mem - after_mem:.1f}MB)")
+                        # Log memory after complete cleanup
+                        current_memory = get_memory_usage()
+                        logger.info(f"📊 Memory after complete cleanup: {current_memory}MB")
                     
                     time.sleep(2)
                 except Exception as e:
