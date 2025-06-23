@@ -5,7 +5,7 @@ This document outlines the deployment process for the RF4 Records application on
 ## Overview
 
 The RF4 Records application consists of:
-- **Backend**: FastAPI server with SQLite database and Selenium web scraping
+- **Backend**: FastAPI server with PostgreSQL database and Selenium web scraping
 - **Frontend**: React application built with Vite
 
 ## Deployment Architecture
@@ -14,36 +14,34 @@ The application is deployed as a single service on Railway that:
 1. Builds both frontend and backend
 2. Serves the React frontend as static files
 3. Provides API endpoints for data access
-4. Runs scheduled scraping tasks using Browserless v1
+4. Runs scheduled scraping tasks using Chrome in Docker container
 
 ## Railway Configuration
 
 ### Services Required
 
 1. **Main Application Service** (this repository)
-2. **Browserless v1 Service** (from Railway template)
+2. **PostgreSQL Database** (Railway built-in service)
 
 ### Environment Variables
 
-The following environment variables are automatically configured when you connect the Browserless service:
+The following environment variables are automatically configured:
 
 ```
-BROWSER_WEBDRIVER_ENDPOINT=${{Browserless.BROWSER_WEBDRIVER_ENDPOINT}}
-BROWSER_TOKEN=${{Browserless.BROWSER_TOKEN}}
+DATABASE_URL (automatically set by Railway PostgreSQL service)
+CHROME_BIN=/usr/bin/google-chrome
+CHROMEDRIVER_PATH=/usr/local/bin/chromedriver
 ```
-
-These are configured in `railway.json` and will be automatically set when you connect the services.
 
 ### Build Process
 
-The build process is configured in `nixpacks.toml`:
+The build process is configured via Dockerfile:
 
-1. **Setup Phase**: Installs Python 3.11, pip, Node.js 20, and npm
-2. **Install Phase**: 
-   - Installs Python dependencies from `backend/requirements.txt`
-   - Installs Node.js dependencies from `frontend/package.json`
-3. **Build Phase**: Builds the React frontend using `npm run build`
-4. **Start Phase**: Runs the FastAPI server which serves both API and frontend
+1. **Base Image**: Python 3.11 with Chrome installation
+2. **Chrome Setup**: Installs Google Chrome and ChromeDriver for scraping
+3. **Frontend Build**: Builds React frontend using npm
+4. **Backend Setup**: Installs Python dependencies
+5. **Startup**: Runs FastAPI server with Chrome in container
 
 ### File Structure
 
@@ -64,19 +62,19 @@ RF4 Records/
 
 1. **Fork or clone this repository**
 
-2. **Deploy Browserless v1 service**:
+2. **Deploy PostgreSQL database**:
    - Go to Railway dashboard
    - Click "New Project"
    - Select "Deploy from template"
-   - Search for "Browserless" and deploy the **v1** template (not v2)
+   - Search for "PostgreSQL" and deploy the PostgreSQL service
 
 3. **Deploy main application**:
    - In the same Railway project, click "New Service"
    - Connect your GitHub repository
-   - Railway will automatically detect and use the `nixpacks.toml` configuration
+   - Railway will automatically detect and use the Dockerfile configuration
 
 4. **Connect services**:
-   - The environment variables are already configured in `railway.json`
+   - The environment variables are already configured in the Dockerfile
    - Railway will automatically connect the services and set the variables
 
 5. **Configure domain** (optional):

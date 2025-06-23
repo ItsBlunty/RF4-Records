@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, create_tables
-from scraper import scrape_and_update_records, should_stop_scraping
+from scraper import scrape_and_update_records, should_stop_scraping, force_garbage_collection, kill_orphaned_chrome_processes
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import is_high_frequency_period, get_next_schedule_change
@@ -422,30 +422,44 @@ def run_database_optimizations():
 
 @app.post("/cleanup")
 def force_cleanup():
-    """Force garbage collection and memory cleanup"""
+    """Force garbage collection and process cleanup for memory management"""
     try:
         import gc
+        import psutil
+        import os
+        from scraper import force_garbage_collection, kill_orphaned_chrome_processes
+        
+        # Get memory before cleanup
+        process = psutil.Process(os.getpid())
+        memory_before = process.memory_info().rss / 1024 / 1024
         
         # Force garbage collection
-        collected = gc.collect()
+        force_garbage_collection()
         
-        # Get memory info
-        import psutil
-        import os as os_module
-        process = psutil.Process(os_module.getpid())
-        memory_info = process.memory_info()
-        memory_mb = memory_info.rss / 1024 / 1024
+        # Kill orphaned Chrome processes
+        kill_orphaned_chrome_processes()
+        
+        # Additional aggressive cleanup
+        gc.collect()
+        gc.collect(0)
+        gc.collect(1) 
+        gc.collect(2)
+        
+        # Get memory after cleanup
+        memory_after = process.memory_info().rss / 1024 / 1024
+        memory_freed = memory_before - memory_after
         
         return {
-            "message": "Memory cleanup completed",
-            "objects_collected": collected,
-            "current_memory_mb": round(memory_mb, 2),
-            "memory_percent": round(process.memory_percent(), 2),
-            "timestamp": datetime.now().isoformat()
+            "status": "cleanup_completed",
+            "memory_before_mb": round(memory_before, 2),
+            "memory_after_mb": round(memory_after, 2), 
+            "memory_freed_mb": round(memory_freed, 2),
+            "cleanup_timestamp": datetime.now(timezone.utc).isoformat()
         }
+        
     except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
-        return {"error": "Cleanup failed", "details": str(e)}
+        logger.error(f"Cleanup failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(e)}")
 
 @app.get("/status")
 def get_status():

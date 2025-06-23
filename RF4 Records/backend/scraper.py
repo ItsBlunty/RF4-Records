@@ -162,7 +162,7 @@ def split_bait_string(bait_string):
         return bait_string.strip(), None
 
 def get_driver():
-    """Create and configure Chrome WebDriver for Docker container, Browserless, or local development"""
+    """Create and configure Chrome WebDriver for Docker container or local development"""
     chrome_options = Options()
     
     # Core performance and memory optimization flags
@@ -182,9 +182,11 @@ def get_driver():
     chrome_options.add_argument('--disable-ipc-flooding-protection')  # Prevent IPC timeout
     chrome_options.add_argument('--disable-renderer-accessibility')  # Reduce renderer load
     
-    # Aggressive memory optimization
+    # Aggressive memory optimization - Enhanced for Railway
     chrome_options.add_argument('--memory-pressure-off')
-    chrome_options.add_argument('--max_old_space_size=2048')  # Reduced from 4096
+    chrome_options.add_argument('--max_old_space_size=1024')  # Reduced from 2048 for Railway containers
+    chrome_options.add_argument('--renderer-process-limit=1')  # Single renderer process
+    chrome_options.add_argument('--max-unused-resource-memory-usage-percentage=5')
     chrome_options.add_argument('--disable-background-timer-throttling')
     chrome_options.add_argument('--disable-backgrounding-occluded-windows')
     chrome_options.add_argument('--disable-renderer-backgrounding')
@@ -218,36 +220,11 @@ def get_driver():
     chrome_options.add_argument('--allow-running-insecure-content')
     chrome_options.add_argument('--disable-ipc-flooding-protection')
     
-    # Check deployment environment
-    browser_endpoint = os.getenv('BROWSER_WEBDRIVER_ENDPOINT_PRIVATE') or os.getenv('BROWSER_WEBDRIVER_ENDPOINT')
-    browser_token = os.getenv('BROWSER_TOKEN')
+    # Check deployment environment (Browserless support removed)
     chrome_bin = os.getenv('CHROME_BIN')  # Docker container Chrome path
     chromedriver_path = os.getenv('CHROMEDRIVER_PATH')  # Docker container ChromeDriver path
     
-    if browser_endpoint:
-        # Using Browserless service
-        logger.info("Using Browserless service for WebDriver")
-        
-        # Safe timeout settings for Browserless
-        chrome_options.add_argument('--page-load-strategy=eager')  # Don't wait for all resources
-        
-        # Add Browserless v1 authentication and configuration
-        if browser_token:
-            chrome_options.set_capability('browserless:token', browser_token)
-            chrome_options.set_capability('browserless:timeout', 300000)  # 5 minutes max session
-            chrome_options.set_capability('browserless:blockAds', True)  # Block ads to save memory
-        
-        # Create remote WebDriver with enhanced timeouts
-        driver = webdriver.Remote(
-            command_executor=browser_endpoint,
-            options=chrome_options
-        )
-        
-        # Set aggressive timeouts for better reliability
-        driver.set_page_load_timeout(25)  # 25 seconds max page load
-        driver.implicitly_wait(10)  # 10 seconds implicit wait
-        
-    elif chrome_bin and chromedriver_path:
+    if chrome_bin and chromedriver_path:
         # Running in Docker container with pre-installed Chrome
         logger.info("Using Docker container Chrome installation")
         
@@ -491,6 +468,74 @@ def force_garbage_collection():
         
     except Exception as e:
         logger.debug(f"Error during garbage collection: {e}")
+
+def kill_orphaned_chrome_processes():
+    """Kill any orphaned Chrome processes that may be consuming memory"""
+    try:
+        import psutil
+        import time
+        
+        killed_count = 0
+        current_time = time.time()
+        
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
+            try:
+                if proc.info['name'] and 'chrome' in proc.info['name'].lower():
+                    # Kill Chrome processes older than 10 minutes (600 seconds)
+                    process_age = current_time - proc.info['create_time']
+                    if process_age > 600:
+                        logger.info(f"Killing orphaned Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                        proc.terminate()
+                        killed_count += 1
+                        
+                        # Wait a bit then force kill if still running
+                        try:
+                            proc.wait(timeout=3)
+                        except psutil.TimeoutExpired:
+                            proc.kill()
+                            logger.info(f"Force killed stubborn Chrome process PID: {proc.info['pid']}")
+                            
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+        
+        if killed_count > 0:
+            logger.info(f"[PROCESS CLEANUP] Killed {killed_count} orphaned Chrome processes")
+            force_garbage_collection()  # Clean up after process cleanup
+        else:
+            logger.debug("No orphaned Chrome processes found")
+            
+    except Exception as e:
+        logger.debug(f"Process cleanup failed: {e}")
+
+def check_memory_before_scraping():
+    """Check memory usage and cleanup if necessary before starting scrape"""
+    memory_mb = get_memory_usage()
+    
+    if memory_mb > 350:  # High memory usage threshold
+        logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
+        
+        # Kill orphaned processes first
+        kill_orphaned_chrome_processes()
+        
+        # Force aggressive garbage collection
+        force_garbage_collection()
+        force_garbage_collection()  # Double cleanup
+        
+        # Wait for cleanup to take effect
+        time.sleep(3)
+        
+        # Check memory again after cleanup
+        memory_after_cleanup = get_memory_usage()
+        memory_freed = memory_mb - memory_after_cleanup
+        
+        logger.info(f"Memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
+        
+        # If still too high after cleanup, raise warning
+        if memory_after_cleanup > 400:
+            logger.error(f"Memory usage still critical ({memory_after_cleanup}MB) after cleanup - scraping may fail")
+            raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting scrape to prevent system failure")
+    
+    return memory_mb
 
 def get_memory_usage():
     """Get current memory usage in MB"""
@@ -778,6 +823,25 @@ def scrape_and_update_records():
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
     
+    # Check memory usage before starting and cleanup if necessary
+    try:
+        initial_memory = check_memory_before_scraping()
+        logger.info(f"Pre-scrape memory check passed: {initial_memory}MB")
+    except MemoryError as e:
+        logger.error(f"Scraping aborted due to memory constraints: {e}")
+        return {
+            'success': False,
+            'categories_scraped': 0,
+            'regions_scraped': 0,
+            'new_records': 0,
+            'duration_seconds': 0,
+            'errors_occurred': True,
+            'interrupted': False,
+            'category_failures': 0,
+            'failed_cleanups': 0,
+            'abort_reason': 'high_memory_usage'
+        }
+    
     # Log initial memory usage
     initial_memory = log_memory_usage("before scrape")
     
@@ -919,6 +983,9 @@ def scrape_and_update_records():
                         if chrome_bin:  # In Docker container
                             import gc
                             gc.collect(2)  # Force old generation cleanup
+                            
+                            # Kill any orphaned Chrome processes
+                            kill_orphaned_chrome_processes()
                             
                             # Clear Chrome's internal caches more frequently
                             try:
@@ -1069,6 +1136,9 @@ def scrape_and_update_records():
             failed_cleanups += 1
             logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
         driver = None
+        
+        # Kill any remaining orphaned Chrome processes
+        kill_orphaned_chrome_processes()
         
         # Clear large variables
         all_unique_fish = None
