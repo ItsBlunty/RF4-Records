@@ -28,24 +28,40 @@ class BulkRecordInserter:
             self.flush()
     
     def flush(self):
-        """Insert all pending records using bulk UPSERT"""
+        """Insert all pending records using optimized batch processing"""
         if not self.pending_records:
             return 0
         
         try:
-            # Use PostgreSQL UPSERT (ON CONFLICT DO NOTHING)
-            stmt = insert(Record).values(self.pending_records)
+            # Use batch duplicate checking with the composite index
+            new_records = []
             
-            # Define the conflict resolution - if duplicate exists, do nothing
-            conflict_columns = ['player', 'fish', 'weight', 'waterbody', 'bait1', 'bait2', 'date', 'region', 'category']
-            stmt = stmt.on_conflict_do_nothing(index_elements=conflict_columns)
+            for record_data in self.pending_records:
+                # Check if record exists using the composite index (very fast now)
+                exists = self.db.query(Record).filter(
+                    Record.player == record_data['player'],
+                    Record.fish == record_data['fish'],
+                    Record.weight == record_data['weight'],
+                    Record.waterbody == record_data['waterbody'],
+                    Record.bait1 == record_data['bait1'],
+                    Record.bait2 == record_data['bait2'],
+                    Record.date == record_data['date'],
+                    Record.region == record_data['region'],
+                    Record.category == record_data['category']
+                ).first()
+                
+                if not exists:
+                    new_records.append(record_data)
             
-            result = self.db.execute(stmt)
-            self.db.commit()
+            # Bulk insert only new records
+            if new_records:
+                self.db.bulk_insert_mappings(Record, new_records)
+                self.db.commit()
+                logger.debug(f"Bulk inserted {len(new_records)} new records out of {len(self.pending_records)} checked")
+            else:
+                logger.debug(f"No new records to insert out of {len(self.pending_records)} checked")
             
-            inserted_count = len(self.pending_records)  # PostgreSQL doesn't return affected rows for ON CONFLICT DO NOTHING
-            logger.debug(f"Bulk inserted {inserted_count} records")
-            
+            inserted_count = len(new_records)
             self.pending_records.clear()
             return inserted_count
             
