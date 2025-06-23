@@ -258,9 +258,9 @@ def get_driver():
         service = Service(executable_path=chromedriver_path)
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set reasonable timeouts for container environment  
-        driver.set_page_load_timeout(45)  # Same as local for database stability
-        driver.implicitly_wait(15)  # Same as local for database stability
+        # Set more aggressive timeouts to prevent renderer hangs in Docker
+        driver.set_page_load_timeout(30)  # Reduced from 45 to prevent long hangs
+        driver.implicitly_wait(10)  # Reduced from 15 to fail faster on timeouts
         
     else:
         # Local development
@@ -268,9 +268,9 @@ def get_driver():
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=chrome_options)
         
-        # Set timeouts - more generous for Docker container stability
-        driver.set_page_load_timeout(45)  # Increased from 30 to handle renderer delays
-        driver.implicitly_wait(15)  # Increased from 10 to handle slow responses
+        # Set balanced timeouts for local development
+        driver.set_page_load_timeout(30)  # Balanced timeout for local stability
+        driver.implicitly_wait(10)  # Standard implicit wait
     
     return driver
 
@@ -792,7 +792,15 @@ def scrape_and_update_records():
                             logger.warning("Driver cleanup failed - potential memory leak risk")
                         driver = get_driver()
                     
-                    driver.get(region['url'])
+                    # Load page with timeout protection
+                    try:
+                        driver.get(region['url'])
+                        # Wait a moment for page to stabilize
+                        time.sleep(1)
+                    except Exception as page_error:
+                        logger.warning(f"Page load failed for {region['name']}: {page_error}")
+                        # Try to continue anyway, sometimes partial loads work
+                    
                     records = parse_table_selenium(driver, region)
                     # Track unique fish names for this region
                     region_fish = set()
@@ -844,7 +852,7 @@ def scrape_and_update_records():
                     regions_scraped += 1
                     
                     # More aggressive Chrome session management for Docker container
-                    if regions_scraped % 10 == 0:  # Every 10 regions, restart Chrome completely
+                    if regions_scraped % 5 == 0:  # Every 5 regions, restart Chrome completely (reduced from 10)
                         logger.info(f"Restarting Chrome after {regions_scraped} regions for memory management")
                         try:
                             # Flush bulk inserter and commit database session before Chrome restart
@@ -865,13 +873,21 @@ def scrape_and_update_records():
                                 db.rollback()
                             except Exception:
                                 pass
-                    elif regions_scraped % 5 == 0:  # Every 5 regions, just garbage collect
+                    elif regions_scraped % 3 == 0:  # Every 3 regions, garbage collect (reduced from 5)
                         force_garbage_collection()
                         # Additional Docker-specific cleanup
                         chrome_bin = os.getenv('CHROME_BIN')
                         if chrome_bin:  # In Docker container
                             import gc
                             gc.collect(2)  # Force old generation cleanup
+                            
+                            # Clear Chrome's internal caches more frequently
+                            try:
+                                if driver and is_driver_alive(driver):
+                                    driver.execute_script("window.stop();")  # Stop any pending requests
+                                    driver.execute_script("if (window.gc) { window.gc(); }")  # Chrome garbage collection
+                            except Exception as gc_error:
+                                logger.debug(f"Chrome GC failed (non-critical): {gc_error}")
                     
                     time.sleep(2)
                 except Exception as e:
