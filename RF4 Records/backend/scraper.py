@@ -1098,10 +1098,45 @@ def scrape_and_update_records():
                         
                         # Force database session cleanup
                         db.expunge_all()  # Remove all objects from session
+                        db.close()  # Close and reopen session to force cleanup
+                        db = SessionLocal()  # Fresh session
                         
-                        # Quick garbage collection
+                        # Recreate bulk operations with fresh session
+                        bulk_inserter = BulkRecordInserter(db, batch_size=25)
+                        record_checker = OptimizedRecordChecker(db)
+                        
+                        # FORCE circular reference cleanup - this is what Python does during idle time
                         import gc
+                        import ctypes
+                        
+                        # Multiple aggressive garbage collection rounds with circular reference cleanup
+                        for _ in range(5):
+                            gc.collect(0)  # Young generation
+                            gc.collect(1)  # Middle generation  
+                            gc.collect(2)  # Old generation with circular references
+                        
+                        # Force Python to trim memory back to OS (like during idle time)
+                        try:
+                            # This forces Python to release memory back to the OS
+                            libc = ctypes.CDLL("libc.so.6")
+                            libc.malloc_trim(0)
+                        except:
+                            pass  # Not available on all systems
+                        
+                        # Additional aggressive cleanup
                         gc.collect()
+                        gc.collect()  # Second pass for any remaining circular refs
+                        
+                        # Clear any local variables that might be holding references
+                        if 'records' in locals():
+                            records = None
+                        if 'region_fish' in locals():
+                            region_fish.clear()
+                        
+                        # Check if our aggressive cleanup worked
+                        current_memory = get_memory_usage()
+                        if current_memory > 200:  # Still high after cleanup
+                            logger.warning(f"⚠️ Memory still high after region cleanup: {current_memory}MB - may need additional investigation")
                     
                     # Simple and reliable: Every 10 regions (1 complete category), kill ALL Chrome processes
                     if regions_scraped % 10 == 0:
