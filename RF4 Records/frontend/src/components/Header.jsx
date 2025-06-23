@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Calculator, Wine } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Calculator, Wine, Link } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
@@ -62,6 +62,18 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
           
           {/* Right Side - Navigation Buttons */}
           <div className="flex space-x-3 mt-4 lg:mt-0">
+            <button
+              onClick={() => onPageChange && onPageChange('links')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'links' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Link className="w-4 h-4 mr-2" />
+              Links
+            </button>
+            
             <button
               onClick={() => onPageChange && onPageChange('records')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${

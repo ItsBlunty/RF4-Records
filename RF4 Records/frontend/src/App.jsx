@@ -11,6 +11,7 @@ import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 import TrophyWeights from './components/TrophyWeights.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
+import Links from './components/Links.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
@@ -33,6 +34,7 @@ function AppContent() {
   
   // Get current page from URL
   const getCurrentPage = () => {
+    if (location.pathname === '/links') return 'links';
     if (location.pathname === '/trophyweights') return 'trophyweights';
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/wearcalc') return 'wearcalc';
@@ -108,6 +110,8 @@ function AppContent() {
   const handlePageChange = (page) => {
     if (page === 'records') {
       navigate('/');
+    } else if (page === 'links') {
+      navigate('/links');
     } else if (page === 'trophyweights') {
       navigate('/trophyweights');
     } else if (page === 'guides') {
@@ -430,6 +434,8 @@ function AppContent() {
             )}
           </div>
         </>
+      ) : getCurrentPage() === 'links' ? (
+        <Links />
       ) : getCurrentPage() === 'trophyweights' ? (
         <TrophyWeights />
       ) : getCurrentPage() === 'guides' ? (
@@ -453,6 +459,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<AppContent />} />
+        <Route path="/links" element={<AppContent />} />
         <Route path="/trophyweights" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
