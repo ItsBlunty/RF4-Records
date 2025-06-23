@@ -193,6 +193,12 @@ def get_driver():
     chrome_options.add_argument('--disable-background-networking')
     chrome_options.add_argument('--aggressive-cache-discard')
     
+    # CRITICAL: Prevent multiple processes to avoid orphaning
+    chrome_options.add_argument('--single-process')  # Force single process mode
+    chrome_options.add_argument('--disable-gpu-process')  # No separate GPU process
+    chrome_options.add_argument('--disable-utility-process')  # No utility processes
+    chrome_options.add_argument('--disable-zygote')  # No zygote process forking
+    
     # Speed optimization flags
     chrome_options.add_argument('--disable-extensions')
     chrome_options.add_argument('--disable-plugins')
@@ -292,12 +298,31 @@ def cleanup_driver(driver):
         try:
             if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
                 logger.info(f"Session {session_id}: Force terminating Chrome process")
+                main_pid = driver.service.process.pid
+                
+                # Kill main process
                 driver.service.process.terminate()
                 import time
                 time.sleep(0.5)
                 if driver.service.process.poll() is None:  # Still running
                     driver.service.process.kill()
                     time.sleep(0.2)
+                
+                # Kill any child processes that might have been spawned
+                try:
+                    import psutil
+                    parent = psutil.Process(main_pid)
+                    children = parent.children(recursive=True)
+                    for child in children:
+                        child.terminate()
+                    psutil.wait_procs(children, timeout=3)
+                    for child in children:
+                        if child.is_running():
+                            child.kill()
+                    logger.info(f"Session {session_id}: Killed {len(children)} child processes")
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+                
                 logger.info(f"Session {session_id}: Chrome process terminated successfully")
             else:
                 # Fallback: try driver.quit() with very short timeout
@@ -397,8 +422,32 @@ def cleanup_driver(driver):
     # Step 5: Final quit - but with process termination fallback for timeouts
     try:
         logger.debug(f"Session {session_id}: Calling driver.quit()...")
+        
+        # Get the main process PID before quitting
+        main_pid = None
+        if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
+            main_pid = driver.service.process.pid
+        
         driver.quit()
         logger.debug(f"Session {session_id}: driver.quit() completed successfully")
+        
+        # Kill any remaining child processes after quit
+        if main_pid:
+            try:
+                import psutil
+                parent = psutil.Process(main_pid)
+                children = parent.children(recursive=True)
+                for child in children:
+                    if child.is_running():
+                        child.terminate()
+                psutil.wait_procs(children, timeout=2)
+                for child in children:
+                    if child.is_running():
+                        child.kill()
+                if children:
+                    logger.debug(f"Session {session_id}: Cleaned up {len(children)} remaining child processes")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
         
         # Give system time to clean up processes
         import time
@@ -984,8 +1033,9 @@ def scrape_and_update_records():
                             import gc
                             gc.collect(2)  # Force old generation cleanup
                             
-                            # Kill any orphaned Chrome processes
-                            kill_orphaned_chrome_processes()
+                            # Kill any orphaned Chrome processes (reduced frequency since we prevent them now)
+                            if regions_scraped % 21 == 0:  # Every 21 regions instead of every 7
+                                kill_orphaned_chrome_processes()
                             
                             # Clear Chrome's internal caches more frequently
                             try:
