@@ -1085,9 +1085,12 @@ def scrape_and_update_records():
                     if regions_scraped % 3 == 0:
                         current_memory = get_memory_usage()
                         if current_memory > 300:  # Early warning threshold
-                            logger.debug(f"Memory check at region {regions_scraped}: {current_memory}MB")
+                            logger.info(f"💾 Memory check at region {regions_scraped}: {current_memory}MB")
+                            # Show detailed breakdown to identify if Chrome or Python is the issue
+                            log_detailed_memory_usage(f"at region {regions_scraped}")
+                            
                             if current_memory > 350:  # Proactive cleanup threshold
-                                logger.info(f"Proactive memory cleanup at region {regions_scraped}: {current_memory}MB")
+                                logger.info(f"🧹 Proactive memory cleanup at region {regions_scraped}: {current_memory}MB")
                                 force_garbage_collection()
                                 
                                 # Clear browser caches if driver is available
@@ -1097,6 +1100,10 @@ def scrape_and_update_records():
                                         driver.execute_script("if (window.performance && window.performance.clearResourceTimings) { window.performance.clearResourceTimings(); }")
                                 except Exception:
                                     pass  # Non-critical
+                                
+                                # Log memory after cleanup to see the effect
+                                cleanup_memory = get_memory_usage()
+                                logger.info(f"✅ Memory after proactive cleanup: {cleanup_memory}MB (freed {current_memory - cleanup_memory:.1f}MB)")
                     
                     # More aggressive Chrome session management for Docker container
                     if regions_scraped % 15 == 0:  # Every 15 regions, restart Chrome completely (reduced cleanup frequency to minimize timeout risk)
@@ -1144,8 +1151,14 @@ def scrape_and_update_records():
                             # Additional memory check - if memory is very high, be more aggressive
                             current_mem = get_memory_usage()
                             if current_mem > 350:  # Higher threshold to avoid disrupting active scraping
-                                logger.warning(f"High memory ({current_mem}MB) during scraping - forcing aggressive cleanup")
+                                logger.warning(f"🚨 High memory ({current_mem}MB) during scraping - forcing aggressive cleanup")
+                                # Show breakdown to see if Chrome processes are the culprit
+                                log_detailed_memory_usage(f"before aggressive cleanup at region {regions_scraped}")
                                 kill_orphaned_chrome_processes(max_age_seconds=120, aggressive=False)  # Kill processes older than 2 minutes (less aggressive)
+                                
+                                # Check memory after aggressive cleanup
+                                after_mem = get_memory_usage()
+                                logger.info(f"✅ Memory after aggressive cleanup: {after_mem}MB (freed {current_mem - after_mem:.1f}MB)")
                     
                     time.sleep(2)
                 except Exception as e:
@@ -1527,49 +1540,113 @@ def scrape_limited_regions():
     print(f"Multi-category scraping complete. Added {total_new_records} new records from {regions_scraped} regions across multiple categories.")
 
 def get_detailed_memory_usage():
-    """Get detailed memory usage breakdown"""
+    """Get detailed memory usage breakdown including Chrome processes"""
     try:
         import psutil
         import os
         import gc
+        import time
         
+        # Main Python process memory
         process = psutil.Process(os.getpid())
         memory_info = process.memory_info()
+        
+        # Find all Chrome processes and their memory usage
+        chrome_memory_total = 0
+        chrome_process_count = 0
+        chrome_processes = []
+        
+        for proc in psutil.process_iter(['pid', 'name', 'memory_info', 'create_time']):
+            try:
+                if proc.info['name'] and 'chrome' in proc.info['name'].lower():
+                    chrome_process_count += 1
+                    chrome_mem_mb = proc.info['memory_info'].rss / 1024 / 1024
+                    chrome_memory_total += chrome_mem_mb
+                    
+                    # Track individual Chrome processes for debugging
+                    chrome_processes.append({
+                        'pid': proc.info['pid'],
+                        'memory_mb': round(chrome_mem_mb, 1),
+                        'age_seconds': round(time.time() - proc.info['create_time'], 1)
+                    })
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                continue
+        
+        # Sort Chrome processes by memory usage (largest first)
+        chrome_processes.sort(key=lambda x: x['memory_mb'], reverse=True)
         
         # Get garbage collection stats
         gc_stats = gc.get_stats()
         gc_counts = gc.get_count()
         
-        # Get object counts by type
+        # Get Python object counts by type
         object_counts = {}
         try:
-            import sys
             for obj in gc.get_objects():
                 obj_type = type(obj).__name__
                 object_counts[obj_type] = object_counts.get(obj_type, 0) + 1
         except Exception:
             object_counts = {"error": "Could not get object counts"}
         
+        # System memory info
+        system_memory = psutil.virtual_memory()
+        
         return {
-            "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
-            "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
-            "percent": round(process.memory_percent(), 2),
-            "gc_counts": gc_counts,
-            "gc_stats": gc_stats,
-            "top_objects": dict(sorted(object_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+            "python_process": {
+                "rss_mb": round(memory_info.rss / 1024 / 1024, 2),
+                "vms_mb": round(memory_info.vms / 1024 / 1024, 2),
+                "percent": round(process.memory_percent(), 2)
+            },
+            "chrome_processes": {
+                "total_memory_mb": round(chrome_memory_total, 1),
+                "process_count": chrome_process_count,
+                "largest_processes": chrome_processes[:5]  # Show top 5 Chrome processes by memory
+            },
+            "system": {
+                "total_mb": round(system_memory.total / 1024 / 1024, 1),
+                "available_mb": round(system_memory.available / 1024 / 1024, 1),
+                "used_percent": system_memory.percent
+            },
+            "python_objects": {
+                "gc_counts": gc_counts,
+                "gc_stats": gc_stats,
+                "top_objects": dict(sorted(object_counts.items(), key=lambda x: x[1], reverse=True)[:10])
+            }
         }
     except Exception as e:
         return {"error": str(e)}
 
 def log_detailed_memory_usage(context=""):
-    """Log detailed memory usage information"""
+    """Log detailed memory usage information with Chrome process breakdown"""
     memory_info = get_detailed_memory_usage()
     
     if "error" not in memory_info:
-        logger.info(f"🔍 Detailed memory {context}:")
-        logger.info(f"  RSS: {memory_info['rss_mb']} MB, VMS: {memory_info['vms_mb']} MB ({memory_info['percent']}%)")
-        logger.info(f"  GC counts: {memory_info['gc_counts']}")
-        logger.info(f"  Top objects: {memory_info['top_objects']}")
+        python_mem = memory_info['python_process']['rss_mb']
+        chrome_mem = memory_info['chrome_processes']['total_memory_mb']
+        chrome_count = memory_info['chrome_processes']['process_count']
+        total_memory = python_mem + chrome_mem
+        
+        logger.info(f"🔍 Detailed memory breakdown {context}:")
+        logger.info(f"  📊 TOTAL: {total_memory:.1f} MB (Python: {python_mem} MB + Chrome: {chrome_mem} MB)")
+        logger.info(f"  🐍 Python Process: RSS: {python_mem} MB, VMS: {memory_info['python_process']['vms_mb']} MB ({memory_info['python_process']['percent']}%)")
+        logger.info(f"  🌐 Chrome Processes: {chrome_count} processes using {chrome_mem} MB total")
+        
+        # Show largest Chrome processes if any exist
+        if chrome_count > 0:
+            largest_chrome = memory_info['chrome_processes']['largest_processes'][:3]  # Top 3
+            chrome_details = []
+            for proc in largest_chrome:
+                chrome_details.append(f"PID {proc['pid']}: {proc['memory_mb']}MB (age: {proc['age_seconds']}s)")
+            logger.info(f"  🔍 Largest Chrome processes: {' | '.join(chrome_details)}")
+        
+        logger.info(f"  🗑️ Python GC: {memory_info['python_objects']['gc_counts']}")
+        logger.info(f"  📦 Top objects: {memory_info['python_objects']['top_objects']}")
+        
+        # Memory distribution analysis
+        if total_memory > 0:
+            python_percent = (python_mem / total_memory) * 100
+            chrome_percent = (chrome_mem / total_memory) * 100
+            logger.info(f"  📈 Memory distribution: Python {python_percent:.1f}% | Chrome {chrome_percent:.1f}%")
     else:
         logger.warning(f"Could not get detailed memory info: {memory_info['error']}")
 
