@@ -249,33 +249,6 @@ def startup_event():
     
     # Run performance optimizations in background to avoid blocking startup
     # This prevents hanging during zero-downtime deployments
-    def run_background_optimizations():
-        """Run database optimizations in background thread"""
-        import time
-        import threading
-        
-        # Wait a bit for server to fully start
-        time.sleep(5)
-        
-        logger.info("Starting background database optimizations...")
-        
-        # Skip migration - already applied in production
-        logger.info("Database migration skipped - already applied in production")
-        
-        # Skip index creation - already created in production
-        logger.info("Database indexes skipped - already created in production")
-        
-        # Skip potentially blocking operations during deployment
-        logger.info("All database optimizations already applied in production")
-        logger.info("Additional maintenance can be run manually via /optimize endpoint if needed")
-        
-        logger.info("Background database optimizations completed")
-    
-    # Start optimizations in background thread
-    optimization_thread = threading.Thread(target=run_background_optimizations, daemon=True)
-    optimization_thread.start()
-    logger.info("Database optimizations started in background thread")
-    
     # Create/verify database tables
     try:
         create_tables()
@@ -438,25 +411,17 @@ def refresh():
 def run_database_optimizations():
     """Manually run database performance optimizations"""
     try:
-        results = {}
-        
-        # Skip performance fix - already applied in production
-        results['performance_fix'] = "Skipped - already applied in production"
-        
         # Run database maintenance
-        try:
-            from db_maintenance import run_database_maintenance
-            results['maintenance'] = run_database_maintenance()
-        except Exception as e:
-            results['maintenance'] = f"Failed: {e}"
+        from db_maintenance import run_database_maintenance
+        maintenance_result = run_database_maintenance()
         
         return {
-            "message": "Database optimizations completed",
-            "results": results
+            "message": "Database maintenance completed",
+            "result": maintenance_result
         }
         
     except Exception as e:
-        return {"error": "Database optimizations failed", "details": str(e)}
+        return {"error": "Database maintenance failed", "details": str(e)}
 
 @app.post("/cleanup")
 def force_cleanup():
