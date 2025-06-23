@@ -54,7 +54,13 @@ function AppContent() {
     fish: '',
     waterbody: '',
     bait: '',
-    dataAge: ''
+    dataAge: '',
+    // Advanced filters - default to true (include all)
+    includeSandwichBait: true,
+    includeUltralight: true,
+    includeLight: true,
+    includeBottomLight: true,
+    includeTelescopic: true
   });
   
   // Unique values for dropdowns
@@ -193,6 +199,34 @@ function AppContent() {
       );
     }
 
+    // Apply advanced filters
+    // Sandwich bait filter
+    if (filters.includeSandwichBait === false) {
+      filtered = filtered.filter(r => !r.bait2 || !r.bait1); // Exclude records with both bait1 and bait2
+    }
+
+    // Category filters
+    if (filters.includeUltralight === false) {
+      filtered = filtered.filter(r => 
+        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'ultralight')
+      );
+    }
+    if (filters.includeLight === false) {
+      filtered = filtered.filter(r => 
+        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'light')
+      );
+    }
+    if (filters.includeBottomLight === false) {
+      filtered = filtered.filter(r => 
+        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'bottomlight')
+      );
+    }
+    if (filters.includeTelescopic === false) {
+      filtered = filtered.filter(r => 
+        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'telescopic')
+      );
+    }
+
     // Apply sorting
     if (sortConfig.key && sortConfig.direction) {
       const sorted = [...filtered].sort((a, b) => {
@@ -238,7 +272,13 @@ function AppContent() {
       fish: '',
       waterbody: '',
       bait: '',
-      dataAge: ''
+      dataAge: '',
+      // Reset advanced filters to default (all true)
+      includeSandwichBait: true,
+      includeUltralight: true,
+      includeLight: true,
+      includeBottomLight: true,
+      includeTelescopic: true
     });
   };
 

@@ -351,7 +351,10 @@ def get_records():
                 "bait_display": bait_display,
                 "date": representative.date,  # Fishing date from leaderboard
                 "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,  # When we scraped this
-                "region": representative.region
+                "region": representative.region,
+                "categories": categories,  # Include all categories for filtering
+                "bait1": representative.bait1,  # Include for sandwich bait filtering
+                "bait2": representative.bait2   # Include for sandwich bait filtering
             })
         
         db.close()
