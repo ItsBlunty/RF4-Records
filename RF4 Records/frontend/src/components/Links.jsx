@@ -7,6 +7,7 @@ const Links = () => {
       title: "Top Links",
       icon: <Globe className="w-5 h-5" />,
       links: [
+        { name: "KiltedJock's MegaSheet - Comprehensive RF4 Data", url: "https://docs.google.com/spreadsheets/d/1zP41qcHAHKnqYV4r6JuJ5vrqMeux2FLN9pLY3C54_Uc/edit#gid=1797575251" },
         { name: "RF4 Records Stats Website - Find Baits Here", url: "https://rf4records.com/" },
         { name: "Russian RF4 Records Stats Website", url: "https://en.rf4-stat.ru" },
         { name: "RF4 Chinese Heat Map", url: "https://rf4db.com/en" },
