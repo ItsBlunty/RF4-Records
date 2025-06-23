@@ -200,31 +200,37 @@ function AppContent() {
     }
 
     // Apply advanced filters
-    // Sandwich bait filter
+    // Sandwich bait filter - look for "+" in bait_display (format: "Bait1 + Bait2")
     if (filters.includeSandwichBait === false) {
-      filtered = filtered.filter(r => !r.bait2 || !r.bait1); // Exclude records with both bait1 and bait2
+      filtered = filtered.filter(r => 
+        !r.bait_display || !r.bait_display.includes(' + ')
+      );
     }
 
-    // Category filters
-    if (filters.includeUltralight === false) {
-      filtered = filtered.filter(r => 
-        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'ultralight')
-      );
-    }
-    if (filters.includeLight === false) {
-      filtered = filtered.filter(r => 
-        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'light')
-      );
-    }
-    if (filters.includeBottomLight === false) {
-      filtered = filtered.filter(r => 
-        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'bottomlight')
-      );
-    }
-    if (filters.includeTelescopic === false) {
-      filtered = filtered.filter(r => 
-        !r.categories || !r.categories.some(cat => cat && cat.toLowerCase() === 'telescopic')
-      );
+    // Category filters - only exclude records that ONLY exist in the disabled categories
+    // Get list of disabled categories
+    const disabledCategories = [];
+    if (filters.includeUltralight === false) disabledCategories.push('ultralight');
+    if (filters.includeLight === false) disabledCategories.push('light');
+    if (filters.includeBottomLight === false) disabledCategories.push('bottomlight');
+    if (filters.includeTelescopic === false) disabledCategories.push('telescopic');
+
+    if (disabledCategories.length > 0) {
+      filtered = filtered.filter(r => {
+        if (!r.categories || r.categories.length === 0) {
+          // If record has no categories, it's probably from "normal" fishing, so keep it
+          return true;
+        }
+        
+        // Get the record's categories in lowercase
+        const recordCategories = r.categories.map(cat => cat ? cat.toLowerCase() : '').filter(Boolean);
+        
+        // Check if ALL of the record's categories are in the disabled list
+        const allCategoriesDisabled = recordCategories.every(cat => disabledCategories.includes(cat));
+        
+        // Keep the record if NOT all its categories are disabled (meaning it exists in at least one enabled category)
+        return !allCategoriesDisabled;
+      });
     }
 
     // Apply sorting
