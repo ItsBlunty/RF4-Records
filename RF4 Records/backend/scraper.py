@@ -178,6 +178,20 @@ def get_driver():
         logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
         raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
     
+    # Check memory before creating new driver
+    current_memory = get_memory_usage()
+    if current_memory > 300:  # High memory threshold
+        logger.warning(f"🚨 High memory usage ({current_memory}MB) detected before Chrome creation - performing cleanup")
+        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+        force_garbage_collection()
+        time.sleep(2)
+        
+        # Check again after cleanup
+        memory_after = get_memory_usage()
+        if memory_after > 350:  # Still too high
+            logger.error(f"🚨 Memory still critical ({memory_after}MB) after cleanup - blocking Chrome creation")
+            raise MemoryError(f"Cannot create Chrome driver - memory usage too high ({memory_after}MB)")
+    
     chrome_options = Options()
     
     # Core performance and memory optimization flags
@@ -570,8 +584,8 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
                     total_chrome_processes += 1
                     process_age = current_time - proc.info['create_time']
                     
-                    # Kill if aggressive mode OR if process is older than threshold
-                    should_kill = aggressive or process_age > max_age_seconds
+                    # Kill if aggressive mode, scraping finished, OR if process is older than threshold
+                    should_kill = aggressive or _scraping_finished or process_age > max_age_seconds
                     
                     if should_kill:
                         if aggressive:
@@ -1091,9 +1105,15 @@ def scrape_and_update_records():
                                 logger.debug(f"Chrome GC failed (non-critical): {gc_error}")
                         
                         # Kill any orphaned Chrome processes (more frequent cleanup) - works in all environments
-                        if regions_scraped % 10 == 0:  # Every 10 regions - more frequent
+                        if regions_scraped % 7 == 0:  # Every 7 regions - even more frequent
                             logger.info(f"Running orphaned process cleanup at region {regions_scraped}")
-                            kill_orphaned_chrome_processes(max_age_seconds=300)  # 5 minutes instead of 10
+                            kill_orphaned_chrome_processes(max_age_seconds=180)  # 3 minutes instead of 5
+                            
+                            # Additional memory check - if memory is high, be more aggressive
+                            current_mem = get_memory_usage()
+                            if current_mem > 250:
+                                logger.warning(f"High memory ({current_mem}MB) during scraping - forcing aggressive cleanup")
+                                kill_orphaned_chrome_processes(max_age_seconds=60, aggressive=False)  # Kill processes older than 1 minute
                     
                     time.sleep(2)
                 except Exception as e:
@@ -1242,6 +1262,10 @@ def scrape_and_update_records():
             finally:
                 driver = None
         
+        # CRITICAL: Mark scraping as finished IMMEDIATELY to prevent new Chrome processes
+        _scraping_finished = True  # This MUST be set before any cleanup to prevent race conditions
+        logger.info("🔒 Scraping session marked as finished - blocking new Chrome processes")
+        
         # Wait for any lingering operations to complete
         logger.info("Waiting for Chrome processes to fully terminate...")
         time.sleep(5)  # Give Chrome processes time to properly exit
@@ -1277,9 +1301,9 @@ def scrape_and_update_records():
         except Exception:
             pass
         
-        # Reset global variables and mark scraping as finished
+        # Reset global variables (scraping already marked as finished above)
         should_stop_scraping = False
-        _scraping_finished = True  # Prevent any new Chrome processes from being created
+        # _scraping_finished already set above to prevent race conditions
         
         # Final memory report with detailed breakdown
         final_memory_after_cleanup = get_memory_usage()
@@ -1290,15 +1314,30 @@ def scrape_and_update_records():
         if final_memory_after_cleanup > 200:
             logger.warning(f"⚠️ Memory usage still high after cleanup: {final_memory_after_cleanup} MB")
             
-            # Try one more aggressive cleanup round
+            # Try multiple aggressive cleanup rounds
             logger.info("Attempting additional memory cleanup...")
-            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-            time.sleep(2)
-            gc.collect()
-            gc.collect(2)
+            for cleanup_round in range(3):  # Up to 3 cleanup rounds
+                logger.info(f"Cleanup round {cleanup_round + 1}/3")
+                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                time.sleep(2)
+                gc.collect()
+                gc.collect(2)
+                
+                # Check if memory improved
+                round_memory = get_memory_usage()
+                logger.info(f"Memory after round {cleanup_round + 1}: {round_memory} MB")
+                
+                if round_memory < 200:  # Good enough
+                    break
+            
             final_final_memory = get_memory_usage()
             logger.info(f"🧹 Final memory after additional cleanup: {final_final_memory} MB")
             log_detailed_memory_usage("after additional cleanup")
+            
+            # If still high after all cleanup attempts, log critical warning
+            if final_final_memory > 250:
+                logger.critical(f"🚨 CRITICAL: Memory usage remains very high ({final_final_memory} MB) after all cleanup attempts!")
+                logger.critical("🚨 This indicates a serious memory leak that may cause system instability!")
     return {
         'success': not errors_occurred and not should_stop_scraping,
         'categories_scraped': len(CATEGORIES),
