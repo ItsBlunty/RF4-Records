@@ -257,29 +257,17 @@ def startup_event():
         # Wait a bit for server to fully start
         time.sleep(5)
         
-        logger.info("Starting background database migration and optimizations...")
+        logger.info("Starting background database optimizations...")
         
         # Skip migration - already applied in production
         logger.info("Database migration skipped - already applied in production")
         
-        # Only run non-blocking optimizations during deployment
-        # This prevents hanging during zero-downtime deployments
-        
-        # Add critical database indexes for performance (uses CONCURRENTLY - non-blocking)
-        try:
-            logger.info("Adding critical database indexes (non-blocking)...")
-            from add_indexes import add_critical_indexes
-            index_success = add_critical_indexes()
-            if index_success:
-                logger.info("Database indexes optimization completed successfully")
-            else:
-                logger.warning("Database indexes optimization failed - continuing anyway")
-        except Exception as e:
-            logger.warning(f"Error running database indexes optimization: {e}")
+        # Skip index creation - already created in production
+        logger.info("Database indexes skipped - already created in production")
         
         # Skip potentially blocking operations during deployment
-        logger.info("Skipping blocking database operations during deployment")
-        logger.info("Performance fix and maintenance can be run manually if needed")
+        logger.info("All database optimizations already applied in production")
+        logger.info("Additional maintenance can be run manually via /optimize endpoint if needed")
         
         logger.info("Background database optimizations completed")
     
