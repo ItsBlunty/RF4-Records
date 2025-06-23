@@ -523,11 +523,13 @@ def kill_orphaned_chrome_processes():
         import time
         
         killed_count = 0
+        total_chrome_processes = 0
         current_time = time.time()
         
         for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
+                    total_chrome_processes += 1
                     # Kill Chrome processes older than 10 minutes (600 seconds)
                     process_age = current_time - proc.info['create_time']
                     if process_age > 600:
@@ -546,13 +548,13 @@ def kill_orphaned_chrome_processes():
                 continue
         
         if killed_count > 0:
-            logger.info(f"[PROCESS CLEANUP] Killed {killed_count} orphaned Chrome processes")
+            logger.info(f"[PROCESS CLEANUP] Killed {killed_count} orphaned Chrome processes (found {total_chrome_processes} total)")
             force_garbage_collection()  # Clean up after process cleanup
         else:
-            logger.debug("No orphaned Chrome processes found")
+            logger.info(f"[PROCESS CLEANUP] No orphaned Chrome processes found (checked {total_chrome_processes} Chrome processes)")
             
     except Exception as e:
-        logger.debug(f"Process cleanup failed: {e}")
+        logger.warning(f"Process cleanup failed: {e}")
 
 def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
@@ -1031,10 +1033,6 @@ def scrape_and_update_records():
                             import gc
                             gc.collect(2)  # Force old generation cleanup
                             
-                            # Kill any orphaned Chrome processes (balanced frequency)
-                            if regions_scraped % 14 == 0:  # Every 14 regions - balanced approach
-                                kill_orphaned_chrome_processes()
-                            
                             # Clear Chrome's internal caches more frequently
                             try:
                                 if driver and is_driver_alive(driver):
@@ -1042,6 +1040,11 @@ def scrape_and_update_records():
                                     driver.execute_script("if (window.gc) { window.gc(); }")  # Chrome garbage collection
                             except Exception as gc_error:
                                 logger.debug(f"Chrome GC failed (non-critical): {gc_error}")
+                        
+                        # Kill any orphaned Chrome processes (balanced frequency) - works in all environments
+                        if regions_scraped % 14 == 0:  # Every 14 regions - balanced approach
+                            logger.info(f"Running orphaned process cleanup at region {regions_scraped}")
+                            kill_orphaned_chrome_processes()
                     
                     time.sleep(2)
                 except Exception as e:
