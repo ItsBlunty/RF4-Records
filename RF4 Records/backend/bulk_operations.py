@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 class BulkRecordInserter:
     """Efficient bulk record insertion with PostgreSQL UPSERT"""
     
-    def __init__(self, batch_size=100):
+    def __init__(self, db_session, batch_size=100):
         self.batch_size = batch_size
         self.pending_records = []
-        self.db = SessionLocal()
+        self.db = db_session  # Use provided session instead of creating new one
         
     def add_record(self, record_data):
         """Add a record to the pending batch"""
@@ -117,9 +117,9 @@ class BulkRecordInserter:
         return inserted_count
     
     def close(self):
-        """Flush remaining records and close the session"""
+        """Flush remaining records (session is managed externally)"""
         inserted = self.flush()
-        self.db.close()
+        # Don't close the session - it's managed by the caller
         return inserted
 
 class OptimizedRecordChecker:
@@ -191,7 +191,7 @@ def bulk_upsert_records(records_data, batch_size=100):
     if not records_data:
         return 0
     
-    inserter = BulkRecordInserter(batch_size)
+    inserter = BulkRecordInserter(SessionLocal(), batch_size)
     
     try:
         for record_data in records_data:

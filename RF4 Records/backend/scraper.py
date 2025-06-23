@@ -748,7 +748,7 @@ def scrape_and_update_records():
     failed_cleanups = 0  # Track failed driver cleanup attempts
     
     # Initialize bulk operations for performance
-    bulk_inserter = BulkRecordInserter(batch_size=50)  # Smaller batches for frequent commits
+    bulk_inserter = BulkRecordInserter(db, batch_size=50)  # Use shared database session
     record_checker = OptimizedRecordChecker(db)
     
     try:
@@ -919,14 +919,19 @@ def scrape_and_update_records():
             try:
                 bulk_inserter.flush()  # Flush any pending records
                 db.commit()
-                db.close()
+                db.close()  # Close the current session
                 db = SessionLocal()  # Fresh database session
+                bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
                 record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
             except Exception as db_error:
                 logger.error(f"Database session refresh error: {db_error}")
                 # Ensure we have a valid database session
                 try:
+                    if db:
+                        db.close()  # Close the problematic session
                     db = SessionLocal()
+                    bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
+                    record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
                 except Exception as fallback_error:
                     logger.error(f"Failed to create fallback database session: {fallback_error}")
             

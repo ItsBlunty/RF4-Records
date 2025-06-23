@@ -19526,3 +19526,10 @@ Stacktrace:
 2025-06-22 17:36:24,401 - INFO - === SERVER STARTUP ===
 2025-06-22 17:36:24,406 - INFO - Database tables created/verified successfully
 2025-06-22 17:36:24,407 - INFO - Server started successfully - dynamic scheduled scraping active
+2025-06-23 03:46:53,763 - INFO - === STARTING SCHEDULED SCRAPE at 2025-06-23 03:46:53.763804 ===
+2025-06-23 03:46:53,795 - INFO - Memory usage before scrape: 61.7 MB
+2025-06-23 03:46:53,801 - ERROR - Critical error during scraping: (sqlite3.OperationalError) no such table: records
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT records.id AS records_id, records.player AS records_player, records.fish AS records_fish, records.weight AS records_weight, records.waterbody AS records_waterbody, records.bait AS records_bait, records.bait1 AS records_bait1, records.bait2 AS records_bait2, records.date AS records_date, records.created_at AS records_created_at, records.region AS records_region, records.category AS records_category 
+FROM records) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
