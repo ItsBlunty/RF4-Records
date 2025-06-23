@@ -193,11 +193,9 @@ def get_driver():
     chrome_options.add_argument('--disable-background-networking')
     chrome_options.add_argument('--aggressive-cache-discard')
     
-    # CRITICAL: Prevent multiple processes to avoid orphaning
-    chrome_options.add_argument('--single-process')  # Force single process mode
+    # Process management - Less aggressive approach
     chrome_options.add_argument('--disable-gpu-process')  # No separate GPU process
     chrome_options.add_argument('--disable-utility-process')  # No utility processes
-    chrome_options.add_argument('--disable-zygote')  # No zygote process forking
     
     # Speed optimization flags
     chrome_options.add_argument('--disable-extensions')
@@ -1033,8 +1031,8 @@ def scrape_and_update_records():
                             import gc
                             gc.collect(2)  # Force old generation cleanup
                             
-                            # Kill any orphaned Chrome processes (reduced frequency since we prevent them now)
-                            if regions_scraped % 21 == 0:  # Every 21 regions instead of every 7
+                            # Kill any orphaned Chrome processes (balanced frequency)
+                            if regions_scraped % 14 == 0:  # Every 14 regions - balanced approach
                                 kill_orphaned_chrome_processes()
                             
                             # Clear Chrome's internal caches more frequently
