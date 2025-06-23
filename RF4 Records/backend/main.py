@@ -259,17 +259,8 @@ def startup_event():
         
         logger.info("Starting background database migration and optimizations...")
         
-        # Run database migration first
-        try:
-            logger.info("Running database migration...")
-            from migrate_production import migrate_production
-            migration_success = migrate_production()
-            if migration_success:
-                logger.info("Database migration completed successfully")
-            else:
-                logger.warning("Database migration failed - continuing with optimizations anyway")
-        except Exception as e:
-            logger.warning(f"Error running database migration: {e}")
+        # Skip migration - already applied in production
+        logger.info("Database migration skipped - already applied in production")
         
         # Only run non-blocking optimizations during deployment
         # This prevents hanging during zero-downtime deployments
@@ -461,12 +452,8 @@ def run_database_optimizations():
     try:
         results = {}
         
-        # Run created_at performance fix
-        try:
-            from fix_created_at_default import fix_created_at_default
-            results['performance_fix'] = fix_created_at_default()
-        except Exception as e:
-            results['performance_fix'] = f"Failed: {e}"
+        # Skip performance fix - already applied in production
+        results['performance_fix'] = "Skipped - already applied in production"
         
         # Run database maintenance
         try:
