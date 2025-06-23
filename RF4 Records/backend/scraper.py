@@ -594,8 +594,9 @@ def check_memory_before_scraping():
     if memory_mb > 350:  # High memory usage threshold
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
         
-        # Kill orphaned processes first
-        kill_orphaned_chrome_processes()
+        # Kill ALL Chrome processes before starting new scrape
+        logger.info("Pre-scrape cleanup - killing ALL Chrome processes...")
+        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         
         # Force aggressive garbage collection
         force_garbage_collection()
@@ -1219,9 +1220,9 @@ def scrape_and_update_records():
             logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
         driver = None
         
-        # Kill any remaining orphaned Chrome processes - be aggressive at end of scraping
-        logger.info("Final aggressive Chrome process cleanup...")
-        kill_orphaned_chrome_processes(max_age_seconds=60, aggressive=False)  # Kill processes older than 1 minute
+        # Kill ALL remaining Chrome processes - scrape is completely finished
+        logger.info("Final aggressive Chrome process cleanup - killing ALL Chrome processes...")
+        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)  # Kill ALL Chrome processes
         
         # Clear large variables
         all_unique_fish = None
