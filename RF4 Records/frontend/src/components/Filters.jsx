@@ -223,7 +223,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                   onChange={(value) => handleAdvancedToggle('includeSandwichBait', value)}
                 />
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records with sandwich baits (Bait1 + Bait2)
+                  Show records with sandwich baits (Bait1; Bait2)
                 </p>
               </div>
 

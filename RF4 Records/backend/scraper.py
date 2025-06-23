@@ -151,8 +151,13 @@ def split_bait_string(bait_string):
     if not bait_string:
         return None, None
     
-    # Check if it's a sandwich bait (contains plus sign)
-    if '+' in bait_string:
+    # Check if it's a sandwich bait (contains semicolon or plus sign)
+    if ';' in bait_string:
+        parts = bait_string.split(';', 1)  # Split on first semicolon
+        bait1 = parts[0].strip()
+        bait2 = parts[1].strip() if len(parts) > 1 else None
+        return bait1, bait2
+    elif '+' in bait_string:
         parts = bait_string.split('+', 1)  # Split on first plus sign only
         bait1 = parts[0].strip()
         bait2 = parts[1].strip() if len(parts) > 1 else None

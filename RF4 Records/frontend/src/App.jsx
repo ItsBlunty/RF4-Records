@@ -200,10 +200,10 @@ function AppContent() {
     }
 
     // Apply advanced filters
-    // Sandwich bait filter - look for "+" in bait_display (format: "Bait1 + Bait2")
+    // Sandwich bait filter - look for ";" in bait_display (format: "Bait1; Bait2")
     if (filters.includeSandwichBait === false) {
       filtered = filtered.filter(r => 
-        !r.bait_display || !r.bait_display.includes(' + ')
+        !r.bait_display || !r.bait_display.includes(';')
       );
     }
 

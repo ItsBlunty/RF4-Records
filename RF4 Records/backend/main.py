@@ -336,8 +336,8 @@ def get_records():
             
             # Format bait display
             if representative.bait2:
-                # Sandwich bait
-                bait_display = f"{representative.bait1} + {representative.bait2}"
+                # Sandwich bait - use semicolon format to match frontend expectation
+                bait_display = f"{representative.bait1}; {representative.bait2}"
             else:
                 # Single bait
                 bait_display = representative.bait1 or representative.bait or ""
