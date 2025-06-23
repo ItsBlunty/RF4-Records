@@ -580,20 +580,38 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
         total_chrome_processes = 0
         current_time = time.time()
         
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
+        # Memory thresholds for killing processes during scraping
+        # During scraping: kill processes using >300MB
+        # Outside scraping: kill processes using >400MB
+        memory_threshold_mb = 300 if scraping_in_progress else 400
+        
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time', 'memory_info']):
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
                     total_chrome_processes += 1
                     process_age = current_time - proc.info['create_time']
                     
-                    # Kill if aggressive mode, scraping finished, OR if process is older than threshold
-                    should_kill = aggressive or _scraping_finished or process_age > max_age_seconds
+                    # Get memory usage
+                    memory_mb = proc.info['memory_info'].rss / 1024 / 1024
+                    
+                    # Kill if aggressive mode, scraping finished, process is older than threshold, OR using too much memory
+                    should_kill = (aggressive or 
+                                 _scraping_finished or 
+                                 process_age > max_age_seconds or
+                                 memory_mb > memory_threshold_mb)
                     
                     if should_kill:
+                        # Determine reason for killing
                         if aggressive:
-                            logger.info(f"[AGGRESSIVE] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                            reason = f"aggressive mode (age: {process_age:.1f}s, memory: {memory_mb:.1f}MB)"
+                        elif _scraping_finished:
+                            reason = f"scraping finished (age: {process_age:.1f}s, memory: {memory_mb:.1f}MB)"
+                        elif process_age > max_age_seconds:
+                            reason = f"age: {process_age:.1f}s (memory: {memory_mb:.1f}MB)"
                         else:
-                            logger.info(f"Killing orphaned Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                            reason = f"memory: {memory_mb:.1f}MB (age: {process_age:.1f}s)"
+                        
+                        logger.info(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} ({reason})")
                         
                         proc.terminate()
                         killed_count += 1
@@ -603,7 +621,7 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
                             proc.wait(timeout=3)
                         except psutil.TimeoutExpired:
                             proc.kill()
-                            logger.info(f"Force killed stubborn Chrome process PID: {proc.info['pid']}")
+                            logger.info(f"[PROCESS CLEANUP] Force killed stubborn Chrome process PID: {proc.info['pid']}")
                             
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
@@ -612,6 +630,7 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
             mode_str = "AGGRESSIVE" if aggressive else "PROCESS CLEANUP"
             logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
             force_garbage_collection()  # Clean up after process cleanup
+            time.sleep(2)  # Give processes time to die and memory to be freed
         else:
             mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
             logger.info(f"[{mode_str}] No Chrome processes to kill (checked {total_chrome_processes} Chrome processes)")
@@ -1091,6 +1110,10 @@ def scrape_and_update_records():
                             
                             if current_memory > 350:  # Proactive cleanup threshold
                                 logger.info(f"🧹 Proactive memory cleanup at region {regions_scraped}: {current_memory}MB")
+                                
+                                # Kill high-memory Chrome processes first - this is often the main culprit
+                                kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False)  # Use memory-based killing
+                                
                                 force_garbage_collection()
                                 
                                 # Clear browser caches if driver is available
