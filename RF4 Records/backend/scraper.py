@@ -919,19 +919,35 @@ def scrape_and_update_records():
             try:
                 bulk_inserter.flush()  # Flush any pending records
                 db.commit()
+                
+                # Clear cache before closing session to free memory
+                record_checker.clear_cache()
+                
                 db.close()  # Close the current session
                 db = SessionLocal()  # Fresh database session
                 bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
                 record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
+                
+                # Force garbage collection after session refresh
+                force_garbage_collection()
+                
+                # Clear large data structures to prevent memory accumulation
+                all_unique_fish.clear()  # Reset fish tracking for next category
             except Exception as db_error:
                 logger.error(f"Database session refresh error: {db_error}")
                 # Ensure we have a valid database session
                 try:
                     if db:
+                        if 'record_checker' in locals():
+                            record_checker.clear_cache()  # Clear cache before closing
                         db.close()  # Close the problematic session
                     db = SessionLocal()
                     bulk_inserter = BulkRecordInserter(db, batch_size=50)  # New bulk inserter with new session
                     record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
+                    
+                    # Force garbage collection after fallback session refresh
+                    force_garbage_collection()
+                    all_unique_fish.clear()  # Reset fish tracking
                 except Exception as fallback_error:
                     logger.error(f"Failed to create fallback database session: {fallback_error}")
             
