@@ -802,25 +802,6 @@ def force_system_memory_release():
     except Exception as e:
         logger.debug(f"Error during system memory release: {e}")
 
-def force_garbage_collection():
-    """Aggressively force garbage collection to help with memory management"""
-    try:
-        import gc
-        
-        # Multiple collection passes for cleanup
-        collected = 0
-        for i in range(2):  # 2 passes to catch circular references
-            collected += gc.collect()
-        
-        # Force collection of specific generations
-        gc.collect(0)  # Young objects
-        gc.collect(2)  # Old objects
-        
-        logger.debug(f"Garbage collection: {collected} objects collected")
-        
-    except Exception as e:
-        logger.debug(f"Error during garbage collection: {e}")
-
 def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
     """Kill orphaned Chrome processes, with special focus on Chrome child processes
     
@@ -907,7 +888,7 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
             logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
             if chrome_child_processes > 0:
                 logger.info(f"[CHILD CLEANUP] Killed {chrome_child_processes} Chrome child processes")
-            force_garbage_collection()  # Clean up after process cleanup
+            enhanced_python_memory_cleanup()  # Clean up after process cleanup
             time.sleep(3)  # Give processes time to die and memory to be freed
         else:
             mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
@@ -1086,25 +1067,7 @@ def parse_table_selenium(driver, region_info):
         except Exception:
             pass  # Non-critical
         
-        # AGGRESSIVE Python memory cleanup after large HTML processing
-        import gc
-        import sys
-        
-        # Conservative garbage collection - avoid destroying built-ins
-        for cleanup_round in range(3):
-            gc.collect()
-            gc.collect(0)  # Young generation (where large strings would be)
-            gc.collect(2)  # Old generation with circular references
-        
-        # Force memory trimming to return memory to OS (Linux-specific but harmless)
-        try:
-            import ctypes
-            import ctypes.util
-            libc = ctypes.CDLL(ctypes.util.find_library("c"))
-            if hasattr(libc, 'malloc_trim'):
-                libc.malloc_trim(0)
-        except Exception:
-            pass
+        logger.debug(f"Parsed {len(records)} records from {region_info['name']}")
         
         return records
         
@@ -1616,7 +1579,7 @@ def scrape_and_update_records():
                         # Multiple rounds of garbage collection
                         import gc
                         gc.collect()
-                        force_garbage_collection()
+                        enhanced_python_memory_cleanup()
                         gc.collect(0)  # Young generation
                         gc.collect(1)  # Middle generation
                         gc.collect(2)  # Old generation
@@ -1909,7 +1872,7 @@ def scrape_and_update_records():
         
         for i in range(3):  # Reduced rounds
             gc.collect()
-            force_garbage_collection()
+            enhanced_python_memory_cleanup()
             gc.collect(0)
             gc.collect(2)
             if i < 2:

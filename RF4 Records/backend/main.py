@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, create_tables
-from scraper import scrape_and_update_records, should_stop_scraping, force_garbage_collection, kill_orphaned_chrome_processes
+from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import is_high_frequency_period, get_next_schedule_change
@@ -133,7 +133,7 @@ def scheduled_scrape():
         logger.info("🧹 Attempting emergency system recovery...")
         try:
             kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-            force_garbage_collection()
+            enhanced_python_memory_cleanup()
             import time
             time.sleep(5)  # Give system time to recover
             
@@ -615,14 +615,14 @@ def force_cleanup():
         import gc
         import psutil
         import os
-        from scraper import force_garbage_collection, kill_orphaned_chrome_processes
+        from scraper import enhanced_python_memory_cleanup, kill_orphaned_chrome_processes
         
         # Get memory before cleanup
         process = psutil.Process(os.getpid())
         memory_before = process.memory_info().rss / 1024 / 1024
         
         # Force garbage collection
-        force_garbage_collection()
+        enhanced_python_memory_cleanup()
         
         # Kill orphaned Chrome processes
         kill_orphaned_chrome_processes()
