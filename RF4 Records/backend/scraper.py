@@ -178,19 +178,25 @@ def get_driver():
         logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
         raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
     
-    # Check memory before creating new driver - but be more lenient during active scraping
+    # EMERGENCY CIRCUIT BREAKER - Check memory before creating new driver
     current_memory = get_memory_usage()
-    if current_memory > 400:  # Increased threshold - only block on truly critical memory
+    
+    # Emergency threshold - prevent memory bombs
+    if current_memory > 500:  # Much stricter threshold
+        logger.critical(f"🚨 EMERGENCY: Memory critically high ({current_memory}MB) - BLOCKING Chrome creation to prevent memory bomb")
+        raise MemoryError(f"EMERGENCY BLOCK: Cannot create Chrome driver - memory usage dangerous ({current_memory}MB)")
+    
+    if current_memory > 300:  # Lower threshold - be more aggressive
         logger.warning(f"🚨 High memory usage ({current_memory}MB) detected before Chrome creation - performing cleanup")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         force_garbage_collection()
         time.sleep(3)  # Longer wait for cleanup to complete
         
-        # Check again after cleanup - more lenient threshold
+        # Check again after cleanup - much stricter threshold
         memory_after = get_memory_usage()
-        if memory_after > 450:  # Higher threshold - only block on extreme memory usage
-            logger.error(f"🚨 Memory critically high ({memory_after}MB) after cleanup - blocking Chrome creation")
-            raise MemoryError(f"Cannot create Chrome driver - memory usage critically high ({memory_after}MB)")
+        if memory_after > 400:  # Much lower threshold - prevent memory bombs
+            logger.critical(f"🚨 CRITICAL: Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
+            raise MemoryError(f"CRITICAL BLOCK: Cannot create Chrome driver - memory usage still dangerous ({memory_after}MB)")
         else:
             logger.info(f"✅ Memory acceptable after cleanup: {memory_after}MB - proceeding with Chrome creation")
     
@@ -626,7 +632,13 @@ def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
     memory_mb = get_memory_usage()
     
-    if memory_mb > 400:  # Higher threshold - only cleanup if truly necessary
+    # EMERGENCY CIRCUIT BREAKER - Prevent 7GB memory bombs
+    if memory_mb > 800:  # Emergency threshold
+        logger.critical(f"🚨 EMERGENCY: Memory critically high ({memory_mb}MB) - ABORTING to prevent system failure")
+        logger.critical(f"🚨 This would have caused a memory bomb like the 7GB incident")
+        raise MemoryError(f"EMERGENCY ABORT: Memory usage dangerous ({memory_mb}MB) - preventing system failure")
+    
+    if memory_mb > 300:  # Lower threshold - be more aggressive
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
         
         # Kill ALL Chrome processes before starting new scrape
@@ -646,12 +658,15 @@ def check_memory_before_scraping():
         
         logger.info(f"Memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
         
-        # More lenient threshold - allow scraping to proceed unless memory is extreme
-        if memory_after_cleanup > 500:
-            logger.error(f"Memory usage critically high ({memory_after_cleanup}MB) after cleanup - scraping may fail")
-            raise MemoryError(f"Memory usage critically high ({memory_after_cleanup}MB) - aborting scrape to prevent system failure")
+        # Much stricter thresholds to prevent memory bombs
+        if memory_after_cleanup > 600:
+            logger.critical(f"🚨 CRITICAL: Memory still critically high ({memory_after_cleanup}MB) after cleanup - ABORTING")
+            raise MemoryError(f"CRITICAL ABORT: Memory usage dangerous ({memory_after_cleanup}MB) - preventing system failure")
         elif memory_after_cleanup > 400:
-            logger.warning(f"Memory usage still high ({memory_after_cleanup}MB) after cleanup - proceeding with caution")
+            logger.error(f"Memory usage still high ({memory_after_cleanup}MB) after cleanup - this is dangerous")
+            raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting to prevent memory bomb")
+        elif memory_after_cleanup > 300:
+            logger.warning(f"Memory usage elevated ({memory_after_cleanup}MB) after cleanup - proceeding with extreme caution")
     
     return memory_mb
 
@@ -1096,6 +1111,28 @@ def scrape_and_update_records():
                     
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
+                    
+                    # EMERGENCY MEMORY MONITORING - Check for memory bombs during scraping
+                    current_memory = get_memory_usage()
+                    if current_memory > 600:  # Emergency threshold during scraping
+                        logger.critical(f"🚨 EMERGENCY: Memory bomb detected during scraping ({current_memory}MB) - ABORTING IMMEDIATELY")
+                        logger.critical(f"🚨 This prevents the 7GB memory bomb that crashed the system")
+                        should_stop_scraping = True
+                        raise MemoryError(f"EMERGENCY ABORT: Memory bomb detected ({current_memory}MB) - stopping to prevent system failure")
+                    elif current_memory > 400:
+                        logger.error(f"⚠️ DANGER: Memory critically high during scraping ({current_memory}MB) - forcing immediate cleanup")
+                        # Force immediate aggressive cleanup
+                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        force_garbage_collection()
+                        force_garbage_collection()
+                        time.sleep(3)
+                        
+                        # Check if cleanup helped
+                        memory_after = get_memory_usage()
+                        if memory_after > 500:
+                            logger.critical(f"🚨 CRITICAL: Memory still dangerous ({memory_after}MB) after emergency cleanup - ABORTING")
+                            should_stop_scraping = True
+                            raise MemoryError(f"CRITICAL ABORT: Emergency cleanup failed ({memory_after}MB) - preventing system failure")
                     
                     # AGGRESSIVE MEMORY MANAGEMENT - Clear Python objects every region to prevent accumulation
                     if regions_scraped % 1 == 0:  # Every single region - prevent memory accumulation
