@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, create_tables
-from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup
+from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import is_high_frequency_period, get_next_schedule_change
@@ -107,16 +107,15 @@ def scheduled_scrape():
         import psutil
         import os
         
-        # Log memory before scrape
-        process = psutil.Process(os.getpid())
-        memory_before = process.memory_info().rss / 1024 / 1024
+        # Get memory before scrape
+        memory_before = get_memory_usage()
         
         frequency = "3-minute" if is_high_frequency_period() else "15-minute"
         logger.info(f"Starting {frequency} scheduled scrape (Memory: {memory_before:.1f} MB)")
         result = scrape_and_update_records()
         
         # Log memory after scrape
-        memory_after = process.memory_info().rss / 1024 / 1024
+        memory_after = get_memory_usage()
         memory_change = memory_after - memory_before
         
         if result['success']:
@@ -138,10 +137,7 @@ def scheduled_scrape():
             time.sleep(5)  # Give system time to recover
             
             # Check if memory recovered
-            import psutil
-            import os
-            process = psutil.Process(os.getpid())
-            memory_after_recovery = process.memory_info().rss / 1024 / 1024
+            memory_after_recovery = get_memory_usage()
             logger.info(f"Memory after emergency recovery: {memory_after_recovery:.1f} MB")
             
             if memory_after_recovery > 500:  # Still dangerously high
@@ -318,12 +314,8 @@ def shutdown_event():
 def health_check():
     """Enhanced health check endpoint for Railway and monitoring"""
     try:
-        import psutil
-        import os
-        
-        # Get current memory usage
-        process = psutil.Process(os.getpid())
-        memory_mb = process.memory_info().rss / 1024 / 1024
+        # Get current memory usage consistently
+        memory_mb = get_memory_usage()
         
         # Check if system is in a healthy state
         if memory_mb > 800:  # Critical memory threshold
@@ -613,13 +605,10 @@ def force_cleanup():
     """Force garbage collection and process cleanup for memory management"""
     try:
         import gc
-        import psutil
-        import os
         from scraper import enhanced_python_memory_cleanup, kill_orphaned_chrome_processes
         
         # Get memory before cleanup
-        process = psutil.Process(os.getpid())
-        memory_before = process.memory_info().rss / 1024 / 1024
+        memory_before = get_memory_usage()
         
         # Force garbage collection
         enhanced_python_memory_cleanup()
@@ -634,7 +623,7 @@ def force_cleanup():
         gc.collect(2)
         
         # Get memory after cleanup
-        memory_after = process.memory_info().rss / 1024 / 1024
+        memory_after = get_memory_usage()
         memory_freed = memory_before - memory_after
         
         return {
@@ -656,10 +645,11 @@ def get_status():
         import psutil
         import os as os_module
         
-        # Get memory usage
+        # Get memory usage consistently
+        memory_mb = get_memory_usage()
+        
+        # Get memory percentage (need psutil for this specific metric)
         process = psutil.Process(os_module.getpid())
-        memory_info = process.memory_info()
-        memory_mb = memory_info.rss / 1024 / 1024  # Convert to MB
         
         db: Session = SessionLocal()
         total_records = db.query(Record).count()
