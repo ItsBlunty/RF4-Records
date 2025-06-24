@@ -1,3 +1,4 @@
+import builtins
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -17,6 +18,10 @@ from bulk_operations import BulkRecordInserter, OptimizedRecordChecker
 import os
 import signal
 import sys
+
+# Ensure built-in functions are available
+any = builtins.any
+callable = builtins.callable
 
 # Global flag to track if scraping should be stopped
 should_stop_scraping = False
@@ -186,19 +191,19 @@ def get_driver():
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({current_memory}MB) - BLOCKING Chrome creation to prevent memory bomb")
         raise MemoryError(f"EMERGENCY BLOCK: Cannot create Chrome driver - memory usage dangerous ({current_memory}MB)")
     
-    if current_memory > 250:  # Much lower threshold - be more aggressive
-        logger.warning(f"🚨 High memory usage ({current_memory}MB) detected before Chrome creation - performing cleanup")
+    if current_memory > 300:  # Reduced verbosity threshold
+        logger.info(f"High memory usage ({current_memory}MB) detected - performing cleanup")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         force_garbage_collection()
-        time.sleep(3)  # Longer wait for cleanup to complete
+        time.sleep(2)  # Reduced wait time
         
-        # Check again after cleanup - much stricter threshold
+        # Check again after cleanup
         memory_after = get_memory_usage()
-        if memory_after > 350:  # Much lower threshold - prevent memory bombs
-            logger.critical(f"🚨 CRITICAL: Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
-            raise MemoryError(f"CRITICAL BLOCK: Cannot create Chrome driver - memory usage still dangerous ({memory_after}MB)")
+        if memory_after > 400:  # Prevent memory bombs
+            logger.error(f"Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
+            raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({memory_after}MB)")
         else:
-            logger.info(f"✅ Memory acceptable after cleanup: {memory_after}MB - proceeding with Chrome creation")
+            logger.info(f"Memory acceptable after cleanup: {memory_after}MB")
     
     chrome_options = Options()
     
@@ -599,9 +604,9 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
                     
                     if should_kill:
                         if aggressive:
-                            logger.info(f"[AGGRESSIVE CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                            logger.debug(f"[AGGRESSIVE CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
                         else:
-                            logger.info(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
+                            logger.debug(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
                         
                         proc.terminate()
                         killed_count += 1
@@ -1142,31 +1147,21 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # EMERGENCY MEMORY MONITORING - Check for memory bombs during scraping
+                    # Emergency memory monitoring - simplified
                     current_memory = get_memory_usage()
-                    if current_memory > 600:  # Emergency threshold during scraping
-                        logger.critical(f"🚨 EMERGENCY: Memory bomb detected during scraping ({current_memory}MB) - ABORTING IMMEDIATELY")
-                        logger.critical(f"🚨 This prevents the 7GB memory bomb that crashed the system")
+                    if current_memory > 600:  # Emergency threshold
+                        logger.critical(f"Memory bomb detected ({current_memory}MB) - ABORTING")
                         should_stop_scraping = True
-                        raise MemoryError(f"EMERGENCY ABORT: Memory bomb detected ({current_memory}MB) - stopping to prevent system failure")
-                    elif current_memory > 400:
-                        logger.error(f"⚠️ DANGER: Memory critically high during scraping ({current_memory}MB) - forcing immediate cleanup")
-                        # Force immediate aggressive cleanup
+                        raise MemoryError(f"Memory bomb detected ({current_memory}MB)")
+                    elif current_memory > 450:
+                        logger.warning(f"High memory usage ({current_memory}MB) - forcing cleanup")
                         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
                         force_garbage_collection()
-                        force_garbage_collection()
-                        time.sleep(3)
-                        
-                        # Check if cleanup helped
-                        memory_after = get_memory_usage()
-                        if memory_after > 500:
-                            logger.critical(f"🚨 CRITICAL: Memory still dangerous ({memory_after}MB) after emergency cleanup - ABORTING")
-                            should_stop_scraping = True
-                            raise MemoryError(f"CRITICAL ABORT: Emergency cleanup failed ({memory_after}MB) - preventing system failure")
+                        time.sleep(2)
                     
-                    # SIMPLE CHROME MANAGEMENT - Kill ALL Chrome processes every 10 regions
-                    if regions_scraped % 10 == 0:  # Every 10 regions - prevent Chrome accumulation
-                        logger.info(f"[CHROME RESET] After {regions_scraped} regions - killing ALL Chrome processes and restarting fresh")
+                    # Chrome reset every 10 regions
+                    if regions_scraped % 10 == 0:
+                        logger.info(f"Chrome reset after {regions_scraped} regions")
                         
                         # Close current driver
                         if driver:
@@ -1204,30 +1199,21 @@ def scrape_and_update_records():
                         bulk_inserter = BulkRecordInserter(db, batch_size=25)
                         record_checker = OptimizedRecordChecker(db)
                         
-                        # AGGRESSIVE PYTHON MEMORY CLEANUP - Force release of accumulated objects
-                        logger.info("🧹 Forcing aggressive Python memory cleanup...")
-                        
-                        # Clear all module-level caches and variables
+                        # Aggressive Python memory cleanup
                         import gc
                         import sys
                         
-                        # Force multiple garbage collection rounds with different strategies
-                        for cleanup_round in range(8):  # More aggressive cleanup rounds
-                            # Standard garbage collection
-                            collected = gc.collect()
-                            
-                            # Generation-specific cleanup
+                        # Multiple garbage collection rounds
+                        for cleanup_round in range(5):  # Reduced rounds
+                            gc.collect()
                             gc.collect(0)  # Young objects
-                            gc.collect(1)  # Middle generation
-                            gc.collect(2)  # Old objects with circular references
+                            gc.collect(2)  # Old objects
                             
                             if cleanup_round % 2 == 0:
-                                # Clear type cache every other round
                                 if hasattr(sys, '_clear_type_cache'):
                                     sys._clear_type_cache()
                             
-                            # Short pause between rounds
-                            time.sleep(0.2)
+                            time.sleep(0.1)  # Reduced sleep
                         
                         # Clear import caches
                         try:
@@ -1527,15 +1513,14 @@ def scrape_and_update_records():
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         time.sleep(2)  # Wait for processes to die
         
-        # COMPREHENSIVE PYTHON MEMORY CLEANUP - Return to baseline
-        logger.info("🧹🧹🧹 COMPREHENSIVE Python memory cleanup - returning to baseline...")
+        # Comprehensive Python memory cleanup
+        logger.info("Final memory cleanup...")
         
-        # Clear large variables explicitly
+        # Clear large variables
         if 'all_unique_fish' in locals():
             all_unique_fish.clear()
             all_unique_fish = None
         
-        # Clear bulk inserter completely
         if 'bulk_inserter' in locals():
             if hasattr(bulk_inserter, 'pending_records'):
                 bulk_inserter.pending_records.clear()
@@ -1543,7 +1528,6 @@ def scrape_and_update_records():
                 bulk_inserter.close()
             bulk_inserter = None
         
-        # Clear record checker cache completely
         if 'record_checker' in locals():
             if hasattr(record_checker, 'clear_cache'):
                 record_checker.clear_cache()
@@ -1551,32 +1535,26 @@ def scrape_and_update_records():
                 record_checker._cache.clear()
             record_checker = None
         
-        # Comprehensive database cleanup
+        # Database cleanup
         if 'db' in locals() and db:
             try:
-                db.expunge_all()  # Remove ALL objects from session
-                db.close()  # Close the session
+                db.expunge_all()
+                db.close()
                 db = None
             except Exception as e:
                 logger.debug(f"Database cleanup error: {e}")
         
-        # Clear any remaining large objects
+        # Garbage collection
         import gc
-        
-        # Get memory before final cleanup
         memory_before_final = get_memory_usage()
-        logger.info(f"📊 Memory before final cleanup: {memory_before_final}MB")
         
-        # Multiple aggressive garbage collection rounds
-        logger.info("Running comprehensive garbage collection (5 rounds)...")
-        for i in range(5):
+        for i in range(3):  # Reduced rounds
             gc.collect()
             force_garbage_collection()
-            gc.collect(0)  # Young generation
-            gc.collect(1)  # Middle generation  
-            gc.collect(2)  # Old generation
-            if i < 4:  # Don't sleep on the last iteration
-                time.sleep(0.5)  # Give time for cleanup between rounds
+            gc.collect(0)
+            gc.collect(2)
+            if i < 2:
+                time.sleep(0.3)
         
         # Clear module-level caches
         try:
@@ -1596,53 +1574,23 @@ def scrape_and_update_records():
         # Get memory after final cleanup
         memory_after_final = get_memory_usage()
         memory_freed_final = memory_before_final - memory_after_final
-        logger.info(f"📊 Memory after final cleanup: {memory_after_final}MB (freed {memory_freed_final:.1f}MB)")
+        logger.info(f"Memory after cleanup: {memory_after_final}MB (freed {memory_freed_final:.1f}MB)")
         
-        # Check if we successfully returned to baseline
-        if memory_after_final <= initial_memory + 50:  # Allow 50MB tolerance
-            logger.info(f"✅ SUCCESS: Memory returned to near baseline ({initial_memory}MB + 50MB tolerance)")
-        else:
-            logger.warning(f"⚠️ Memory still elevated: {memory_after_final}MB vs baseline {initial_memory}MB (diff: {memory_after_final - initial_memory:.1f}MB)")
-            # Show final memory breakdown to identify what's still consuming memory
-            log_detailed_memory_usage("final cleanup analysis")
-        
-        # Reset global variables (scraping already marked as finished above)
+        # Reset global variables
         should_stop_scraping = False
-        # _scraping_finished already set above to prevent race conditions
         
-        # Final memory report with detailed breakdown
-        final_memory_after_cleanup = get_memory_usage()
-        logger.info(f"🧹 Post-cleanup memory: {final_memory_after_cleanup} MB")
-        log_detailed_memory_usage("after final cleanup")
-        
-        # If memory is still high, log a warning and investigate
-        if final_memory_after_cleanup > 200:
-            logger.warning(f"⚠️ Memory usage still high after cleanup: {final_memory_after_cleanup} MB")
-            
-            # Try multiple aggressive cleanup rounds
-            logger.info("Attempting additional memory cleanup...")
-            for cleanup_round in range(3):  # Up to 3 cleanup rounds
-                logger.info(f"Cleanup round {cleanup_round + 1}/3")
+        # Additional cleanup if memory still high
+        if memory_after_final > 250:
+            logger.warning(f"Memory still high ({memory_after_final}MB) - additional cleanup")
+            for cleanup_round in range(2):
                 kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                time.sleep(2)
+                time.sleep(1)
                 gc.collect()
                 gc.collect(2)
-                
-                # Check if memory improved
-                round_memory = get_memory_usage()
-                logger.info(f"Memory after round {cleanup_round + 1}: {round_memory} MB")
-                
-                if round_memory < 200:  # Good enough
-                    break
             
-            final_final_memory = get_memory_usage()
-            logger.info(f"🧹 Final memory after additional cleanup: {final_final_memory} MB")
-            log_detailed_memory_usage("after additional cleanup")
-            
-            # If still high after all cleanup attempts, log critical warning
-            if final_final_memory > 250:
-                logger.critical(f"🚨 CRITICAL: Memory usage remains very high ({final_final_memory} MB) after all cleanup attempts!")
-                logger.critical("🚨 This indicates a serious memory leak that may cause system instability!")
+            final_memory = get_memory_usage()
+            if final_memory > 300:
+                logger.critical(f"Memory remains very high ({final_memory}MB) after cleanup!")
     return {
         'success': not errors_occurred and not should_stop_scraping,
         'categories_scraped': len(CATEGORIES),

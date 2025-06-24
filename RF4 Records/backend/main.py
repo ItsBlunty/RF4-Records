@@ -16,6 +16,7 @@ import sys
 import time
 import threading
 import os
+import builtins
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -60,6 +61,9 @@ scraping_lock = threading.Lock()
 
 # Initialize scheduler but don't start it yet
 scheduler = BackgroundScheduler()
+
+# Ensure built-in functions are available
+callable = builtins.callable
 
 def signal_handler(signum, frame):
     """Handle graceful shutdown"""
