@@ -1011,10 +1011,8 @@ def log_memory_usage(context=""):
     if memory_mb > 0:
         logger.info(f"Memory usage {context}: {memory_mb} MB")
         
-        # Force enhanced cleanup if memory usage is too high
-        if memory_mb > 500:  # Increased threshold from 350MB for Railway
-            logger.warning(f"High memory usage detected ({memory_mb} MB), forcing enhanced cleanup")
-            enhanced_python_memory_cleanup()  # Use enhanced cleanup instead of basic
+        # DISABLED: No cleanup during active scraping
+        # All cleanup now happens only between categories
             
     return memory_mb
 
@@ -1460,20 +1458,13 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # Emergency memory monitoring - realistic threshold for Railway Docker
-                    current_memory = get_memory_usage()
-                    if current_memory > 1500:  # 1.5GB threshold as requested
-                        logger.critical(f"Memory bomb detected ({current_memory}MB) - ABORTING")
-                        should_stop_scraping = True
-                        raise MemoryError(f"Memory bomb detected ({current_memory}MB)")
-                    elif current_memory > 1200:  # High memory warning threshold
-                        logger.warning(f"High memory usage ({current_memory}MB) - forcing cleanup")
-                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                        enhanced_python_memory_cleanup()
-                        time.sleep(3)
+                    # DISABLED: No memory monitoring during active scraping
+                    # Memory cleanup only happens between categories now
+                    # This prevents killing Chrome processes while they're actively scraping
+                    pass
                     
-                    # Chrome reset every 10 regions
-                    if regions_scraped % 10 == 0:
+                    # DISABLED: No mid-category Chrome resets during active scraping
+                    if False and regions_scraped % 10 == 0:
                         logger.info(f"Chrome reset after {regions_scraped} regions")
                         
                         # Close current driver
@@ -1588,8 +1579,8 @@ def scrape_and_update_records():
                                 except Exception as e:
                                     logger.error(f"Failed to recreate WebDriver: {e}")
                     
-                    # Simple and reliable: Every 10 regions (1 complete category), kill ALL Chrome processes
-                    if regions_scraped % 10 == 0:
+                    # DISABLED: No mid-category cleanup during active scraping
+                    if False and regions_scraped % 10 == 0:
                         logger.info(f"🧹 Complete Chrome cleanup after {regions_scraped} regions (1 category complete)")
                         
                         # Flush database before cleanup

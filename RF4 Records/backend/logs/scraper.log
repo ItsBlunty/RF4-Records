@@ -19536,3 +19536,4 @@ FROM records) AS anon_1]
 2025-06-24 04:25:54,689 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
 2025-06-24 05:08:15,803 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
 2025-06-24 05:12:15,970 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-24 06:41:24,965 - INFO - Memory usage test: 59.4 MB
