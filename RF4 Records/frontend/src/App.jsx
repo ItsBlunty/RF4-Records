@@ -181,7 +181,7 @@ function AppContent() {
         return;
       }
       
-      const { records: remainingRecords } = response.data;
+      const { records: remainingRecords, total_unique_records, unique_values } = response.data;
       
       setRecords(prevRecords => {
         const allRecords = [...prevRecords, ...remainingRecords];
@@ -191,6 +191,14 @@ function AppContent() {
         }
         return allRecords;
       });
+      
+      // Update total count and unique values with complete data
+      if (total_unique_records) {
+        setTotalRecords(total_unique_records);
+      }
+      if (unique_values) {
+        setUniqueValues(unique_values);
+      }
       
       setAllRecordsLoaded(true);
       console.log(`Successfully loaded ${remainingRecords.length} remaining records`);
@@ -495,9 +503,9 @@ function AppContent() {
                 <div className="flex items-center space-x-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                     {filteredRecords.length} of {records.length} records
-                    {!allRecordsLoaded && (
+                    {!allRecordsLoaded && totalRecords && typeof totalRecords === 'number' && (
                       <span className="ml-1 text-xs">
-                        ({totalRecords} total)
+                        (~{totalRecords} total)
                       </span>
                     )}
                   </span>

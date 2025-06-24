@@ -19535,3 +19535,4 @@ FROM records) AS anon_1]
 (Background on this error at: https://sqlalche.me/e/20/e3q8)
 2025-06-24 04:25:54,689 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
 2025-06-24 05:08:15,803 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-24 05:12:15,970 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets

@@ -436,24 +436,63 @@ def _get_processed_records():
 @app.get("/records/initial")
 @app.get("/api/records/initial")
 def get_initial_records(limit: int = 1000):
-    """Get initial batch of records for fast page load"""
+    """Get initial batch of records for FAST page load - optimized to avoid processing all records"""
     try:
-        result, total_db_records = _get_processed_records()
+        db: Session = SessionLocal()
         
-        # Return only the first batch for initial load
-        initial_batch = result[:limit]
+        # FAST PATH: Get only a limited set of records from database (not all 90K!)
+        # Order by ID descending to get most recent records first
+        limited_records = db.query(Record).order_by(Record.id.desc()).limit(limit * 3).all()  # Get 3x limit to account for deduplication
         
-        # Also return unique values for filters (from full dataset)
-        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+        # Quick deduplication on limited set
+        record_groups = {}
+        for r in limited_records:
+            key = (r.player, r.fish, r.weight, r.waterbody, r.bait1, r.bait2, r.date, r.region)
+            if key not in record_groups:
+                record_groups[key] = []
+            record_groups[key].append(r)
         
-        logger.info(f"Retrieved initial {len(initial_batch)} records (of {len(result)} total unique records)")
+        # Process limited records
+        initial_batch = []
+        for key, group_records in record_groups.items():
+            if len(initial_batch) >= limit:
+                break
+                
+            representative = group_records[0]
+            categories = [r.category for r in group_records if r.category]
+            
+            bait_display = f"{representative.bait1}; {representative.bait2}" if representative.bait2 else (representative.bait1 or representative.bait or "")
+            
+            initial_batch.append({
+                "player": representative.player,
+                "fish": representative.fish,
+                "weight": representative.weight,
+                "waterbody": representative.waterbody,
+                "bait_display": bait_display,
+                "date": representative.date,
+                "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,
+                "region": representative.region,
+                "categories": categories,
+                "bait1": representative.bait1,
+                "bait2": representative.bait2
+            })
+        
+        # Get total counts efficiently (without processing all records)
+        total_db_records = db.query(Record).count()
+        
+        # Get unique values from limited set for now (will be updated when full data loads)
+        fish = sorted(list(set(r['fish'] for r in initial_batch if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in initial_batch if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in initial_batch if r['bait_display'])))
+        
+        db.close()
+        
+        logger.info(f"FAST: Retrieved initial {len(initial_batch)} records from limited query (total DB records: {total_db_records})")
         return {
             "records": initial_batch,
-            "total_unique_records": len(result),
+            "total_unique_records": "unknown",  # Will be determined when full data loads
             "total_db_records": total_db_records,
-            "has_more": len(result) > limit,
+            "has_more": True,  # Always true for initial load
             "unique_values": {
                 "fish": fish,
                 "waterbody": waterbody,
@@ -467,18 +506,28 @@ def get_initial_records(limit: int = 1000):
 @app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records(skip: int = 1000):
-    """Get remaining records after initial batch"""
+    """Get remaining records after initial batch - this processes the full dataset"""
     try:
         result, total_db_records = _get_processed_records()
         
         # Return records after the skip point
         remaining_records = result[skip:]
         
-        logger.info(f"Retrieved {len(remaining_records)} remaining records (skipped first {skip})")
+        # Also return complete unique values for filters (from full dataset)
+        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+        
+        logger.info(f"Retrieved {len(remaining_records)} remaining records (skipped first {skip}, total unique: {len(result)})")
         return {
             "records": remaining_records,
             "total_unique_records": len(result),
-            "total_db_records": total_db_records
+            "total_db_records": total_db_records,
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
         }
     except Exception as e:
         logger.error(f"Error retrieving remaining records: {e}")
