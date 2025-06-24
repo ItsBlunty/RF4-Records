@@ -591,19 +591,66 @@ def is_driver_alive(driver):
         return False
 
 def count_chrome_processes():
-    """Count the number of Chrome processes currently running"""
+    """Count the number of Chrome processes currently running and analyze their memory usage"""
     try:
         import psutil
-        chrome_count = 0
+        import os
         
-        for proc in psutil.process_iter(['pid', 'name']):
+        chrome_count = 0
+        total_chrome_memory = 0
+        chrome_child_processes = 0
+        current_pid = os.getpid()
+        
+        # Check all Chrome processes on the system
+        for proc in psutil.process_iter(['pid', 'name', 'ppid', 'memory_info', 'cmdline']):
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
                     chrome_count += 1
+                    memory_mb = proc.info['memory_info'].rss / 1024 / 1024
+                    total_chrome_memory += memory_mb
+                    
+                    # Check if this Chrome process is a child of the current Python process
+                    if proc.info['ppid'] == current_pid:
+                        chrome_child_processes += 1
+                        logger.warning(f"Found Chrome child process: PID {proc.info['pid']}, Memory: {memory_mb:.1f}MB")
+                        
+                        # Log command line to see if it's headless
+                        cmdline = ' '.join(proc.info['cmdline']) if proc.info['cmdline'] else 'N/A'
+                        if '--headless' in cmdline:
+                            logger.warning(f"  This is a HEADLESS Chrome process: {cmdline[:100]}...")
+                    
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
         
+        # Also check for any child processes of the current Python process
+        try:
+            parent = psutil.Process(current_pid)
+            children = parent.children(recursive=True)
+            
+            for child in children:
+                try:
+                    if 'chrome' in child.name().lower():
+                        if child.pid not in [p.info['pid'] for p in psutil.process_iter(['pid', 'name']) if p.info['name'] and 'chrome' in p.info['name'].lower()]:
+                            # This shouldn't happen, but just in case
+                            chrome_child_processes += 1
+                            memory_mb = child.memory_info().rss / 1024 / 1024
+                            logger.warning(f"Found additional Chrome child: PID {child.pid}, Memory: {memory_mb:.1f}MB")
+                            
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                    
+        except Exception as e:
+            logger.debug(f"Error checking child processes: {e}")
+        
+        # Log summary if Chrome processes found
+        if chrome_count > 0:
+            logger.info(f"Chrome process analysis: {chrome_count} total processes, {total_chrome_memory:.1f}MB total memory")
+            if chrome_child_processes > 0:
+                logger.warning(f"⚠️  Found {chrome_child_processes} Chrome processes that are children of Python!")
+                logger.warning("This suggests Chrome drivers are not being properly cleaned up")
+        
         return chrome_count
+        
     except Exception as e:
         logger.debug(f"Error counting Chrome processes: {e}")
         return 0
@@ -716,7 +763,7 @@ def force_garbage_collection():
         logger.debug(f"Error during garbage collection: {e}")
 
 def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
-    """Kill orphaned Chrome processes
+    """Kill orphaned Chrome processes, with special focus on Chrome child processes
     
     Args:
         max_age_seconds: Maximum age in seconds before a process is considered orphaned (ignored if aggressive=True)
@@ -725,16 +772,52 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
     try:
         import psutil
         import time
+        import os
         
         killed_count = 0
         total_chrome_processes = 0
+        chrome_child_processes = 0
         current_time = time.time()
+        current_pid = os.getpid()
         
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time']):
+        # First, kill any Chrome processes that are direct children of this Python process
+        try:
+            parent = psutil.Process(current_pid)
+            children = parent.children(recursive=True)
+            
+            for child in children:
+                try:
+                    if 'chrome' in child.name().lower():
+                        chrome_child_processes += 1
+                        memory_mb = child.memory_info().rss / 1024 / 1024
+                        logger.warning(f"[CHILD CLEANUP] Killing Chrome child process PID: {child.pid}, Memory: {memory_mb:.1f}MB")
+                        
+                        child.terminate()
+                        killed_count += 1
+                        
+                        # Wait a bit then force kill if still running
+                        try:
+                            child.wait(timeout=3)
+                        except psutil.TimeoutExpired:
+                            child.kill()
+                            logger.info(f"[CHILD CLEANUP] Force killed stubborn Chrome child PID: {child.pid}")
+                            
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+                    
+        except Exception as e:
+            logger.debug(f"Error cleaning up child processes: {e}")
+        
+        # Then, kill other Chrome processes based on normal criteria
+        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time', 'ppid']):
             try:
                 if proc.info['name'] and 'chrome' in proc.info['name'].lower():
                     total_chrome_processes += 1
                     process_age = current_time - proc.info['create_time']
+                    
+                    # Skip if this was already killed as a child process
+                    if proc.info['ppid'] == current_pid:
+                        continue  # Already handled above
                     
                     # Kill if aggressive mode, scraping finished, OR process is older than threshold
                     should_kill = (aggressive or 
@@ -763,6 +846,8 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
         if killed_count > 0:
             mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
             logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
+            if chrome_child_processes > 0:
+                logger.info(f"[CHILD CLEANUP] Killed {chrome_child_processes} Chrome child processes")
             force_garbage_collection()  # Clean up after process cleanup
             time.sleep(3)  # Give processes time to die and memory to be freed
         else:
@@ -829,13 +914,35 @@ def check_memory_before_scraping():
     return memory_mb
 
 def get_memory_usage():
-    """Get current memory usage in MB"""
+    """Get current memory usage in MB, including child processes"""
     try:
         import psutil
         import os
+        
+        # Get main Python process memory
         process = psutil.Process(os.getpid())
-        memory_mb = process.memory_info().rss / 1024 / 1024
-        return round(memory_mb, 1)
+        main_memory = process.memory_info().rss / 1024 / 1024
+        
+        # Get child process memory (this is what system monitoring includes)
+        child_memory = 0
+        try:
+            children = process.children(recursive=True)
+            for child in children:
+                try:
+                    child_memory += child.memory_info().rss / 1024 / 1024
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception:
+            pass
+        
+        total_memory = main_memory + child_memory
+        
+        # Log breakdown if there are significant child processes
+        if child_memory > 10:  # More than 10MB in child processes
+            logger.debug(f"Memory breakdown: Python={main_memory:.1f}MB, Children={child_memory:.1f}MB, Total={total_memory:.1f}MB")
+        
+        return round(total_memory, 1)
+        
     except Exception:
         return 0
 
