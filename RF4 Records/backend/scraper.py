@@ -1041,16 +1041,21 @@ def scrape_and_update_records():
                 try:
                     # Check if driver is still alive before using it
                     if not is_driver_alive(driver):
-                        cleanup_success = cleanup_driver(driver)
-                        if not cleanup_success:
-                            failed_cleanups += 1
-                            logger.warning("Driver cleanup failed - potential memory leak risk")
-                            
-                            # If cleanup failed, force kill all Chrome processes and wait longer
-                            logger.info("Cleanup failed - forcing aggressive Chrome process cleanup")
-                            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                            time.sleep(3)  # Wait for processes to fully terminate
+                        logger.info("Driver died - killing ALL Chrome processes and creating fresh driver")
                         
+                        # Don't bother with complex cleanup - just kill everything and start fresh
+                        if driver:
+                            try:
+                                driver.quit()
+                            except Exception:
+                                pass  # Don't care if quit fails
+                            driver = None
+                        
+                        # Kill ALL Chrome processes - simple and effective
+                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        time.sleep(2)  # Wait for processes to die
+                        
+                        # Create fresh driver
                         driver = get_driver()
                     
                     # Load page with timeout protection
@@ -1134,16 +1139,35 @@ def scrape_and_update_records():
                             should_stop_scraping = True
                             raise MemoryError(f"CRITICAL ABORT: Emergency cleanup failed ({memory_after}MB) - preventing system failure")
                     
-                    # AGGRESSIVE MEMORY MANAGEMENT - Clear Python objects every region to prevent accumulation
-                    if regions_scraped % 1 == 0:  # Every single region - prevent memory accumulation
-                        # Flush pending records immediately to prevent accumulation
+                    # SIMPLE CHROME MANAGEMENT - Kill ALL Chrome processes every 10 regions
+                    if regions_scraped % 10 == 0:  # Every 10 regions - prevent Chrome accumulation
+                        logger.info(f"[CHROME RESET] After {regions_scraped} regions - killing ALL Chrome processes and restarting fresh")
+                        
+                        # Close current driver
+                        if driver:
+                            try:
+                                driver.quit()
+                            except Exception:
+                                pass  # Don't care if quit fails
+                            driver = None
+                        
+                        # Kill ALL Chrome processes - no exceptions, no age checks, no complex logic
+                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        
+                        # Wait for processes to die
+                        time.sleep(3)
+                        
+                        # Create fresh driver
+                        driver = get_driver()
+                        
+                        # Flush database operations
                         bulk_inserter.flush()
                         db.commit()
                         
                         # Clear bulk inserter pending records
                         bulk_inserter.pending_records.clear()
                         
-                        # Clear record checker cache every region
+                        # Clear record checker cache
                         record_checker.clear_cache()
                         
                         # Force database session cleanup
@@ -1155,15 +1179,11 @@ def scrape_and_update_records():
                         bulk_inserter = BulkRecordInserter(db, batch_size=25)
                         record_checker = OptimizedRecordChecker(db)
                         
-                        # FORCE circular reference cleanup - this is what Python does during idle time
-                        import gc
-                        import ctypes
+                        # Force garbage collection
+                        force_garbage_collection()
+                        force_garbage_collection()  # Double cleanup
                         
-                        # Multiple aggressive garbage collection rounds with circular reference cleanup
-                        for _ in range(5):
-                            gc.collect(0)  # Young generation
-                            gc.collect(1)  # Middle generation  
-                            gc.collect(2)  # Old generation with circular references
+                        logger.info(f"[CHROME RESET] Fresh Chrome instance created after killing all processes")
                         
                         # Force Python to trim memory back to OS (like during idle time)
                         try:
@@ -1396,29 +1416,21 @@ def scrape_and_update_records():
         except Exception as e:
             logger.debug(f"Error closing database session: {e}")
         
-        # Clean up WebDriver with delay to prevent race conditions
+        # SIMPLE FINAL CLEANUP - Just kill everything
         if driver:
             try:
-                cleanup_success = cleanup_driver(driver)
-                if not cleanup_success:
-                    failed_cleanups += 1
-                    logger.error("FINAL driver cleanup failed - this is a critical memory leak risk!")
-            except Exception as e:
-                logger.error(f"Error during final driver cleanup: {e}")
-            finally:
-                driver = None
+                driver.quit()
+            except Exception:
+                pass  # Don't care if quit fails
+            driver = None
         
         # CRITICAL: Mark scraping as finished IMMEDIATELY to prevent new Chrome processes
-        _scraping_finished = True  # This MUST be set before any cleanup to prevent race conditions
-        logger.info("🔒 Scraping session marked as finished - blocking new Chrome processes")
+        _scraping_finished = True
+        logger.info("🔒 Scraping session finished - killing ALL Chrome processes")
         
-        # Wait for any lingering operations to complete
-        logger.info("Waiting for Chrome processes to fully terminate...")
-        time.sleep(5)  # Give Chrome processes time to properly exit
-        
-        # Kill ALL remaining Chrome processes - scrape is completely finished
-        logger.info("Final aggressive Chrome process cleanup - killing ALL Chrome processes...")
-        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)  # Kill ALL Chrome processes
+        # Kill ALL Chrome processes - simple and effective
+        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+        time.sleep(2)  # Wait for processes to die
         
         # COMPREHENSIVE PYTHON MEMORY CLEANUP - Return to baseline
         logger.info("🧹🧹🧹 COMPREHENSIVE Python memory cleanup - returning to baseline...")
