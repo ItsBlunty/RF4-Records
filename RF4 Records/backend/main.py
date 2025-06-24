@@ -381,60 +381,117 @@ def api_root():
         "environment": os.getenv("RAILWAY_ENVIRONMENT", "development")
     }
 
+def _get_processed_records():
+    """Helper function to get and process all records (shared by endpoints)"""
+    db: Session = SessionLocal()
+    
+    # Get all records with category information
+    records = db.query(Record).all()
+    
+    # Group records by unique combination (excluding category)
+    record_groups = {}
+    for r in records:
+        # Create a key for deduplication (excluding category)
+        key = (r.player, r.fish, r.weight, r.waterbody, r.bait1, r.bait2, r.date, r.region)
+        
+        if key not in record_groups:
+            record_groups[key] = []
+        record_groups[key].append(r)
+    
+    # For each group, select one representative record and include category info
+    result = []
+    for key, group_records in record_groups.items():
+        # Use the first record as the representative
+        representative = group_records[0]
+        
+        # Collect all categories for this record
+        categories = [r.category for r in group_records if r.category]
+        
+        # Format bait display
+        if representative.bait2:
+            # Sandwich bait - use semicolon format to match frontend expectation
+            bait_display = f"{representative.bait1}; {representative.bait2}"
+        else:
+            # Single bait
+            bait_display = representative.bait1 or representative.bait or ""
+        
+        # Optimized response - only send data actually used by frontend
+        result.append({
+            "player": representative.player,
+            "fish": representative.fish,
+            "weight": representative.weight,
+            "waterbody": representative.waterbody,
+            "bait_display": bait_display,
+            "date": representative.date,  # Fishing date from leaderboard
+            "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,  # When we scraped this
+            "region": representative.region,
+            "categories": categories,  # Include all categories for filtering
+            "bait1": representative.bait1,  # Include for sandwich bait filtering
+            "bait2": representative.bait2   # Include for sandwich bait filtering
+        })
+    
+    db.close()
+    return result, len(records)
+
+@app.get("/records/initial")
+@app.get("/api/records/initial")
+def get_initial_records(limit: int = 1000):
+    """Get initial batch of records for fast page load"""
+    try:
+        result, total_db_records = _get_processed_records()
+        
+        # Return only the first batch for initial load
+        initial_batch = result[:limit]
+        
+        # Also return unique values for filters (from full dataset)
+        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+        
+        logger.info(f"Retrieved initial {len(initial_batch)} records (of {len(result)} total unique records)")
+        return {
+            "records": initial_batch,
+            "total_unique_records": len(result),
+            "total_db_records": total_db_records,
+            "has_more": len(result) > limit,
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving initial records: {e}")
+        return {"error": "Failed to retrieve initial records"}
+
+@app.get("/records/remaining")
+@app.get("/api/records/remaining")
+def get_remaining_records(skip: int = 1000):
+    """Get remaining records after initial batch"""
+    try:
+        result, total_db_records = _get_processed_records()
+        
+        # Return records after the skip point
+        remaining_records = result[skip:]
+        
+        logger.info(f"Retrieved {len(remaining_records)} remaining records (skipped first {skip})")
+        return {
+            "records": remaining_records,
+            "total_unique_records": len(result),
+            "total_db_records": total_db_records
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving remaining records: {e}")
+        return {"error": "Failed to retrieve remaining records"}
+
 @app.get("/records")
 @app.get("/api/records")
 def get_records():
-    """Get all records from database, deduplicated for frontend display"""
+    """Get all records from database, deduplicated for frontend display (legacy endpoint)"""
     try:
-        db: Session = SessionLocal()
+        result, total_db_records = _get_processed_records()
         
-        # Get all records with category information
-        records = db.query(Record).all()
-        
-        # Group records by unique combination (excluding category)
-        record_groups = {}
-        for r in records:
-            # Create a key for deduplication (excluding category)
-            key = (r.player, r.fish, r.weight, r.waterbody, r.bait1, r.bait2, r.date, r.region)
-            
-            if key not in record_groups:
-                record_groups[key] = []
-            record_groups[key].append(r)
-        
-        # For each group, select one representative record and include category info
-        result = []
-        for key, group_records in record_groups.items():
-            # Use the first record as the representative
-            representative = group_records[0]
-            
-            # Collect all categories for this record
-            categories = [r.category for r in group_records if r.category]
-            
-            # Format bait display
-            if representative.bait2:
-                # Sandwich bait - use semicolon format to match frontend expectation
-                bait_display = f"{representative.bait1}; {representative.bait2}"
-            else:
-                # Single bait
-                bait_display = representative.bait1 or representative.bait or ""
-            
-            # Optimized response - only send data actually used by frontend
-            result.append({
-                "player": representative.player,
-                "fish": representative.fish,
-                "weight": representative.weight,
-                "waterbody": representative.waterbody,
-                "bait_display": bait_display,
-                "date": representative.date,  # Fishing date from leaderboard
-                "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,  # When we scraped this
-                "region": representative.region,
-                "categories": categories,  # Include all categories for filtering
-                "bait1": representative.bait1,  # Include for sandwich bait filtering
-                "bait2": representative.bait2   # Include for sandwich bait filtering
-            })
-        
-        db.close()
-        logger.info(f"Retrieved {len(result)} unique records (from {len(records)} total records) via API")
+        logger.info(f"Retrieved {len(result)} unique records (from {total_db_records} total records) via legacy API")
         return result
     except Exception as e:
         logger.error(f"Error retrieving records: {e}")

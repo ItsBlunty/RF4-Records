@@ -12,6 +12,7 @@ import TrophyWeights from './components/TrophyWeights.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
 import Links from './components/Links.jsx';
+import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
@@ -24,7 +25,10 @@ function AppContent() {
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingRemaining, setLoadingRemaining] = useState(false);
+  const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [totalRecords, setTotalRecords] = useState(0);
   
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
@@ -123,47 +127,128 @@ function AppContent() {
     }
   };
 
-  // Fetch records from API
-    const fetchRecords = async () => {
-      try {
-        setLoading(true);
+  // Fetch initial records for fast page load
+  const fetchInitialRecords = async () => {
+    try {
+      setLoading(true);
       setError(null);
-      console.log('Fetching records from API...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records' : '/records');
-      console.log('API Response:', response);
-      console.log('Response data:', response.data);
-      console.log('Response status:', response.status);
+      console.log('Fetching initial records from API...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/initial' : '/records/initial');
+      console.log('Initial API Response:', response);
       
-      // Check if response.data is an array
+      if (!response.data || !Array.isArray(response.data.records)) {
+        console.error('Invalid initial response format:', response.data);
+        throw new Error('Invalid response format - expected records array');
+      }
+      
+      const { records: initialRecords, total_unique_records, has_more, unique_values } = response.data;
+      
+      setRecords(initialRecords);
+      setTotalRecords(total_unique_records);
+      setAllRecordsLoaded(!has_more);
+      
+      // Set unique values for filters from the full dataset
+      setUniqueValues(unique_values);
+      setFilteredRecords(initialRecords);
+      setLastRefresh(new Date());
+      
+      console.log(`Successfully loaded initial ${initialRecords.length} records (${total_unique_records} total)`);
+      
+      // Start loading remaining records in background if there are more
+      if (has_more) {
+        setTimeout(() => fetchRemainingRecords(), 1000); // Start after 1 second
+      }
+      
+    } catch (err) {
+      console.error('Detailed error:', err);
+      setError(`Failed to fetch initial records: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch remaining records in background
+  const fetchRemainingRecords = async () => {
+    if (allRecordsLoaded) return;
+    
+    try {
+      setLoadingRemaining(true);
+      console.log('Fetching remaining records in background...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/remaining' : '/records/remaining');
+      
+      if (!response.data || !Array.isArray(response.data.records)) {
+        console.error('Invalid remaining response format:', response.data);
+        return;
+      }
+      
+      const { records: remainingRecords } = response.data;
+      
+      setRecords(prevRecords => {
+        const allRecords = [...prevRecords, ...remainingRecords];
+        // Update filtered records if no filters are active
+        if (!filters.fish && !filters.waterbody && !filters.bait && !filters.dataAge) {
+          setFilteredRecords(allRecords);
+        }
+        return allRecords;
+      });
+      
+      setAllRecordsLoaded(true);
+      console.log(`Successfully loaded ${remainingRecords.length} remaining records`);
+      
+    } catch (err) {
+      console.error('Error fetching remaining records:', err);
+      // Don't show error to user for background loading failure
+    } finally {
+      setLoadingRemaining(false);
+    }
+  };
+
+  // Force load remaining records (for user interactions)
+  const ensureAllRecordsLoaded = async () => {
+    if (!allRecordsLoaded && !loadingRemaining) {
+      await fetchRemainingRecords();
+    }
+  };
+
+  // Legacy fetch all records function (for manual refresh)
+  const fetchAllRecords = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching all records from API...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records' : '/records');
+      
       if (!Array.isArray(response.data)) {
-        console.error('Response data is not an array:', response.data);
         throw new Error('Invalid response format - expected array');
       }
       
-        setRecords(response.data);
-        
-        // Extract unique values for filters
-        const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
-        const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
-              const bait = [...new Set(response.data.map(r => r.bait_display).filter(Boolean))].sort();
-        
+      setRecords(response.data);
+      setTotalRecords(response.data.length);
+      setAllRecordsLoaded(true);
+      
+      // Extract unique values for filters
+      const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
+      const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
+      const bait = [...new Set(response.data.map(r => r.bait_display).filter(Boolean))].sort();
+      
       setUniqueValues({ fish, waterbody, bait });
-        setFilteredRecords(response.data);
+      setFilteredRecords(response.data);
       setLastRefresh(new Date());
-      console.log(`Successfully loaded ${response.data.length} records`);
-      } catch (err) {
-        console.error('Detailed error:', err);
-        console.error('Error response:', err.response);
-        setError(`Failed to fetch records: ${err.message}`);
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log(`Successfully loaded all ${response.data.length} records`);
+      
+    } catch (err) {
+      console.error('Detailed error:', err);
+      setError(`Failed to fetch records: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Manual refresh function
   const handleRefresh = () => {
     hasFetched.current = false;
-    fetchRecords();
+    setAllRecordsLoaded(false);
+    fetchAllRecords(); // Use legacy endpoint for manual refresh to get everything
   };
 
   useEffect(() => {
@@ -171,7 +256,7 @@ function AppContent() {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    fetchRecords();
+    fetchInitialRecords();
   }, []);
 
   // No automatic refresh - users can manually refresh by reloading the page
@@ -292,14 +377,18 @@ function AppContent() {
     });
   };
 
-  const handleFilterChange = (filterType, value) => {
+  const handleFilterChange = async (filterType, value) => {
+    // Ensure all records are loaded before filtering
+    await ensureAllRecordsLoaded();
     setFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
   };
 
-  const handleSort = (key) => {
+  const handleSort = async (key) => {
+    // Ensure all records are loaded before sorting
+    await ensureAllRecordsLoaded();
     setSortConfig(prevConfig => {
       if (prevConfig.key === key) {
         // If clicking the same column
@@ -403,9 +492,29 @@ function AppContent() {
                 </div>
                 
                 {/* Record Count */}
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                  {filteredRecords.length} of {records.length} records
-                </span>
+                <div className="flex items-center space-x-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+                    {filteredRecords.length} of {records.length} records
+                    {!allRecordsLoaded && (
+                      <span className="ml-1 text-xs">
+                        ({totalRecords} total)
+                      </span>
+                    )}
+                  </span>
+                  
+                  {loadingRemaining && (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                      <span>Loading more...</span>
+                    </div>
+                  )}
+                  
+                  {!allRecordsLoaded && !loadingRemaining && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Loading remaining records in background...
+                    </span>
+                  )}
+                </div>
               </div>
               
               <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -413,25 +522,27 @@ function AppContent() {
               </div>
             </div>
             
-            {viewMode === 'grouped' ? (
-              <GroupedRecordsTable 
-                records={filteredRecords} 
-                sortConfig={sortConfig}
-                onSort={handleSort}
-              />
-            ) : viewMode === 'fish-grouped' ? (
-              <FishGroupedRecordsTable 
-                records={filteredRecords} 
-                sortConfig={sortConfig}
-                onSort={handleSort}
-              />
-            ) : (
-              <RecordsTable 
-                records={filteredRecords} 
-                sortConfig={sortConfig}
-                onSort={handleSort}
-              />
-            )}
+            <LoadingOverlay isLoading={loadingRemaining}>
+              {viewMode === 'grouped' ? (
+                <GroupedRecordsTable 
+                  records={filteredRecords} 
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+              ) : viewMode === 'fish-grouped' ? (
+                <FishGroupedRecordsTable 
+                  records={filteredRecords} 
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+              ) : (
+                <RecordsTable 
+                  records={filteredRecords} 
+                  sortConfig={sortConfig}
+                  onSort={handleSort}
+                />
+              )}
+            </LoadingOverlay>
           </div>
         </>
       ) : getCurrentPage() === 'links' ? (
