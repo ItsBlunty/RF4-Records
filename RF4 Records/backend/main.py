@@ -106,6 +106,7 @@ def scheduled_scrape():
     try:
         import psutil
         import os
+        import gc  # Import gc at function scope to avoid UnboundLocalError
         
         # Get memory before any cleanup
         memory_before_cleanup = get_memory_usage()
@@ -121,7 +122,6 @@ def scheduled_scrape():
             enhanced_python_memory_cleanup()
             
             # Additional garbage collection for FastAPI/database operations
-            import gc
             for _ in range(3):
                 gc.collect()
             
