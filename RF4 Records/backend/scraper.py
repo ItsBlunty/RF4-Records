@@ -19,9 +19,7 @@ import os
 import signal
 import sys
 
-# Ensure built-in functions are available
-any = builtins.any
-callable = builtins.callable
+# Built-in functions should be available naturally
 
 # Global flag to track if scraping should be stopped
 should_stop_scraping = False
@@ -774,16 +772,11 @@ def parse_table_selenium(driver, region_info):
         import gc
         import sys
         
-        # Multiple rounds of garbage collection with focus on large objects
-        for cleanup_round in range(4):
-            collected = gc.collect()
+        # Conservative garbage collection - avoid destroying built-ins
+        for cleanup_round in range(3):
+            gc.collect()
             gc.collect(0)  # Young generation (where large strings would be)
-            gc.collect(1)  # Middle generation
             gc.collect(2)  # Old generation with circular references
-            
-            # Clear type cache every other round to free class-related memory
-            if cleanup_round % 2 == 0 and hasattr(sys, '_clear_type_cache'):
-                sys._clear_type_cache()
         
         # Force memory trimming to return memory to OS (Linux-specific but harmless)
         try:
@@ -1199,23 +1192,15 @@ def scrape_and_update_records():
                         bulk_inserter = BulkRecordInserter(db, batch_size=25)
                         record_checker = OptimizedRecordChecker(db)
                         
-                        # Aggressive Python memory cleanup
+                        # Conservative Python memory cleanup - avoid destroying built-ins
                         import gc
-                        import sys
                         
-                        # Multiple garbage collection rounds
-                        for cleanup_round in range(5):  # Reduced rounds
+                        # Standard garbage collection only - no aggressive module clearing
+                        for cleanup_round in range(3):
                             gc.collect()
-                            gc.collect(0)  # Young objects
-                            gc.collect(2)  # Old objects
-                            
-                            if cleanup_round % 2 == 0:
-                                if hasattr(sys, '_clear_type_cache'):
-                                    sys._clear_type_cache()
-                            
-                            time.sleep(0.1)  # Reduced sleep
+                            time.sleep(0.1)
                         
-                        # Clear import caches
+                        # Clear only safe, application-specific caches
                         try:
                             import importlib
                             importlib.invalidate_caches()
@@ -1236,33 +1221,17 @@ def scrape_and_update_records():
                         memory_after_python_cleanup = get_memory_usage()
                         logger.info(f"🧹 Memory after aggressive Python cleanup: {memory_after_python_cleanup}MB")
                         
-                        # If memory is still high, try one more extreme cleanup
+                        # If memory is still high, just do additional garbage collection
                         if memory_after_python_cleanup > 300:
-                            logger.warning(f"⚠️ Memory still high ({memory_after_python_cleanup}MB) after Python cleanup - trying extreme measures")
+                            logger.warning(f"Memory still high ({memory_after_python_cleanup}MB) - additional GC")
                             
-                            # Clear all cached modules (extreme measure)
-                            modules_to_clear = []
-                            for module_name, module in sys.modules.items():
-                                if hasattr(module, '__dict__') and module_name not in ['sys', 'gc', 'os', 'time']:
-                                    try:
-                                        # Clear module dictionaries of non-essential modules
-                                        if hasattr(module, '__dict__'):
-                                            for attr_name in list(module.__dict__.keys()):
-                                                if not attr_name.startswith('__'):
-                                                    try:
-                                                        delattr(module, attr_name)
-                                                    except Exception:
-                                                        pass
-                                    except Exception:
-                                        pass
-                            
-                            # Final garbage collection after extreme cleanup
-                            for _ in range(5):
+                            # Safe additional cleanup - no module destruction
+                            for _ in range(3):
                                 gc.collect()
-                                gc.collect(2)  # Focus on circular references
+                                gc.collect(2)
                             
-                            memory_after_extreme = get_memory_usage()
-                            logger.info(f"🧹 Memory after EXTREME cleanup: {memory_after_extreme}MB")
+                            memory_after_additional = get_memory_usage()
+                            logger.info(f"Memory after additional cleanup: {memory_after_additional}MB")
                         
                         logger.info(f"[CHROME RESET] Fresh Chrome instance created after killing all processes")
                         
@@ -1556,13 +1525,7 @@ def scrape_and_update_records():
             if i < 2:
                 time.sleep(0.3)
         
-        # Clear module-level caches
-        try:
-            import sys
-            if hasattr(sys, '_clear_type_cache'):
-                sys._clear_type_cache()
-        except Exception:
-            pass
+        # Skip aggressive cache clearing to preserve built-ins
         
         # Clear import caches
         try:
