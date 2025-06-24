@@ -1793,10 +1793,8 @@ def scrape_and_update_records():
                     # We'll try to create it on-demand later
                     driver = None
             
-            # 7. Log memory after complete cleanup (including new Chrome)
+            # 7. Final memory state (includes new Chrome if created)
             memory_after_cleanup = get_memory_usage()
-            memory_freed = memory_before_cleanup - memory_after_cleanup
-            logger.info(f"📊 Category cleanup complete: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
             
             # 8. Final memory check - abort if still over 1.5GB
             if memory_after_cleanup > 1500:
