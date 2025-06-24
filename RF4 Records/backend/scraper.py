@@ -181,6 +181,13 @@ def get_driver():
         logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
         raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
     
+    # PRE-EMPTIVE CLEANUP: Kill any existing Chrome processes before creating new ones
+    chrome_count = count_chrome_processes()
+    if chrome_count > 0:
+        logger.info(f"Found {chrome_count} existing Chrome processes - cleaning up before creating new driver")
+        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+        time.sleep(2)  # Wait for cleanup
+    
     # IMPROVED MEMORY MANAGEMENT - Check memory before creating new driver
     current_memory = get_memory_usage()
     
@@ -257,9 +264,9 @@ def get_driver():
     chrome_options.add_argument('--disable-ipc-flooding-protection')  # Prevent IPC timeout
     chrome_options.add_argument('--disable-renderer-accessibility')  # Reduce renderer load
     
-    # Aggressive memory optimization - Enhanced for Railway
+    # EXTREME memory optimization for Railway containers
     chrome_options.add_argument('--memory-pressure-off')
-    chrome_options.add_argument('--max_old_space_size=1024')  # Reduced from 2048 for Railway containers
+    chrome_options.add_argument('--max_old_space_size=512')  # Further reduced for Railway
     chrome_options.add_argument('--renderer-process-limit=1')  # Single renderer process
     chrome_options.add_argument('--max-unused-resource-memory-usage-percentage=5')
     chrome_options.add_argument('--disable-background-timer-throttling')
@@ -267,6 +274,19 @@ def get_driver():
     chrome_options.add_argument('--disable-renderer-backgrounding')
     chrome_options.add_argument('--disable-background-networking')
     chrome_options.add_argument('--aggressive-cache-discard')
+    
+    # Additional Railway-specific memory constraints
+    chrome_options.add_argument('--max-old-space-size=256')  # V8 heap limit
+    chrome_options.add_argument('--memory-pressure-off')
+    chrome_options.add_argument('--disable-features=VizDisplayCompositor,VizHitTestSurfaceLayer')
+    chrome_options.add_argument('--disable-gpu-sandbox')
+    chrome_options.add_argument('--disable-software-rasterizer')
+    chrome_options.add_argument('--disable-background-timer-throttling')
+    chrome_options.add_argument('--disable-renderer-backgrounding')
+    chrome_options.add_argument('--disable-backgrounding-occluded-windows')
+    chrome_options.add_argument('--disable-features=TranslateUI')
+    chrome_options.add_argument('--disable-features=BlinkGenPropertyTrees')
+    chrome_options.add_argument('--disable-ipc-flooding-protection')
     
     # Process management - Less aggressive approach
     chrome_options.add_argument('--disable-gpu-process')  # No separate GPU process
@@ -307,12 +327,49 @@ def get_driver():
         # Running in Docker container with pre-installed Chrome
         logger.info("Using Docker container Chrome installation")
         
+        # MEMORY MONITORING: Check memory before Chrome creation
+        pre_chrome_memory = get_memory_usage()
+        logger.info(f"Memory before Chrome creation: {pre_chrome_memory}MB")
+        
         # Set Chrome binary location
         chrome_options.binary_location = chrome_bin
         
         # Create service with specific ChromeDriver path
         service = Service(executable_path=chromedriver_path)
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        # MEMORY BOMB PREVENTION: Monitor memory during Chrome creation
+        try:
+            driver = webdriver.Chrome(service=service, options=chrome_options)
+            
+            # Check memory immediately after Chrome creation
+            post_chrome_memory = get_memory_usage()
+            memory_increase = post_chrome_memory - pre_chrome_memory
+            logger.info(f"Memory after Chrome creation: {post_chrome_memory}MB (Δ+{memory_increase:.1f}MB)")
+            
+            # EMERGENCY: If Chrome creation caused massive memory spike
+            if post_chrome_memory > 800:  # Emergency threshold for Docker
+                logger.critical(f"🚨 EMERGENCY: Chrome creation caused memory bomb ({post_chrome_memory}MB)!")
+                logger.critical(f"Memory increased by {memory_increase:.1f}MB during Chrome creation")
+                
+                # Try to clean up the driver we just created
+                try:
+                    driver.quit()
+                except Exception:
+                    pass
+                
+                # Kill all Chrome processes
+                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                
+                raise MemoryError(f"Chrome creation memory bomb: {post_chrome_memory}MB (increased by {memory_increase:.1f}MB)")
+            
+            elif memory_increase > 400:  # Chrome used more than 400MB
+                logger.warning(f"⚠️  Chrome creation used {memory_increase:.1f}MB - monitoring closely")
+                
+        except MemoryError:
+            raise  # Re-raise memory errors
+        except Exception as e:
+            logger.error(f"Failed to create Chrome driver: {e}")
+            raise
         
         # Set more aggressive timeouts to prevent renderer hangs in Docker
         driver.set_page_load_timeout(30)  # Reduced from 45 to prevent long hangs
@@ -1401,17 +1458,17 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # Emergency memory monitoring - simplified
+                    # Emergency memory monitoring - with child process awareness
                     current_memory = get_memory_usage()
-                    if current_memory > 600:  # Emergency threshold
+                    if current_memory > 800:  # Adjusted threshold for Railway with child processes
                         logger.critical(f"Memory bomb detected ({current_memory}MB) - ABORTING")
                         should_stop_scraping = True
                         raise MemoryError(f"Memory bomb detected ({current_memory}MB)")
-                    elif current_memory > 450:
+                    elif current_memory > 600:  # High memory warning threshold
                         logger.warning(f"High memory usage ({current_memory}MB) - forcing cleanup")
                         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                        force_garbage_collection()
-                        time.sleep(2)
+                        enhanced_python_memory_cleanup()
+                        time.sleep(3)
                     
                     # Chrome reset every 10 regions
                     if regions_scraped % 10 == 0:
