@@ -107,7 +107,45 @@ def scheduled_scrape():
         import psutil
         import os
         
-        # Get memory before scrape
+        # Get memory before any cleanup
+        memory_before_cleanup = get_memory_usage()
+        
+        # PRE-SCRAPE CLEANUP: Clear memory accumulated during idle period
+        if memory_before_cleanup > 300:  # Significant memory accumulation
+            logger.info(f"🧹 Pre-scrape cleanup: Memory at {memory_before_cleanup:.1f}MB - clearing idle accumulation")
+            
+            # Kill any orphaned Chrome processes from previous sessions
+            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+            
+            # Enhanced Python memory cleanup to clear API operation residue
+            enhanced_python_memory_cleanup()
+            
+            # Additional garbage collection for FastAPI/database operations
+            import gc
+            for _ in range(3):
+                gc.collect()
+            
+            # Clear database session pools that may have accumulated
+            try:
+                from database import SessionLocal
+                # Force database connection pool cleanup
+                SessionLocal.close_all()
+            except Exception:
+                pass
+            
+            # Wait for cleanup to take effect
+            import time
+            time.sleep(2)
+            
+            memory_after_cleanup = get_memory_usage()
+            memory_freed = memory_before_cleanup - memory_after_cleanup
+            
+            if memory_freed > 50:  # Significant cleanup
+                logger.info(f"✅ Pre-scrape cleanup freed {memory_freed:.1f}MB (now {memory_after_cleanup:.1f}MB)")
+            else:
+                logger.debug(f"Pre-scrape cleanup freed {memory_freed:.1f}MB (now {memory_after_cleanup:.1f}MB)")
+        
+        # Get memory before scrape (after cleanup)
         memory_before = get_memory_usage()
         
         frequency = "3-minute" if is_high_frequency_period() else "15-minute"
@@ -252,6 +290,45 @@ def schedule_monitor():
     except Exception as e:
         logger.error(f"Error in schedule monitor: {e}")
 
+def periodic_memory_cleanup():
+    """Periodic cleanup to prevent memory accumulation from API operations"""
+    try:
+        # Only run if not currently scraping
+        if is_scraping:
+            return
+        
+        current_memory = get_memory_usage()
+        
+        # Only cleanup if memory is elevated (>350MB) and we're not scraping
+        if current_memory > 350:
+            logger.info(f"🧹 Periodic cleanup: Memory at {current_memory:.1f}MB during idle")
+            
+            # Kill any orphaned processes
+            kill_orphaned_chrome_processes(max_age_seconds=300, aggressive=False)
+            
+            # Light Python memory cleanup
+            enhanced_python_memory_cleanup()
+            
+            # Clear database session pools
+            try:
+                from database import SessionLocal
+                SessionLocal.close_all()
+            except Exception:
+                pass
+            
+            import gc
+            gc.collect()
+            gc.collect(2)
+            
+            memory_after = get_memory_usage()
+            memory_freed = current_memory - memory_after
+            
+            if memory_freed > 20:
+                logger.info(f"✅ Periodic cleanup freed {memory_freed:.1f}MB (now {memory_after:.1f}MB)")
+            
+    except Exception as e:
+        logger.debug(f"Periodic cleanup error: {type(e).__name__}")
+
 @app.on_event("startup")
 def startup_event():
     """Server startup - run migrations and start scheduler"""
@@ -281,7 +358,16 @@ def startup_event():
             id='schedule_monitor_job'
         )
         
+        # Add periodic memory cleanup job (every 90 seconds during idle)
+        scheduler.add_job(
+            periodic_memory_cleanup,
+            'interval',
+            seconds=90,
+            id='memory_cleanup_job'
+        )
+        
         logger.info("Dynamic scheduler started - frequency based on weekly schedule")
+        logger.info("Periodic memory cleanup scheduled every 90 seconds")
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
     
