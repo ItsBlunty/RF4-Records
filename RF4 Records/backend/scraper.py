@@ -181,27 +181,62 @@ def get_driver():
         logger.warning("🚫 Attempted to create Chrome driver after scraping finished - blocking to prevent memory leaks")
         raise RuntimeError("Chrome driver creation blocked - scraping session has ended")
     
-    # EMERGENCY CIRCUIT BREAKER - Check memory before creating new driver
+    # IMPROVED MEMORY MANAGEMENT - Check memory before creating new driver
     current_memory = get_memory_usage()
     
-    # Emergency threshold - prevent memory bombs
-    if current_memory > 500:  # Much stricter threshold
+    # Emergency threshold - prevent memory bombs (increased for Railway)
+    if current_memory > 700:  # Increased from 500MB for Railway containers
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({current_memory}MB) - BLOCKING Chrome creation to prevent memory bomb")
         raise MemoryError(f"EMERGENCY BLOCK: Cannot create Chrome driver - memory usage dangerous ({current_memory}MB)")
     
-    if current_memory > 300:  # Reduced verbosity threshold
-        logger.info(f"High memory usage ({current_memory}MB) detected - performing cleanup")
-        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-        force_garbage_collection()
-        time.sleep(2)  # Reduced wait time
+    # CIRCUIT BREAKER - Prevent infinite loops by allowing creation if no Chrome processes exist
+    if current_memory > 450:  # Increased threshold for Railway
+        logger.info(f"High memory usage ({current_memory}MB) detected - performing enhanced cleanup")
         
-        # Check again after cleanup
-        memory_after = get_memory_usage()
-        if memory_after > 400:  # Prevent memory bombs
-            logger.error(f"Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
-            raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({memory_after}MB)")
+        # Check if there are actually Chrome processes to clean up
+        chrome_process_count = count_chrome_processes()
+        
+        if chrome_process_count == 0:
+            # No Chrome processes - memory is held by Python process
+            logger.warning(f"High memory ({current_memory}MB) but no Chrome processes found - performing Python memory cleanup")
+            enhanced_python_memory_cleanup()
+            time.sleep(3)  # Allow cleanup to take effect
+            
+            # Check memory after Python cleanup
+            memory_after = get_memory_usage()
+            memory_freed = current_memory - memory_after
+            logger.info(f"Python memory cleanup: {memory_after}MB (freed {memory_freed:.1f}MB)")
+            
+            # CIRCUIT BREAKER: Allow Chrome creation even if memory is still high
+            # This prevents infinite loops when memory is held by Python process
+            if memory_after > 600:  # Still very high - one more attempt
+                logger.warning(f"Memory still very high ({memory_after}MB) - forcing aggressive cleanup")
+                enhanced_python_memory_cleanup()
+                force_system_memory_release()
+                time.sleep(5)
+                
+                final_memory = get_memory_usage()
+                if final_memory > 650:  # Emergency threshold
+                    logger.error(f"Memory critically high ({final_memory}MB) after all cleanup - BLOCKING Chrome creation")
+                    raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({final_memory}MB)")
+                else:
+                    logger.warning(f"Proceeding with Chrome creation despite elevated memory ({final_memory}MB) - no Chrome processes to clean")
+            elif memory_after > 500:
+                logger.warning(f"Memory elevated after cleanup ({memory_after}MB) - proceeding with caution")
         else:
-            logger.info(f"Memory acceptable after cleanup: {memory_after}MB")
+            # Chrome processes exist - clean them up
+            logger.info(f"Found {chrome_process_count} Chrome processes - performing process cleanup")
+            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+            enhanced_python_memory_cleanup()
+            time.sleep(3)
+            
+            # Check again after cleanup
+            memory_after = get_memory_usage()
+            if memory_after > 550:  # Adjusted threshold for Railway
+                logger.error(f"Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
+                raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({memory_after}MB)")
+            else:
+                logger.info(f"Memory acceptable after cleanup: {memory_after}MB")
     
     chrome_options = Options()
     
@@ -544,16 +579,122 @@ def cleanup_driver(driver):
     return cleanup_success
 
 def is_driver_alive(driver):
-    """Check if WebDriver session is still alive"""
+    """Check if the WebDriver is still alive and responsive"""
     if not driver:
         return False
     
     try:
-        # Simple check to see if session is alive
-        driver.current_url
+        # Quick test to see if driver is responsive
+        _ = driver.current_url
         return True
     except Exception:
         return False
+
+def count_chrome_processes():
+    """Count the number of Chrome processes currently running"""
+    try:
+        import psutil
+        chrome_count = 0
+        
+        for proc in psutil.process_iter(['pid', 'name']):
+            try:
+                if proc.info['name'] and 'chrome' in proc.info['name'].lower():
+                    chrome_count += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                continue
+        
+        return chrome_count
+    except Exception as e:
+        logger.debug(f"Error counting Chrome processes: {e}")
+        return 0
+
+def enhanced_python_memory_cleanup():
+    """Perform enhanced Python memory cleanup to free process memory"""
+    try:
+        import gc
+        
+        logger.debug("Starting enhanced Python memory cleanup")
+        
+        # Step 1: Multiple rounds of conservative garbage collection
+        total_collected = 0
+        for round_num in range(3):  # Conservative rounds
+            collected = gc.collect()
+            total_collected += collected
+        
+        # Step 2: Clear specific known caches safely
+        try:
+            # Clear BeautifulSoup parser cache if it exists
+            import bs4
+            if hasattr(bs4, 'BeautifulSoup') and hasattr(bs4.BeautifulSoup, '_parser_cache'):
+                bs4.BeautifulSoup._parser_cache.clear()
+        except (ImportError, AttributeError):
+            pass
+        
+        try:
+            # Clear Selenium WebDriver cache if it exists
+            from selenium.webdriver.chrome import service
+            if hasattr(service, 'Service') and hasattr(service.Service, '_instances'):
+                service.Service._instances.clear()
+        except (ImportError, AttributeError):
+            pass
+        
+        # Step 3: Final garbage collection
+        final_collected = gc.collect()
+        total_collected += final_collected
+        
+        logger.debug(f"Enhanced cleanup completed: {total_collected} objects collected")
+        
+    except Exception as e:
+        logger.debug(f"Error during enhanced memory cleanup: {e}")
+
+def force_system_memory_release():
+    """Force the system to release memory back to the OS"""
+    try:
+        # Step 1: Linux-specific memory trimming
+        try:
+            import ctypes
+            import ctypes.util
+            libc = ctypes.CDLL(ctypes.util.find_library("c"))
+            if hasattr(libc, 'malloc_trim'):
+                result = libc.malloc_trim(0)
+                logger.debug(f"malloc_trim result: {result}")
+        except Exception:
+            pass  # Not available on all systems
+        
+        # Step 2: Python-specific memory optimization
+        try:
+            import gc
+            
+            # Conservative garbage collection without changing GC settings
+            gc.collect()
+            gc.collect(0)  # Young generation
+            gc.collect(1)  # Middle generation
+            gc.collect(2)  # Old generation
+            
+        except Exception:
+            pass
+        
+        # Step 3: Process memory optimization
+        try:
+            import psutil
+            import os
+            
+            # Get current process
+            process = psutil.Process(os.getpid())
+            
+            # Force memory stats refresh
+            memory_info = process.memory_info()
+            memory_percent = process.memory_percent()
+            
+            logger.debug(f"Process memory after cleanup: RSS={memory_info.rss/1024/1024:.1f}MB, Percent={memory_percent:.1f}%")
+            
+        except Exception:
+            pass
+        
+        logger.debug("System memory release completed")
+        
+    except Exception as e:
+        logger.debug(f"Error during system memory release: {e}")
 
 def force_garbage_collection():
     """Aggressively force garbage collection to help with memory management"""
@@ -635,41 +776,55 @@ def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
     memory_mb = get_memory_usage()
     
-    # EMERGENCY CIRCUIT BREAKER - Prevent 7GB memory bombs
-    if memory_mb > 800:  # Emergency threshold
+    # EMERGENCY CIRCUIT BREAKER - Prevent memory bombs (adjusted for Railway)
+    if memory_mb > 900:  # Increased from 800MB for Railway containers
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({memory_mb}MB) - ABORTING to prevent system failure")
         logger.critical(f"🚨 This would have caused a memory bomb like the 7GB incident")
         raise MemoryError(f"EMERGENCY ABORT: Memory usage dangerous ({memory_mb}MB) - preventing system failure")
     
-    if memory_mb > 250:  # Much lower threshold - be more aggressive
-        logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
+    if memory_mb > 400:  # Increased from 250MB for Railway containers
+        logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing enhanced cleanup")
+        
+        # Check if there are Chrome processes to clean up
+        chrome_count = count_chrome_processes()
+        logger.info(f"Found {chrome_count} Chrome processes before cleanup")
         
         # Kill ALL Chrome processes before starting new scrape
-        logger.info("Pre-scrape cleanup - killing ALL Chrome processes...")
-        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+        if chrome_count > 0:
+            logger.info("Pre-scrape cleanup - killing ALL Chrome processes...")
+            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         
-        # Force aggressive garbage collection
-        force_garbage_collection()
-        force_garbage_collection()  # Double cleanup
+        # Perform enhanced Python memory cleanup
+        logger.info("Performing enhanced Python memory cleanup...")
+        enhanced_python_memory_cleanup()
         
-        # Wait longer for cleanup to take effect
+        # Force system memory release
+        force_system_memory_release()
+        
+        # Wait for cleanup to take effect
         time.sleep(5)
         
         # Check memory again after cleanup
         memory_after_cleanup = get_memory_usage()
         memory_freed = memory_mb - memory_after_cleanup
         
-        logger.info(f"Memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
+        logger.info(f"Enhanced memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
         
-        # Much stricter thresholds to prevent memory bombs
-        if memory_after_cleanup > 600:
+        # ADJUSTED THRESHOLDS for Railway deployment - prevent infinite loops
+        if memory_after_cleanup > 800:  # Increased from 600MB
             logger.critical(f"🚨 CRITICAL: Memory still critically high ({memory_after_cleanup}MB) after cleanup - ABORTING")
             raise MemoryError(f"CRITICAL ABORT: Memory usage dangerous ({memory_after_cleanup}MB) - preventing system failure")
-        elif memory_after_cleanup > 400:
-            logger.error(f"Memory usage still high ({memory_after_cleanup}MB) after cleanup - this is dangerous")
-            raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting to prevent memory bomb")
-        elif memory_after_cleanup > 250:
-            logger.warning(f"Memory usage elevated ({memory_after_cleanup}MB) after cleanup - proceeding with extreme caution")
+        elif memory_after_cleanup > 650:  # Increased from 400MB
+            # CIRCUIT BREAKER: Don't abort if no Chrome processes exist
+            remaining_chrome = count_chrome_processes()
+            if remaining_chrome == 0:
+                logger.warning(f"Memory still high ({memory_after_cleanup}MB) but no Chrome processes - proceeding with caution")
+                logger.warning("This prevents infinite loops when memory is held by Python process")
+            else:
+                logger.error(f"Memory usage still high ({memory_after_cleanup}MB) with {remaining_chrome} Chrome processes - this is dangerous")
+                raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting to prevent memory bomb")
+        elif memory_after_cleanup > 500:  # Increased from 250MB
+            logger.warning(f"Memory usage elevated ({memory_after_cleanup}MB) after cleanup - proceeding with enhanced monitoring")
     
     return memory_mb
 
@@ -690,11 +845,10 @@ def log_memory_usage(context=""):
     if memory_mb > 0:
         logger.info(f"Memory usage {context}: {memory_mb} MB")
         
-        # Force aggressive cleanup if memory usage is too high
-        if memory_mb > 350:  # Threshold for aggressive cleanup
-            logger.warning(f"High memory usage detected ({memory_mb} MB), forcing aggressive cleanup")
-            force_garbage_collection()
-            force_garbage_collection()  # Double cleanup
+        # Force enhanced cleanup if memory usage is too high
+        if memory_mb > 500:  # Increased threshold from 350MB for Railway
+            logger.warning(f"High memory usage detected ({memory_mb} MB), forcing enhanced cleanup")
+            enhanced_python_memory_cleanup()  # Use enhanced cleanup instead of basic
             
     return memory_mb
 
