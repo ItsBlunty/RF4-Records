@@ -121,6 +121,38 @@ def scheduled_scrape():
         else:
             logger.warning(f"{frequency.capitalize()} scrape completed with issues (Memory: {memory_after:.1f} MB, Δ{memory_change:+.1f} MB)")
             
+    except MemoryError as e:
+        # Memory bomb detected - this is a critical system issue
+        logger.critical(f"🚨 MEMORY BOMB DETECTED: {e}")
+        logger.critical("🚨 This indicates a serious system issue that requires immediate attention")
+        
+        # Force aggressive cleanup to try to recover
+        logger.info("🧹 Attempting emergency system recovery...")
+        try:
+            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+            force_garbage_collection()
+            import time
+            time.sleep(5)  # Give system time to recover
+            
+            # Check if memory recovered
+            import psutil
+            import os
+            process = psutil.Process(os.getpid())
+            memory_after_recovery = process.memory_info().rss / 1024 / 1024
+            logger.info(f"Memory after emergency recovery: {memory_after_recovery:.1f} MB")
+            
+            if memory_after_recovery > 500:  # Still dangerously high
+                logger.critical(f"🚨 RECOVERY FAILED: Memory still critically high ({memory_after_recovery:.1f} MB)")
+                logger.critical("🚨 System may need Railway redeploy to fully recover")
+            else:
+                logger.info(f"✅ Emergency recovery successful: Memory reduced to {memory_after_recovery:.1f} MB")
+                
+        except Exception as recovery_error:
+            logger.critical(f"🚨 Emergency recovery failed: {recovery_error}")
+            
+        # Continue with normal scheduling - let Railway handle redeploy if needed
+        logger.info("Continuing with normal scheduling - Railway will handle redeploy if system becomes unstable")
+        
     except Exception as e:
         logger.error(f"Scheduled scrape failed: {e}")
     finally:
@@ -281,12 +313,56 @@ def shutdown_event():
 
 @app.get("/health")
 def health_check():
-    """Health check endpoint for Railway and monitoring"""
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "version": "1.0.0"
-    }
+    """Enhanced health check endpoint for Railway and monitoring"""
+    try:
+        import psutil
+        import os
+        
+        # Get current memory usage
+        process = psutil.Process(os.getpid())
+        memory_mb = process.memory_info().rss / 1024 / 1024
+        
+        # Check if system is in a healthy state
+        if memory_mb > 800:  # Critical memory threshold
+            return JSONResponse(
+                status_code=503,  # Service Unavailable - Railway will redeploy
+                content={
+                    "status": "unhealthy",
+                    "reason": "critical_memory_usage",
+                    "memory_mb": round(memory_mb, 1),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "action_needed": "Railway should redeploy this instance"
+                }
+            )
+        elif memory_mb > 500:  # Warning threshold
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "degraded",
+                    "reason": "high_memory_usage",
+                    "memory_mb": round(memory_mb, 1),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "warning": "Memory usage is elevated but still functional"
+                }
+            )
+        else:
+            return {
+                "status": "healthy",
+                "memory_mb": round(memory_mb, 1),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "version": "1.0.0"
+            }
+            
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "reason": "health_check_failed",
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        )
 
 @app.get("/api")
 def api_root():
