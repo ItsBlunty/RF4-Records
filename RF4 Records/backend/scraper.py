@@ -186,7 +186,7 @@ def get_driver():
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({current_memory}MB) - BLOCKING Chrome creation to prevent memory bomb")
         raise MemoryError(f"EMERGENCY BLOCK: Cannot create Chrome driver - memory usage dangerous ({current_memory}MB)")
     
-    if current_memory > 300:  # Lower threshold - be more aggressive
+    if current_memory > 250:  # Much lower threshold - be more aggressive
         logger.warning(f"🚨 High memory usage ({current_memory}MB) detected before Chrome creation - performing cleanup")
         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
         force_garbage_collection()
@@ -194,7 +194,7 @@ def get_driver():
         
         # Check again after cleanup - much stricter threshold
         memory_after = get_memory_usage()
-        if memory_after > 400:  # Much lower threshold - prevent memory bombs
+        if memory_after > 350:  # Much lower threshold - prevent memory bombs
             logger.critical(f"🚨 CRITICAL: Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
             raise MemoryError(f"CRITICAL BLOCK: Cannot create Chrome driver - memory usage still dangerous ({memory_after}MB)")
         else:
@@ -638,7 +638,7 @@ def check_memory_before_scraping():
         logger.critical(f"🚨 This would have caused a memory bomb like the 7GB incident")
         raise MemoryError(f"EMERGENCY ABORT: Memory usage dangerous ({memory_mb}MB) - preventing system failure")
     
-    if memory_mb > 300:  # Lower threshold - be more aggressive
+    if memory_mb > 250:  # Much lower threshold - be more aggressive
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing cleanup")
         
         # Kill ALL Chrome processes before starting new scrape
@@ -665,7 +665,7 @@ def check_memory_before_scraping():
         elif memory_after_cleanup > 400:
             logger.error(f"Memory usage still high ({memory_after_cleanup}MB) after cleanup - this is dangerous")
             raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting to prevent memory bomb")
-        elif memory_after_cleanup > 300:
+        elif memory_after_cleanup > 250:
             logger.warning(f"Memory usage elevated ({memory_after_cleanup}MB) after cleanup - proceeding with extreme caution")
     
     return memory_mb
@@ -747,9 +747,12 @@ def parse_table_selenium(driver, region_info):
         # Now parse all the records tables
         records = parse_all_records_from_soup(soup, region_info)
         
-        # Aggressive memory cleanup - clear large objects immediately
+        # AGGRESSIVE memory cleanup - clear large objects immediately and force release
         soup.decompose()  # BeautifulSoup method to free memory more aggressively
         soup = None
+        
+        # Clear the large HTML string from memory explicitly
+        html_content = None
         
         # Force Selenium to clear its internal page cache
         try:
@@ -757,13 +760,35 @@ def parse_table_selenium(driver, region_info):
             driver.execute_script("document.open(); document.write(''); document.close();")
             # Force browser garbage collection
             driver.execute_script("if (window.gc) { window.gc(); }")
+            # Clear performance timeline and resource timings
+            driver.execute_script("if (window.performance) { window.performance.clearResourceTimings(); window.performance.clearMeasures(); window.performance.clearMarks(); }")
         except Exception:
             pass  # Non-critical
         
-        # Force Python garbage collection after processing large HTML
+        # AGGRESSIVE Python memory cleanup after large HTML processing
         import gc
-        gc.collect()
-        gc.collect()  # Second pass for any circular references
+        import sys
+        
+        # Multiple rounds of garbage collection with focus on large objects
+        for cleanup_round in range(4):
+            collected = gc.collect()
+            gc.collect(0)  # Young generation (where large strings would be)
+            gc.collect(1)  # Middle generation
+            gc.collect(2)  # Old generation with circular references
+            
+            # Clear type cache every other round to free class-related memory
+            if cleanup_round % 2 == 0 and hasattr(sys, '_clear_type_cache'):
+                sys._clear_type_cache()
+        
+        # Force memory trimming to return memory to OS (Linux-specific but harmless)
+        try:
+            import ctypes
+            import ctypes.util
+            libc = ctypes.CDLL(ctypes.util.find_library("c"))
+            if hasattr(libc, 'malloc_trim'):
+                libc.malloc_trim(0)
+        except Exception:
+            pass
         
         return records
         
@@ -1179,9 +1204,79 @@ def scrape_and_update_records():
                         bulk_inserter = BulkRecordInserter(db, batch_size=25)
                         record_checker = OptimizedRecordChecker(db)
                         
-                        # Force garbage collection
-                        force_garbage_collection()
-                        force_garbage_collection()  # Double cleanup
+                        # AGGRESSIVE PYTHON MEMORY CLEANUP - Force release of accumulated objects
+                        logger.info("🧹 Forcing aggressive Python memory cleanup...")
+                        
+                        # Clear all module-level caches and variables
+                        import gc
+                        import sys
+                        
+                        # Force multiple garbage collection rounds with different strategies
+                        for cleanup_round in range(8):  # More aggressive cleanup rounds
+                            # Standard garbage collection
+                            collected = gc.collect()
+                            
+                            # Generation-specific cleanup
+                            gc.collect(0)  # Young objects
+                            gc.collect(1)  # Middle generation
+                            gc.collect(2)  # Old objects with circular references
+                            
+                            if cleanup_round % 2 == 0:
+                                # Clear type cache every other round
+                                if hasattr(sys, '_clear_type_cache'):
+                                    sys._clear_type_cache()
+                            
+                            # Short pause between rounds
+                            time.sleep(0.2)
+                        
+                        # Clear import caches
+                        try:
+                            import importlib
+                            importlib.invalidate_caches()
+                        except Exception:
+                            pass
+                        
+                        # Force memory trimming (Linux-specific but harmless on other systems)
+                        try:
+                            import ctypes
+                            import ctypes.util
+                            libc = ctypes.CDLL(ctypes.util.find_library("c"))
+                            if hasattr(libc, 'malloc_trim'):
+                                libc.malloc_trim(0)  # Force return unused memory to OS
+                        except Exception:
+                            pass  # Not available on all systems
+                        
+                        # Check memory after aggressive cleanup
+                        memory_after_python_cleanup = get_memory_usage()
+                        logger.info(f"🧹 Memory after aggressive Python cleanup: {memory_after_python_cleanup}MB")
+                        
+                        # If memory is still high, try one more extreme cleanup
+                        if memory_after_python_cleanup > 300:
+                            logger.warning(f"⚠️ Memory still high ({memory_after_python_cleanup}MB) after Python cleanup - trying extreme measures")
+                            
+                            # Clear all cached modules (extreme measure)
+                            modules_to_clear = []
+                            for module_name, module in sys.modules.items():
+                                if hasattr(module, '__dict__') and module_name not in ['sys', 'gc', 'os', 'time']:
+                                    try:
+                                        # Clear module dictionaries of non-essential modules
+                                        if hasattr(module, '__dict__'):
+                                            for attr_name in list(module.__dict__.keys()):
+                                                if not attr_name.startswith('__'):
+                                                    try:
+                                                        delattr(module, attr_name)
+                                                    except Exception:
+                                                        pass
+                                    except Exception:
+                                        pass
+                            
+                            # Final garbage collection after extreme cleanup
+                            for _ in range(5):
+                                gc.collect()
+                                gc.collect(2)  # Focus on circular references
+                            
+                            memory_after_extreme = get_memory_usage()
+                            logger.info(f"🧹 Memory after EXTREME cleanup: {memory_after_extreme}MB")
                         
                         logger.info(f"[CHROME RESET] Fresh Chrome instance created after killing all processes")
                         
