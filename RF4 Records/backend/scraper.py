@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from database import SessionLocal, Record
@@ -689,13 +690,36 @@ def count_chrome_processes():
             for child in children:
                 try:
                     if 'chrome' in child.name().lower():
-                        if child.pid not in [p.info['pid'] for p in psutil.process_iter(['pid', 'name']) if p.info['name'] and 'chrome' in p.info['name'].lower()]:
-                            # This shouldn't happen, but just in case
-                            chrome_child_processes += 1
+                        chrome_child_processes += 1
+                        try:
                             memory_mb = child.memory_info().rss / 1024 / 1024
-                            logger.warning(f"Found additional Chrome child: PID {child.pid}, Memory: {memory_mb:.1f}MB")
+                            # Only log if process has significant memory (not zombie)
+                            if memory_mb > 1:
+                                logger.warning(f"[CHILD CLEANUP] Killing Chrome child process PID: {child.pid}, Memory: {memory_mb:.1f}MB")
+                            else:
+                                logger.debug(f"[CHILD CLEANUP] Cleaning up zombie Chrome child PID: {child.pid}")
+                        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                            logger.debug(f"[CHILD CLEANUP] Zombie Chrome child PID: {child.pid}")
+                        
+                        # Try to terminate gracefully first
+                        try:
+                            child.terminate()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass  # Already dead
+                        
+                        killed_count += 1
+                        
+                        # Quick wait then force kill if still running
+                        try:
+                            child.wait(timeout=1)  # Reduced timeout for faster cleanup
+                        except psutil.TimeoutExpired:
+                            try:
+                                child.kill()
+                                logger.debug(f"[CHILD CLEANUP] Force killed stubborn Chrome child PID: {child.pid}")
+                            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                pass  # Already dead
                             
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
                     
         except Exception as e:
@@ -829,20 +853,35 @@ def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
                 try:
                     if 'chrome' in child.name().lower():
                         chrome_child_processes += 1
-                        memory_mb = child.memory_info().rss / 1024 / 1024
-                        logger.warning(f"[CHILD CLEANUP] Killing Chrome child process PID: {child.pid}, Memory: {memory_mb:.1f}MB")
+                        try:
+                            memory_mb = child.memory_info().rss / 1024 / 1024
+                            # Only log if process has significant memory (not zombie)
+                            if memory_mb > 1:
+                                logger.warning(f"[CHILD CLEANUP] Killing Chrome child process PID: {child.pid}, Memory: {memory_mb:.1f}MB")
+                            else:
+                                logger.debug(f"[CHILD CLEANUP] Cleaning up zombie Chrome child PID: {child.pid}")
+                        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                            logger.debug(f"[CHILD CLEANUP] Zombie Chrome child PID: {child.pid}")
                         
-                        child.terminate()
+                        # Try to terminate gracefully first
+                        try:
+                            child.terminate()
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass  # Already dead
+                        
                         killed_count += 1
                         
-                        # Wait a bit then force kill if still running
+                        # Quick wait then force kill if still running
                         try:
-                            child.wait(timeout=3)
+                            child.wait(timeout=1)  # Reduced timeout for faster cleanup
                         except psutil.TimeoutExpired:
-                            child.kill()
-                            logger.info(f"[CHILD CLEANUP] Force killed stubborn Chrome child PID: {child.pid}")
+                            try:
+                                child.kill()
+                                logger.debug(f"[CHILD CLEANUP] Force killed stubborn Chrome child PID: {child.pid}")
+                            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                pass  # Already dead
                             
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
                     
         except Exception as e:
@@ -1009,25 +1048,34 @@ def parse_table_selenium(driver, region_info):
         return []
     
     # Enhanced timeout handling with multiple strategies
-    wait = WebDriverWait(driver, 20)  # Increased timeout for reliability
+    wait = WebDriverWait(driver, 15)  # Reasonable timeout for Docker
     
     # Look for all records tables on the page with multiple fallback strategies
     try:
         # Strategy 1: Look for the main records tables
         table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.records_subtable.flex_table")))
-    except Exception as e1:
+    except TimeoutException:
         try:
             # Strategy 2: Look for any table-like structure
-            logger.debug(f"Primary table selector failed for {region_info['name']}, trying fallback")
+            logger.debug(f"Primary table selector timeout for {region_info['name']}, trying fallback")
             table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "div.flex_table")))
-        except Exception as e2:
+        except TimeoutException:
             try:
                 # Strategy 3: Look for any records container
-                logger.debug(f"Secondary table selector failed for {region_info['name']}, trying final fallback")
+                logger.debug(f"Secondary table selector timeout for {region_info['name']}, trying final fallback")
                 table_elements = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, "[class*='record']")))
-            except Exception as e3:
-                logger.warning(f"All table selectors failed for {region_info['name']}: {str(e1)[:100]}")
+            except TimeoutException:
+                logger.warning(f"Timeout waiting for page content in {region_info['name']} - page may not have loaded properly")
                 return []
+            except Exception as e3:
+                logger.warning(f"Error loading {region_info['name']}: {type(e3).__name__}")
+                return []
+        except Exception as e2:
+            logger.warning(f"Error loading {region_info['name']}: {type(e2).__name__}")
+            return []
+    except Exception as e1:
+        logger.warning(f"Error loading {region_info['name']}: {type(e1).__name__}")
+        return []
     
     # Check for interruption
     if should_stop_scraping:
@@ -1368,8 +1416,9 @@ def scrape_and_update_records():
                         # Wait a moment for page to stabilize
                         time.sleep(1)
                     except Exception as page_error:
-                        logger.warning(f"Page load failed for {region['name']}: {page_error}")
-                        # Try to continue anyway, sometimes partial loads work
+                        logger.warning(f"Page load failed for {region['name']}: {type(page_error).__name__}")
+                        consecutive_region_failures += 1
+                        continue
                     
                     records = parse_table_selenium(driver, region)
                     # Track unique fish names for this region
@@ -1602,7 +1651,7 @@ def scrape_and_update_records():
                     
                     time.sleep(2)
                 except Exception as e:
-                    logger.error(f"Error scraping {category_info['name']} - {region['name']}: {e}")
+                    logger.error(f"Error scraping {category_info['name']} - {region['name']}: {type(e).__name__}")
                     errors_occurred = True
                     consecutive_region_failures += 1
                     
@@ -1613,10 +1662,10 @@ def scrape_and_update_records():
                             cleanup_success = cleanup_driver(driver)
                             if not cleanup_success:
                                 failed_cleanups += 1
-                                logger.warning("Driver cleanup failed during error recovery - potential memory leak risk")
+                                logger.warning("Driver cleanup failed during error recovery")
                             driver = get_driver()
-                        except Exception as refresh_error:
-                            logger.error(f"Failed to refresh WebDriver session: {refresh_error}")
+                        except Exception:
+                            logger.error("Failed to refresh WebDriver session")
                     # Skip to next category after 2 consecutive failures (handled by loop logic)
                     
                     # Continue to next region (don't break the loop)
