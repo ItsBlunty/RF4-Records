@@ -191,13 +191,13 @@ def get_driver():
     # IMPROVED MEMORY MANAGEMENT - Check memory before creating new driver
     current_memory = get_memory_usage()
     
-    # Emergency threshold - prevent memory bombs (increased for Railway)
-    if current_memory > 700:  # Increased from 500MB for Railway containers
+    # Emergency threshold - prevent memory bombs (realistic for Railway Docker)
+    if current_memory > 1500:  # Realistic threshold for Railway Docker containers
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({current_memory}MB) - BLOCKING Chrome creation to prevent memory bomb")
         raise MemoryError(f"EMERGENCY BLOCK: Cannot create Chrome driver - memory usage dangerous ({current_memory}MB)")
     
     # CIRCUIT BREAKER - Prevent infinite loops by allowing creation if no Chrome processes exist
-    if current_memory > 450:  # Increased threshold for Railway
+    if current_memory > 1000:  # Realistic threshold for Railway with Chrome children
         logger.info(f"High memory usage ({current_memory}MB) detected - performing enhanced cleanup")
         
         # Check if there are actually Chrome processes to clean up
@@ -216,19 +216,19 @@ def get_driver():
             
             # CIRCUIT BREAKER: Allow Chrome creation even if memory is still high
             # This prevents infinite loops when memory is held by Python process
-            if memory_after > 600:  # Still very high - one more attempt
+            if memory_after > 1200:  # Still very high - one more attempt
                 logger.warning(f"Memory still very high ({memory_after}MB) - forcing aggressive cleanup")
                 enhanced_python_memory_cleanup()
                 force_system_memory_release()
                 time.sleep(5)
                 
                 final_memory = get_memory_usage()
-                if final_memory > 650:  # Emergency threshold
+                if final_memory > 1400:  # Emergency threshold
                     logger.error(f"Memory critically high ({final_memory}MB) after all cleanup - BLOCKING Chrome creation")
                     raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({final_memory}MB)")
                 else:
                     logger.warning(f"Proceeding with Chrome creation despite elevated memory ({final_memory}MB) - no Chrome processes to clean")
-            elif memory_after > 500:
+            elif memory_after > 1000:
                 logger.warning(f"Memory elevated after cleanup ({memory_after}MB) - proceeding with caution")
         else:
             # Chrome processes exist - clean them up
@@ -239,7 +239,7 @@ def get_driver():
             
             # Check again after cleanup
             memory_after = get_memory_usage()
-            if memory_after > 550:  # Adjusted threshold for Railway
+            if memory_after > 1300:  # Realistic threshold for Railway
                 logger.error(f"Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
                 raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({memory_after}MB)")
             else:
@@ -346,8 +346,8 @@ def get_driver():
             memory_increase = post_chrome_memory - pre_chrome_memory
             logger.info(f"Memory after Chrome creation: {post_chrome_memory}MB (Δ+{memory_increase:.1f}MB)")
             
-            # EMERGENCY: If Chrome creation caused massive memory spike
-            if post_chrome_memory > 800:  # Emergency threshold for Docker
+            # EMERGENCY: If Chrome creation caused massive memory spike (increased threshold)
+            if post_chrome_memory > 1500:  # Much higher threshold for Railway Docker
                 logger.critical(f"🚨 EMERGENCY: Chrome creation caused memory bomb ({post_chrome_memory}MB)!")
                 logger.critical(f"Memory increased by {memory_increase:.1f}MB during Chrome creation")
                 
@@ -362,8 +362,10 @@ def get_driver():
                 
                 raise MemoryError(f"Chrome creation memory bomb: {post_chrome_memory}MB (increased by {memory_increase:.1f}MB)")
             
-            elif memory_increase > 400:  # Chrome used more than 400MB
+            elif memory_increase > 700:  # Chrome used more than 700MB (increased threshold)
                 logger.warning(f"⚠️  Chrome creation used {memory_increase:.1f}MB - monitoring closely")
+            else:
+                logger.info(f"Chrome creation used {memory_increase:.1f}MB - normal range")
                 
         except MemoryError:
             raise  # Re-raise memory errors
@@ -918,13 +920,13 @@ def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
     memory_mb = get_memory_usage()
     
-    # EMERGENCY CIRCUIT BREAKER - Prevent memory bombs (adjusted for Railway)
-    if memory_mb > 900:  # Increased from 800MB for Railway containers
+    # EMERGENCY CIRCUIT BREAKER - Prevent memory bombs (realistic for Railway Docker)
+    if memory_mb > 1600:  # Realistic emergency threshold for Railway Docker
         logger.critical(f"🚨 EMERGENCY: Memory critically high ({memory_mb}MB) - ABORTING to prevent system failure")
         logger.critical(f"🚨 This would have caused a memory bomb like the 7GB incident")
         raise MemoryError(f"EMERGENCY ABORT: Memory usage dangerous ({memory_mb}MB) - preventing system failure")
     
-    if memory_mb > 400:  # Increased from 250MB for Railway containers
+    if memory_mb > 1000:  # Realistic threshold for Railway Docker with Chrome
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing enhanced cleanup")
         
         # Check if there are Chrome processes to clean up
@@ -952,11 +954,11 @@ def check_memory_before_scraping():
         
         logger.info(f"Enhanced memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
         
-        # ADJUSTED THRESHOLDS for Railway deployment - prevent infinite loops
-        if memory_after_cleanup > 800:  # Increased from 600MB
+        # REALISTIC THRESHOLDS for Railway Docker deployment
+        if memory_after_cleanup > 1500:  # Realistic critical threshold
             logger.critical(f"🚨 CRITICAL: Memory still critically high ({memory_after_cleanup}MB) after cleanup - ABORTING")
             raise MemoryError(f"CRITICAL ABORT: Memory usage dangerous ({memory_after_cleanup}MB) - preventing system failure")
-        elif memory_after_cleanup > 650:  # Increased from 400MB
+        elif memory_after_cleanup > 1300:  # High but manageable
             # CIRCUIT BREAKER: Don't abort if no Chrome processes exist
             remaining_chrome = count_chrome_processes()
             if remaining_chrome == 0:
@@ -965,7 +967,7 @@ def check_memory_before_scraping():
             else:
                 logger.error(f"Memory usage still high ({memory_after_cleanup}MB) with {remaining_chrome} Chrome processes - this is dangerous")
                 raise MemoryError(f"Memory usage too high ({memory_after_cleanup}MB) - aborting to prevent memory bomb")
-        elif memory_after_cleanup > 500:  # Increased from 250MB
+        elif memory_after_cleanup > 1100:  # Elevated but acceptable
             logger.warning(f"Memory usage elevated ({memory_after_cleanup}MB) after cleanup - proceeding with enhanced monitoring")
     
     return memory_mb
@@ -1458,13 +1460,13 @@ def scrape_and_update_records():
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
                     
-                    # Emergency memory monitoring - with child process awareness
+                    # Emergency memory monitoring - realistic threshold for Railway Docker
                     current_memory = get_memory_usage()
-                    if current_memory > 800:  # Adjusted threshold for Railway with child processes
+                    if current_memory > 1500:  # 1.5GB threshold as requested
                         logger.critical(f"Memory bomb detected ({current_memory}MB) - ABORTING")
                         should_stop_scraping = True
                         raise MemoryError(f"Memory bomb detected ({current_memory}MB)")
-                    elif current_memory > 600:  # High memory warning threshold
+                    elif current_memory > 1200:  # High memory warning threshold
                         logger.warning(f"High memory usage ({current_memory}MB) - forcing cleanup")
                         kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
                         enhanced_python_memory_cleanup()
@@ -1675,11 +1677,52 @@ def scrape_and_update_records():
             # Simple one-line category summary
             logger.info(f"{category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions, {total_new_records} total records")
             
-            # Commit and refresh database session between categories
+            # ENHANCED CATEGORY-LEVEL CLEANUP - Kill ALL Chrome processes and children
+            logger.info(f"🧹 CATEGORY COMPLETE: Thorough cleanup after {category_info['name']}")
+            
+            # Get memory before cleanup for comparison
+            memory_before_cleanup = get_memory_usage()
+            logger.info(f"Memory before category cleanup: {memory_before_cleanup}MB")
+            
+            # 1. Flush database operations first
             try:
                 bulk_inserter.flush()  # Flush any pending records
                 db.commit()
+            except Exception as db_error:
+                logger.error(f"Database flush error during category cleanup: {db_error}")
+            
+            # 2. Aggressive Chrome cleanup - kill EVERYTHING
+            try:
+                # Close current driver
+                if driver:
+                    try:
+                        driver.quit()
+                    except Exception:
+                        pass  # Don't care if quit fails
+                    driver = None
                 
+                # Kill ALL Chrome processes and children - no mercy, no age checks
+                logger.info("🔥 Killing ALL Chrome processes and children...")
+                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                
+                # Wait for processes to fully die
+                time.sleep(3)
+                
+                # Verify all Chrome processes are dead
+                chrome_count = count_chrome_processes()
+                if chrome_count > 0:
+                    logger.warning(f"⚠️  {chrome_count} Chrome processes still alive after cleanup - forcing kill")
+                    # One more aggressive attempt
+                    kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                    time.sleep(2)
+                else:
+                    logger.info("✅ All Chrome processes successfully killed")
+                
+            except Exception as chrome_error:
+                logger.error(f"Chrome cleanup error: {chrome_error}")
+            
+            # 3. Database session refresh
+            try:
                 # Clear cache and flush bulk operations to free memory
                 if 'record_checker' in locals() and record_checker:
                     record_checker.clear_cache()
@@ -1693,11 +1736,6 @@ def scrape_and_update_records():
                 bulk_inserter = BulkRecordInserter(db, batch_size=25)  # Smaller batch size to prevent memory leaks
                 record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
                 
-                # Force garbage collection after session refresh
-                force_garbage_collection()
-                
-                # Clear large data structures to prevent memory accumulation
-                all_unique_fish.clear()  # Reset fish tracking for next category
             except Exception as db_error:
                 logger.error(f"Database session refresh error: {db_error}")
                 # Ensure we have a valid database session
@@ -1709,27 +1747,44 @@ def scrape_and_update_records():
                     db = SessionLocal()
                     bulk_inserter = BulkRecordInserter(db, batch_size=25)  # Smaller batch size to prevent memory leaks
                     record_checker = OptimizedRecordChecker(db)  # Refresh checker with new session
-                    
-                    # Force garbage collection after fallback session refresh
-                    force_garbage_collection()
-                    all_unique_fish.clear()  # Reset fish tracking
                 except Exception as fallback_error:
                     logger.error(f"Failed to create fallback database session: {fallback_error}")
             
-            # Refresh WebDriver session between categories to prevent staleness and memory leaks
+            # 4. Python memory cleanup
             try:
-                cleanup_success = cleanup_driver(driver)
-                if not cleanup_success:
-                    failed_cleanups += 1
-                    logger.warning(f"Driver cleanup failed between categories ({category_info['name']}) - potential memory leak risk")
-                force_garbage_collection()  # Force garbage collection between categories
-                driver = get_driver()
+                # Clear large data structures to prevent memory accumulation
+                all_unique_fish.clear()  # Reset fish tracking for next category
                 
-                # Log memory usage after category cleanup
-                log_memory_usage(f"after {category_info['name']} category")
+                # Force garbage collection
+                enhanced_python_memory_cleanup()
+                force_system_memory_release()
                 
-            except Exception as refresh_error:
-                logger.error(f"Failed to refresh WebDriver session between categories: {refresh_error}")
+            except Exception as py_error:
+                logger.error(f"Python memory cleanup error: {py_error}")
+            
+            # 5. Create fresh Chrome driver for next category (if not last category)
+            remaining_categories = list(CATEGORIES.keys())[list(CATEGORIES.keys()).index(category_key) + 1:]
+            if remaining_categories and not should_stop_scraping:
+                try:
+                    logger.info("🆕 Creating fresh Chrome driver for next category...")
+                    driver = get_driver()
+                    logger.info("✅ Fresh Chrome driver ready")
+                except Exception as driver_error:
+                    logger.error(f"Failed to create fresh driver: {driver_error}")
+                    # We'll try to create it on-demand later
+                    driver = None
+            
+            # 6. Log memory after complete cleanup
+            memory_after_cleanup = get_memory_usage()
+            memory_freed = memory_before_cleanup - memory_after_cleanup
+            logger.info(f"📊 Category cleanup complete: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
+            
+            # 7. Final memory check - abort if still over 1.5GB
+            if memory_after_cleanup > 1500:
+                logger.critical(f"🚨 Memory still critically high ({memory_after_cleanup}MB) after category cleanup!")
+                logger.critical("Aborting scraping to prevent memory bomb")
+                should_stop_scraping = True
+                break
         if should_stop_scraping:
             logger.info("🛑 Scraping interrupted by user")
         elif category_failures > 0:
