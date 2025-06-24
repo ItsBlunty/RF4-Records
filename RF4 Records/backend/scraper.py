@@ -1741,19 +1741,47 @@ def scrape_and_update_records():
                 except Exception as fallback_error:
                     logger.error(f"Failed to create fallback database session: {fallback_error}")
             
-            # 4. Python memory cleanup
+            # 4. AGGRESSIVE Python memory cleanup
             try:
                 # Clear large data structures to prevent memory accumulation
                 all_unique_fish.clear()  # Reset fish tracking for next category
                 
-                # Force garbage collection
+                # Multiple rounds of aggressive cleanup
                 enhanced_python_memory_cleanup()
                 force_system_memory_release()
+                
+                # Additional aggressive cleanup
+                import gc
+                for _ in range(5):  # More aggressive cleanup rounds
+                    gc.collect()
+                    time.sleep(0.1)
+                
+                # Force memory trimming multiple times
+                try:
+                    import ctypes
+                    import ctypes.util
+                    libc = ctypes.CDLL(ctypes.util.find_library("c"))
+                    if hasattr(libc, 'malloc_trim'):
+                        for _ in range(3):  # Multiple trim attempts
+                            libc.malloc_trim(0)
+                            time.sleep(0.1)
+                except Exception:
+                    pass
                 
             except Exception as py_error:
                 logger.error(f"Python memory cleanup error: {py_error}")
             
-            # 5. Create fresh Chrome driver for next category (if not last category)
+            # 5. Check memory after cleanup (BEFORE creating new Chrome)
+            memory_after_python_cleanup = get_memory_usage()
+            python_memory_freed = memory_before_cleanup - memory_after_python_cleanup
+            logger.info(f"📊 Memory after Python cleanup: {memory_after_python_cleanup}MB (freed {python_memory_freed:.1f}MB)")
+            
+            # Warn if Python cleanup wasn't effective enough
+            if memory_after_python_cleanup > 500:  # Should be much lower after killing Chrome
+                logger.warning(f"⚠️  Python cleanup not very effective - still at {memory_after_python_cleanup}MB")
+                logger.warning("This suggests memory leaks in Python objects or database connections")
+            
+            # 6. Create fresh Chrome driver for next category (if not last category)
             remaining_categories = list(CATEGORIES.keys())[list(CATEGORIES.keys()).index(category_key) + 1:]
             if remaining_categories and not should_stop_scraping:
                 try:
@@ -1765,12 +1793,12 @@ def scrape_and_update_records():
                     # We'll try to create it on-demand later
                     driver = None
             
-            # 6. Log memory after complete cleanup
+            # 7. Log memory after complete cleanup (including new Chrome)
             memory_after_cleanup = get_memory_usage()
             memory_freed = memory_before_cleanup - memory_after_cleanup
             logger.info(f"📊 Category cleanup complete: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
             
-            # 7. Final memory check - abort if still over 1.5GB
+            # 8. Final memory check - abort if still over 1.5GB
             if memory_after_cleanup > 1500:
                 logger.critical(f"🚨 Memory still critically high ({memory_after_cleanup}MB) after category cleanup!")
                 logger.critical("Aborting scraping to prevent memory bomb")
