@@ -814,6 +814,128 @@ def merge_duplicate_records():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.post("/merge-duplicates/rollback")
+def rollback_duplicate_merge():
+    """Emergency rollback of duplicate merge operation"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+        
+        rollback_info = {
+            "pre_rollback_stats": {},
+            "rollback_actions": [],
+            "post_rollback_stats": {}
+        }
+        
+        with engine.connect() as conn:
+            # Get pre-rollback stats
+            result = conn.execute(text("SELECT COUNT(*) FROM records"))
+            rollback_info["pre_rollback_stats"]["total_records"] = result.scalar()
+            
+            result = conn.execute(text("SELECT COUNT(*) FROM records WHERE categories LIKE '%;%'"))
+            rollback_info["pre_rollback_stats"]["merged_records"] = result.scalar()
+            
+            # Check if we have merged records to rollback
+            if rollback_info["pre_rollback_stats"]["merged_records"] == 0:
+                return {
+                    "message": "No merged records found to rollback",
+                    "stats": rollback_info["pre_rollback_stats"]
+                }
+            
+            # Start transaction for rollback
+            trans = conn.begin()
+            
+            try:
+                # Find all merged records and expand them back to individual records
+                result = conn.execute(text("""
+                    SELECT id, fish, weight, player, waterbody, region, date_caught, categories
+                    FROM records 
+                    WHERE categories LIKE '%;%'
+                    LIMIT 1000
+                """))
+                
+                merged_records = result.fetchall()
+                rollback_info["rollback_actions"].append(f"Found {len(merged_records)} merged records to expand")
+                
+                # Category mapping (reverse of merge)
+                category_reverse_map = {
+                    'N': 'Normal',
+                    'L': 'Light', 
+                    'U': 'Ultralight',
+                    'B': 'BottomLight',
+                    'T': 'Telescopic'
+                }
+                
+                expanded_count = 0
+                deleted_count = 0
+                
+                for record in merged_records:
+                    # Parse categories
+                    categories = record[7].split(';')
+                    
+                    # Delete the merged record
+                    conn.execute(text("""
+                        DELETE FROM records WHERE id = :record_id
+                    """), {"record_id": record[0]})
+                    deleted_count += 1
+                    
+                    # Insert individual records for each category
+                    for cat_code in categories:
+                        if cat_code.strip() in category_reverse_map:
+                            full_category = category_reverse_map[cat_code.strip()]
+                            
+                            conn.execute(text("""
+                                INSERT INTO records (fish, weight, player, waterbody, region, date_caught, categories)
+                                VALUES (:fish, :weight, :player, :waterbody, :region, :date_caught, :category)
+                            """), {
+                                "fish": record[1],
+                                "weight": record[2], 
+                                "player": record[3],
+                                "waterbody": record[4],
+                                "region": record[5],
+                                "date_caught": record[6],
+                                "category": full_category
+                            })
+                            expanded_count += 1
+                
+                rollback_info["rollback_actions"].append(f"Deleted {deleted_count} merged records")
+                rollback_info["rollback_actions"].append(f"Created {expanded_count} individual records")
+                
+                # Commit the rollback
+                trans.commit()
+                rollback_info["rollback_actions"].append("Rollback transaction committed")
+                
+                # Get post-rollback stats
+                result = conn.execute(text("SELECT COUNT(*) FROM records"))
+                rollback_info["post_rollback_stats"]["total_records"] = result.scalar()
+                
+                result = conn.execute(text("SELECT COUNT(*) FROM records WHERE categories LIKE '%;%'"))
+                rollback_info["post_rollback_stats"]["merged_records"] = result.scalar()
+                
+                return {
+                    "message": "Duplicate merge rollback completed successfully",
+                    "rollback_info": rollback_info,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "note": "Records have been expanded back to individual category entries"
+                }
+                
+            except Exception as e:
+                trans.rollback()
+                rollback_info["rollback_actions"].append(f"Rollback failed, transaction rolled back: {str(e)}")
+                raise e
+        
+    except Exception as e:
+        logger.error(f"Rollback operation failed: {e}")
+        return {
+            "error": "Rollback operation failed",
+            "details": str(e),
+            "rollback_info": rollback_info,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.post("/cleanup")
 def force_cleanup():
     """Force garbage collection and process cleanup for memory management"""
@@ -1143,6 +1265,179 @@ def force_checkpoint():
         logger.error(f"CHECKPOINT failed: {e}")
         return {
             "error": "CHECKPOINT failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+@app.get("/database/investigation")
+def investigate_database_space():
+    """Deep investigation of database space usage to find hidden space consumers"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "Investigation only available for PostgreSQL",
+                "database_type": "SQLite"
+            }
+        
+        engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+        investigation = {}
+        
+        with engine.connect() as conn:
+            # 1. All databases on this PostgreSQL instance
+            result = conn.execute(text("""
+                SELECT 
+                    datname,
+                    pg_size_pretty(pg_database_size(datname)) as size,
+                    pg_database_size(datname) as bytes
+                FROM pg_database 
+                ORDER BY pg_database_size(datname) DESC
+            """))
+            investigation["all_databases"] = [
+                {"name": row[0], "size": row[1], "bytes": row[2]}
+                for row in result.fetchall()
+            ]
+            
+            # 2. ALL tables in current database (including system tables)
+            result = conn.execute(text("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size,
+                    pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) as table_size,
+                    pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) as index_size,
+                    pg_total_relation_size(schemaname||'.'||tablename) as bytes
+                FROM pg_tables 
+                ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+                LIMIT 20
+            """))
+            investigation["all_tables"] = [
+                {
+                    "schema": row[0],
+                    "table": row[1], 
+                    "total_size": row[2],
+                    "table_size": row[3],
+                    "index_size": row[4],
+                    "bytes": row[5]
+                }
+                for row in result.fetchall()
+            ]
+            
+            # 3. WAL files breakdown
+            result = conn.execute(text("""
+                SELECT 
+                    name,
+                    pg_size_pretty(size) as size,
+                    size as bytes,
+                    modification
+                FROM pg_ls_waldir()
+                ORDER BY size DESC
+                LIMIT 10
+            """))
+            investigation["wal_files"] = [
+                {
+                    "name": row[0],
+                    "size": row[1], 
+                    "bytes": row[2],
+                    "modified": str(row[3])
+                }
+                for row in result.fetchall()
+            ]
+            
+            # 4. Database activity and locks
+            result = conn.execute(text("""
+                SELECT 
+                    pid,
+                    usename,
+                    application_name,
+                    state,
+                    query_start,
+                    state_change,
+                    LEFT(query, 100) as query_preview
+                FROM pg_stat_activity 
+                WHERE datname = current_database()
+                ORDER BY query_start DESC
+            """))
+            investigation["active_connections"] = [
+                {
+                    "pid": row[0],
+                    "user": row[1],
+                    "app": row[2],
+                    "state": row[3],
+                    "query_start": str(row[4]) if row[4] else None,
+                    "state_change": str(row[5]) if row[5] else None,
+                    "query": row[6]
+                }
+                for row in result.fetchall()
+            ]
+            
+            # 5. Check for orphaned temporary tables
+            result = conn.execute(text("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size
+                FROM pg_tables 
+                WHERE tablename LIKE '%temp%' 
+                   OR tablename LIKE '%tmp%'
+                   OR tablename LIKE '%backup%'
+                   OR tablename LIKE '%old%'
+                ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+            """))
+            investigation["potential_temp_tables"] = [
+                {"schema": row[0], "table": row[1], "size": row[2]}
+                for row in result.fetchall()
+            ]
+            
+            # 6. Transaction and replication status
+            result = conn.execute(text("""
+                SELECT 
+                    txid_current() as current_transaction_id,
+                    pg_is_in_recovery() as in_recovery_mode
+            """))
+            tx_info = result.fetchone()
+            investigation["transaction_info"] = {
+                "current_txid": tx_info[0],
+                "in_recovery": tx_info[1]
+            }
+            
+            # 7. Check for replication slots (can hold WAL files)
+            result = conn.execute(text("""
+                SELECT 
+                    slot_name,
+                    slot_type,
+                    active,
+                    pg_size_pretty(
+                        pg_wal_lsn_diff(pg_current_wal_lsn(), restart_lsn)
+                    ) as retained_wal
+                FROM pg_replication_slots
+            """))
+            investigation["replication_slots"] = [
+                {
+                    "name": row[0],
+                    "type": row[1],
+                    "active": row[2],
+                    "retained_wal": row[3]
+                }
+                for row in result.fetchall()
+            ]
+        
+        return {
+            "message": "Database space investigation completed",
+            "investigation": investigation,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "Look for hidden tables, WAL accumulation, or replication slots holding space"
+        }
+        
+    except Exception as e:
+        logger.error(f"Database investigation failed: {e}")
+        return {
+            "error": "Database investigation failed",
             "details": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
