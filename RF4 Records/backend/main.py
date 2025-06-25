@@ -496,15 +496,14 @@ def get_initial_records():
         logger.error(f"Error retrieving records: {e}")
         return {"error": "Failed to retrieve records"}
 
-@app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records():
     """Legacy endpoint - now returns empty since all records loaded initially"""
-        return {
+    return {
         "records": [],
         "total_unique_records": 0,
         "total_db_records": 0,
-            "unique_values": {
+        "unique_values": {
             "fish": [],
             "waterbody": [],
             "bait": []
@@ -787,7 +786,7 @@ def merge_duplicate_records():
             # Verify the migration
             if success:
                 verification_success = verify_migration()
-                            else:
+            else:
                 verification_success = False
             
         finally:
@@ -835,7 +834,7 @@ def rollback_duplicate_merge():
             result = conn.execute(text("SELECT COUNT(*) FROM records"))
             rollback_info["pre_rollback_stats"]["total_records"] = result.scalar()
             
-            result = conn.execute(text("SELECT COUNT(*) FROM records WHERE categories LIKE '%;%'"))
+            result = conn.execute(text("SELECT COUNT(*) FROM records WHERE category LIKE '%;%'"))
             rollback_info["pre_rollback_stats"]["merged_records"] = result.scalar()
             
             # Check if we have merged records to rollback
@@ -851,9 +850,9 @@ def rollback_duplicate_merge():
             try:
                 # Find all merged records and expand them back to individual records
                 result = conn.execute(text("""
-                    SELECT id, fish, weight, player, waterbody, region, date_caught, categories
+                    SELECT id, fish, weight, player, waterbody, region, date, category
                     FROM records 
-                    WHERE categories LIKE '%;%'
+                    WHERE category LIKE '%;%'
                     LIMIT 1000
                 """))
                 
@@ -888,15 +887,15 @@ def rollback_duplicate_merge():
                             full_category = category_reverse_map[cat_code.strip()]
                             
                             conn.execute(text("""
-                                INSERT INTO records (fish, weight, player, waterbody, region, date_caught, categories)
-                                VALUES (:fish, :weight, :player, :waterbody, :region, :date_caught, :category)
+                                INSERT INTO records (fish, weight, player, waterbody, region, date, category)
+                                VALUES (:fish, :weight, :player, :waterbody, :region, :date, :category)
                             """), {
                                 "fish": record[1],
                                 "weight": record[2], 
                                 "player": record[3],
                                 "waterbody": record[4],
                                 "region": record[5],
-                                "date_caught": record[6],
+                                "date": record[6],
                                 "category": full_category
                             })
                             expanded_count += 1
@@ -912,7 +911,7 @@ def rollback_duplicate_merge():
                 result = conn.execute(text("SELECT COUNT(*) FROM records"))
                 rollback_info["post_rollback_stats"]["total_records"] = result.scalar()
                 
-                result = conn.execute(text("SELECT COUNT(*) FROM records WHERE categories LIKE '%;%'"))
+                result = conn.execute(text("SELECT COUNT(*) FROM records WHERE category LIKE '%;%'"))
                 rollback_info["post_rollback_stats"]["merged_records"] = result.scalar()
                 
                 return {
@@ -922,14 +921,14 @@ def rollback_duplicate_merge():
                     "note": "Records have been expanded back to individual category entries"
                 }
                 
-    except Exception as e:
+            except Exception as e:
                 trans.rollback()
                 rollback_info["rollback_actions"].append(f"Rollback failed, transaction rolled back: {str(e)}")
                 raise e
         
     except Exception as e:
         logger.error(f"Rollback operation failed: {e}")
-    return {
+        return {
             "error": "Rollback operation failed",
             "details": str(e),
             "rollback_info": rollback_info,
