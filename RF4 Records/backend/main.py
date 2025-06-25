@@ -980,7 +980,7 @@ def analyze_database_size():
                     n_dead_tup as dead_tuples,
                     CASE 
                         WHEN n_live_tup > 0 
-                        THEN round((n_dead_tup::float / n_live_tup::float) * 100, 2)
+                        THEN ROUND(CAST((n_dead_tup::numeric / n_live_tup::numeric) * 100 AS numeric), 2)
                         ELSE 0 
                     END as dead_tuple_ratio
                 FROM pg_stat_user_tables
