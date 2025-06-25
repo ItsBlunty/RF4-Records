@@ -1615,6 +1615,82 @@ def analyze_volume_usage():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.post("/add-categories-column")
+def add_categories_column():
+    """Add categories column to records table for scraper compatibility"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+        
+        migration_info = {
+            "pre_migration": {},
+            "migration_actions": [],
+            "post_migration": {}
+        }
+        
+        with engine.connect() as conn:
+            # Check if column already exists
+            if 'postgresql' in database_url.lower() or 'postgres' in database_url.lower():
+                # PostgreSQL
+                result = conn.execute(text("""
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'records' AND column_name = 'categories'
+                """))
+                column_exists = result.fetchone() is not None
+                
+                if not column_exists:
+                    migration_info["migration_actions"].append("Adding categories column to PostgreSQL...")
+                    conn.execute(text("ALTER TABLE records ADD COLUMN categories VARCHAR"))
+                    conn.commit()
+                    migration_info["migration_actions"].append("Categories column added successfully")
+                else:
+                    migration_info["migration_actions"].append("Categories column already exists")
+                    
+            else:
+                # SQLite
+                result = conn.execute(text("PRAGMA table_info(records)"))
+                columns = [row[1] for row in result.fetchall()]
+                
+                if 'categories' not in columns:
+                    migration_info["migration_actions"].append("Adding categories column to SQLite...")
+                    conn.execute(text("ALTER TABLE records ADD COLUMN categories TEXT"))
+                    conn.commit()
+                    migration_info["migration_actions"].append("Categories column added successfully")
+                else:
+                    migration_info["migration_actions"].append("Categories column already exists")
+            
+            # Get statistics
+            result = conn.execute(text("SELECT COUNT(*) FROM records"))
+            record_count = result.scalar()
+            migration_info["post_migration"]["total_records"] = record_count
+            
+            result = conn.execute(text("SELECT COUNT(*) FROM records WHERE categories IS NOT NULL AND categories != ''"))
+            merged_records = result.scalar()
+            migration_info["post_migration"]["merged_records"] = merged_records
+            
+            result = conn.execute(text("SELECT COUNT(*) FROM records WHERE category IS NOT NULL AND category != ''"))
+            old_format_records = result.scalar()
+            migration_info["post_migration"]["old_format_records"] = old_format_records
+            
+        return {
+            "message": "Categories column migration completed successfully",
+            "migration_info": migration_info,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "Scraper can now work with merged records"
+        }
+        
+    except Exception as e:
+        logger.error(f"Categories column migration failed: {e}")
+        return {
+            "error": "Categories column migration failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):

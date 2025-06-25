@@ -20,6 +20,7 @@ class Record(Base):
     created_at = Column(DateTime, server_default=func.now())  # When we scraped this record
     region = Column(String)  # Add region field to track which region the record is from
     category = Column(String)  # Add category field to track fishing type (normal, ultralight, light, bottomlight, telescopic)
+    categories = Column(String)  # Compact category format for merged records (e.g., "N;U;L")
 
 # Database configuration
 def get_database_url():

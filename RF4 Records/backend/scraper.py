@@ -137,9 +137,25 @@ CATEGORIES = {
     }
 }
 
-# Helper to check if a record exists (now includes region and category)
-def record_exists(db: Session, data: dict):
-    return db.query(Record).filter(
+# Helper to check if a record exists (updated for merged records with compact categories)
+def record_exists_or_update(db: Session, data: dict):
+    """
+    Check if a record exists with the same fish/player/weight/waterbody/bait/date/region.
+    If it exists, update it by adding the new category to the existing categories.
+    Returns (exists, updated_record_id) tuple.
+    """
+    # Map full category names to compact format
+    category_map = {
+        'Normal': 'N',
+        'Light': 'L', 
+        'Ultralight': 'U',
+        'BottomLight': 'B',
+        'Bottom Light': 'B',  # Handle both formats
+        'Telescopic': 'T'
+    }
+    
+    # Find existing record (ignoring category for now)
+    existing_record = db.query(Record).filter(
         and_(
             Record.player == data['player'],
             Record.fish == data['fish'],
@@ -148,10 +164,48 @@ def record_exists(db: Session, data: dict):
             Record.bait1 == data['bait1'],
             Record.bait2 == data['bait2'],
             Record.date == data['date'],
-            Record.region == data['region'],
-            Record.category == data['category']
+            Record.region == data['region']
         )
-    ).first() is not None
+    ).first()
+    
+    if existing_record:
+        # Record exists - check if we need to add the new category
+        new_category_code = category_map.get(data['category'], data['category'])
+        
+        # Parse existing categories
+        if existing_record.categories:
+            existing_categories = set(existing_record.categories.split(';'))
+        else:
+            # Handle old format records that might still exist
+            existing_categories = set()
+            if hasattr(existing_record, 'category') and existing_record.category:
+                old_category_code = category_map.get(existing_record.category, existing_record.category)
+                existing_categories.add(old_category_code)
+        
+        # Add new category if not already present
+        if new_category_code not in existing_categories:
+            existing_categories.add(new_category_code)
+            
+            # Update the record with combined categories
+            updated_categories = ';'.join(sorted(existing_categories))
+            existing_record.categories = updated_categories
+            
+            # Also update the old category field for backward compatibility
+            existing_record.category = data['category']
+            
+            return True, existing_record.id
+        else:
+            # Category already exists, no update needed
+            return True, None
+    
+    # Record doesn't exist
+    return False, None
+
+# Legacy function for backward compatibility
+def record_exists(db: Session, data: dict):
+    """Legacy function - checks if exact record exists (including category)"""
+    exists, _ = record_exists_or_update(db, data)
+    return exists
 
 def split_bait_string(bait_string):
     """Split a bait string into primary and secondary baits"""
@@ -1451,8 +1505,25 @@ def scrape_and_update_records():
                                 all_unique_fish.add(data['fish'])
                             # Only add records that have at least some meaningful data
                             if data['fish'] and data['player'] and data['weight']:
-                                if not record_checker.record_exists(data):
+                                # Check if record exists or needs category update
+                                exists, updated_id = record_exists_or_update(db, data)
+                                if not exists:
+                                    # Create new record with compact category format
+                                    category_map = {
+                                        'Normal': 'N',
+                                        'Light': 'L', 
+                                        'Ultralight': 'U',
+                                        'BottomLight': 'B',
+                                        'Bottom Light': 'B',
+                                        'Telescopic': 'T'
+                                    }
+                                    # Set both old and new category fields
+                                    data['categories'] = category_map.get(data['category'], data['category'])
                                     bulk_inserter.add_record(data)
+                                    region_new_records += 1
+                                    total_new_records += 1
+                                elif updated_id:
+                                    # Record was updated with new category
                                     region_new_records += 1
                                     total_new_records += 1
                         except Exception as e:
@@ -2029,8 +2100,25 @@ def scrape_limited_regions():
                             
                             # Only add records that have at least some meaningful data
                             if data['fish'] and data['player'] and data['weight']:  # Weight is already validated
-                                if not record_exists(db, data):
+                                # Check if record exists or needs category update
+                                exists, updated_id = record_exists_or_update(db, data)
+                                if not exists:
+                                    # Create new record with compact category format
+                                    category_map = {
+                                        'Normal': 'N',
+                                        'Light': 'L', 
+                                        'Ultralight': 'U',
+                                        'BottomLight': 'B',
+                                        'Bottom Light': 'B',
+                                        'Telescopic': 'T'
+                                    }
+                                    # Set both old and new category fields
+                                    data['categories'] = category_map.get(data['category'], data['category'])
                                     db.add(Record(**data))
+                                    region_new_records += 1
+                                    total_new_records += 1
+                                elif updated_id:
+                                    # Record was updated with new category
                                     region_new_records += 1
                                     total_new_records += 1
                         except Exception as e:
