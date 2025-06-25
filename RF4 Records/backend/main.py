@@ -975,7 +975,7 @@ def analyze_database_size():
             result = conn.execute(text("""
                 SELECT 
                     schemaname,
-                    tablename,
+                    relname,
                     n_live_tup as live_tuples,
                     n_dead_tup as dead_tuples,
                     CASE 
@@ -1018,7 +1018,7 @@ def analyze_database_size():
             result = conn.execute(text("""
                 SELECT 
                     schemaname,
-                    tablename,
+                    relname,
                     last_vacuum,
                     last_autovacuum,
                     last_analyze,
