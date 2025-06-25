@@ -239,14 +239,23 @@ def check_duplicate_status():
         duplicate_groups = {k: v for k, v in record_groups.items() if len(v) > 1}
         single_records = {k: v for k, v in record_groups.items() if len(v) == 1}
         
+        # Calculate actual record counts
+        records_in_duplicate_groups = sum(len(group) for group in duplicate_groups.values())
+        records_in_single_groups = sum(len(group) for group in single_records.values())
+        total_duplicate_records_to_delete = sum(len(group) - 1 for group in duplicate_groups.values())
+        
         print(f"📊 Current Status:")
-        print(f"  Total records: {initial_count:,}")
-        print(f"  Duplicate groups: {len(duplicate_groups):,}")
-        print(f"  Unique records: {len(single_records):,}")
+        print(f"  Total records in database: {initial_count:,}")
+        print(f"  Records in {len(duplicate_groups):,} duplicate groups: {records_in_duplicate_groups:,}")
+        print(f"  Records in {len(single_records):,} unique groups: {records_in_single_groups:,}")
+        print(f"  Total duplicate records to delete: {total_duplicate_records_to_delete:,}")
+        print(f"  Final records after full migration: {initial_count - total_duplicate_records_to_delete:,}")
         
         if len(duplicate_groups) > 0:
-            print(f"  Next batch will process: {min(5000, len(duplicate_groups)):,} groups")
-            print(f"  Estimated records to delete: {sum(len(group) - 1 for group in list(duplicate_groups.values())[:5000]):,}")
+            batch_groups_to_process = min(5000, len(duplicate_groups))
+            batch_records_to_delete = sum(len(group) - 1 for group in list(duplicate_groups.values())[:5000])
+            print(f"  Next batch will process: {batch_groups_to_process:,} duplicate groups")
+            print(f"  Next batch will delete: {batch_records_to_delete:,} records")
         else:
             print(f"  ✅ No duplicate groups found - migration complete!")
         
