@@ -1462,6 +1462,9 @@ def analyze_volume_usage():
         volume_analysis = {}
         
         with engine.connect() as conn:
+            # Use autocommit mode to avoid transaction issues
+            conn = conn.execution_options(autocommit=True)
+            
             # 1. Total database size vs volume
             result = conn.execute(text("""
                 SELECT 
@@ -1475,25 +1478,28 @@ def analyze_volume_usage():
             }
             
             # 2. ALL WAL files (not just top 10)
-            result = conn.execute(text("""
-                SELECT 
-                    COUNT(*) as wal_file_count,
-                    pg_size_pretty(SUM(size)) as total_wal_size,
-                    SUM(size) as total_wal_bytes,
-                    pg_size_pretty(AVG(size)) as avg_wal_size,
-                    pg_size_pretty(MAX(size)) as max_wal_size,
-                    pg_size_pretty(MIN(size)) as min_wal_size
-                FROM pg_ls_waldir()
-            """))
-            wal_summary = result.fetchone()
-            volume_analysis["wal_summary"] = {
-                "count": wal_summary[0],
-                "total_size": wal_summary[1],
-                "total_bytes": wal_summary[2],
-                "avg_size": wal_summary[3],
-                "max_size": wal_summary[4],
-                "min_size": wal_summary[5]
-            }
+            try:
+                result = conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as wal_file_count,
+                        pg_size_pretty(SUM(size)) as total_wal_size,
+                        SUM(size) as total_wal_bytes,
+                        pg_size_pretty(AVG(size)) as avg_wal_size,
+                        pg_size_pretty(MAX(size)) as max_wal_size,
+                        pg_size_pretty(MIN(size)) as min_wal_size
+                    FROM pg_ls_waldir()
+                """))
+                wal_summary = result.fetchone()
+                volume_analysis["wal_summary"] = {
+                    "count": wal_summary[0],
+                    "total_size": wal_summary[1],
+                    "total_bytes": wal_summary[2],
+                    "avg_size": wal_summary[3],
+                    "max_size": wal_summary[4],
+                    "min_size": wal_summary[5]
+                }
+            except Exception as e:
+                volume_analysis["wal_summary"] = {"error": f"Cannot access WAL files: {str(e)}"}
             
             # 3. Check pg_wal archive directory if accessible
             try:
@@ -1549,36 +1555,44 @@ def analyze_volume_usage():
             except Exception as e:
                 volume_analysis["log_files"] = {"error": f"Cannot access log files: {str(e)}"}
             
-            # 6. PostgreSQL settings that affect disk usage
-            result = conn.execute(text("""
-                SELECT name, setting, unit, short_desc
-                FROM pg_settings 
-                WHERE name IN (
-                    'wal_keep_segments', 'wal_keep_size', 'max_wal_size', 
-                    'min_wal_size', 'checkpoint_segments', 'checkpoint_completion_target',
-                    'wal_buffers', 'shared_buffers', 'temp_file_limit'
-                )
-                ORDER BY name
-            """))
-            volume_analysis["postgres_settings"] = [
-                {
-                    "name": row[0],
-                    "setting": row[1],
-                    "unit": row[2],
-                    "description": row[3]
-                }
-                for row in result.fetchall()
-            ]
+            # 6. PostgreSQL settings that affect disk usage (simplified to avoid transaction issues)
+            try:
+                result = conn.execute(text("""
+                    SELECT 
+                        'max_wal_size' as name, 
+                        current_setting('max_wal_size') as setting,
+                        'MB' as unit
+                    UNION ALL
+                    SELECT 
+                        'min_wal_size' as name,
+                        current_setting('min_wal_size') as setting, 
+                        'MB' as unit
+                    UNION ALL
+                    SELECT
+                        'wal_keep_size' as name,
+                        current_setting('wal_keep_size') as setting,
+                        'MB' as unit
+                """))
+                volume_analysis["postgres_settings"] = [
+                    {
+                        "name": row[0],
+                        "setting": row[1],
+                        "unit": row[2]
+                    }
+                    for row in result.fetchall()
+                ]
+            except Exception as e:
+                volume_analysis["postgres_settings"] = {"error": f"Cannot access settings: {str(e)}"}
             
             # 7. Calculate estimated total volume usage
             total_estimated = db_info[1]  # Database size
-            if "total_bytes" in volume_analysis.get("wal_summary", {}):
+            if "total_bytes" in volume_analysis.get("wal_summary", {}) and volume_analysis["wal_summary"]["total_bytes"]:
                 total_estimated += volume_analysis["wal_summary"]["total_bytes"]
-            if "total_bytes" in volume_analysis.get("temp_files", {}):
+            if "total_bytes" in volume_analysis.get("temp_files", {}) and volume_analysis["temp_files"]["total_bytes"]:
                 total_estimated += volume_analysis["temp_files"]["total_bytes"]
-            if "total_bytes" in volume_analysis.get("log_files", {}):
+            if "total_bytes" in volume_analysis.get("log_files", {}) and volume_analysis["log_files"]["total_bytes"]:
                 total_estimated += volume_analysis["log_files"]["total_bytes"]
-            if "total_bytes" in volume_analysis.get("wal_archive", {}):
+            if "total_bytes" in volume_analysis.get("wal_archive", {}) and volume_analysis["wal_archive"]["total_bytes"]:
                 total_estimated += volume_analysis["wal_archive"]["total_bytes"]
             
             volume_analysis["estimated_total"] = {
