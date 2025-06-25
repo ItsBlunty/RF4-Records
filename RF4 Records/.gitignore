@@ -12,6 +12,14 @@ backend/__pycache__/
 .env.local
 .env.production
 
+# SSL Certificates (sensitive)
+*.pem
+*.key
+*.crt
+*.cert
+.certificates/
+frontend/.certificates/
+
 # IDE files
 .vscode/
 .idea/
