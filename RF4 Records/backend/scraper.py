@@ -141,7 +141,8 @@ CATEGORIES = {
 def record_exists_or_update(db: Session, data: dict):
     """
     Check if a record exists with the same fish/player/weight/waterbody/bait/date/region.
-    If it exists, update it by adding the new category to the existing categories.
+    If it exists, check if the category is already included in the categories field.
+    If not, update it by adding the new category to the existing categories.
     Returns (exists, updated_record_id) tuple.
     """
     # Map full category names to compact format
@@ -172,15 +173,12 @@ def record_exists_or_update(db: Session, data: dict):
         # Record exists - check if we need to add the new category
         new_category_code = category_map.get(data['category'], data['category'])
         
-        # Parse existing categories
+        # Parse existing categories from the categories field
         if existing_record.categories:
             existing_categories = set(existing_record.categories.split(';'))
         else:
-            # Handle old format records that might still exist
+            # Handle records that might not have categories set yet
             existing_categories = set()
-            if hasattr(existing_record, 'category') and existing_record.category:
-                old_category_code = category_map.get(existing_record.category, existing_record.category)
-                existing_categories.add(old_category_code)
         
         # Add new category if not already present
         if new_category_code not in existing_categories:
@@ -1517,7 +1515,7 @@ def scrape_and_update_records():
                                         'Bottom Light': 'B',
                                         'Telescopic': 'T'
                                     }
-                                    # Set both old and new category fields
+                                    # Set the categories field with compact format
                                     data['categories'] = category_map.get(data['category'], data['category'])
                                     bulk_inserter.add_record(data)
                                     region_new_records += 1
@@ -2112,7 +2110,7 @@ def scrape_limited_regions():
                                         'Bottom Light': 'B',
                                         'Telescopic': 'T'
                                     }
-                                    # Set both old and new category fields
+                                    # Set the categories field with compact format
                                     data['categories'] = category_map.get(data['category'], data['category'])
                                     db.add(Record(**data))
                                     region_new_records += 1
