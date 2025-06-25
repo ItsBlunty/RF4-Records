@@ -497,14 +497,14 @@ def get_initial_records():
         return {"error": "Failed to retrieve records"}
 
 @app.get("/records/remaining")
-@app.get("/api/records/remaining") 
+@app.get("/api/records/remaining")
 def get_remaining_records():
     """Legacy endpoint - now returns empty since all records loaded initially"""
-    return {
+        return {
         "records": [],
         "total_unique_records": 0,
         "total_db_records": 0,
-        "unique_values": {
+            "unique_values": {
             "fish": [],
             "waterbody": [],
             "bait": []
@@ -787,7 +787,7 @@ def merge_duplicate_records():
             # Verify the migration
             if success:
                 verification_success = verify_migration()
-            else:
+                            else:
                 verification_success = False
             
         finally:
@@ -922,14 +922,14 @@ def rollback_duplicate_merge():
                     "note": "Records have been expanded back to individual category entries"
                 }
                 
-            except Exception as e:
+    except Exception as e:
                 trans.rollback()
                 rollback_info["rollback_actions"].append(f"Rollback failed, transaction rolled back: {str(e)}")
                 raise e
         
     except Exception as e:
         logger.error(f"Rollback operation failed: {e}")
-        return {
+    return {
             "error": "Rollback operation failed",
             "details": str(e),
             "rollback_info": rollback_info,

@@ -19,8 +19,7 @@ class Record(Base):
     date = Column(String)  # Fishing date from RF4 leaderboard (e.g., "21.06.25")
     created_at = Column(DateTime, server_default=func.now())  # When we scraped this record
     region = Column(String)  # Add region field to track which region the record is from
-    category = Column(String)  # Add category field to track fishing type (normal, ultralight, light, bottomlight, telescopic)
-    categories = Column(String)  # Compact category format for merged records (e.g., "N;U;L") - added by merge operation
+    category = Column(String)  # Category field: single category OR compact format for merged records (e.g., "N;U;L")
 
 # Database configuration
 def get_database_url():

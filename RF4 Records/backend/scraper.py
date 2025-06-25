@@ -141,8 +141,8 @@ CATEGORIES = {
 def record_exists_or_update(db: Session, data: dict):
     """
     Check if a record exists with the same fish/player/weight/waterbody/bait/date/region.
-    If it exists, check if the category is already included in the categories field.
-    If not, update it by adding the new category to the existing categories.
+    If it exists, check if the category is already included in the category field.
+    If not, update it by adding the new category to the existing category.
     Returns (exists, updated_record_id) tuple.
     """
     # Map full category names to compact format
@@ -173,23 +173,26 @@ def record_exists_or_update(db: Session, data: dict):
         # Record exists - check if we need to add the new category
         new_category_code = category_map.get(data['category'], data['category'])
         
-        # Parse existing categories from the categories field
-        if existing_record.categories:
-            existing_categories = set(existing_record.categories.split(';'))
+        # Parse existing categories from the category field (compact format)
+        if existing_record.category:
+            # Check if it's already in compact format (contains semicolons)
+            if ';' in existing_record.category:
+                existing_categories = set(existing_record.category.split(';'))
+            else:
+                # Convert old format to compact format
+                old_category_code = category_map.get(existing_record.category, existing_record.category)
+                existing_categories = {old_category_code}
         else:
-            # Handle records that might not have categories set yet
+            # Handle records that might not have category set yet
             existing_categories = set()
         
         # Add new category if not already present
         if new_category_code not in existing_categories:
             existing_categories.add(new_category_code)
             
-            # Update the record with combined categories
+            # Update the record with combined categories in the category field
             updated_categories = ';'.join(sorted(existing_categories))
-            existing_record.categories = updated_categories
-            
-            # Also update the old category field for backward compatibility
-            existing_record.category = data['category']
+            existing_record.category = updated_categories
             
             return True, existing_record.id
         else:
@@ -1515,8 +1518,8 @@ def scrape_and_update_records():
                                         'Bottom Light': 'B',
                                         'Telescopic': 'T'
                                     }
-                                    # Set the categories field with compact format
-                                    data['categories'] = category_map.get(data['category'], data['category'])
+                                    # Set the category field with compact format
+                                    data['category'] = category_map.get(data['category'], data['category'])
                                     bulk_inserter.add_record(data)
                                     region_new_records += 1
                                     total_new_records += 1
@@ -2110,8 +2113,8 @@ def scrape_limited_regions():
                                         'Bottom Light': 'B',
                                         'Telescopic': 'T'
                                     }
-                                    # Set the categories field with compact format
-                                    data['categories'] = category_map.get(data['category'], data['category'])
+                                    # Set the category field with compact format
+                                    data['category'] = category_map.get(data['category'], data['category'])
                                     db.add(Record(**data))
                                     region_new_records += 1
                                     total_new_records += 1
