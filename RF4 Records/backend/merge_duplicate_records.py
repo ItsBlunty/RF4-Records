@@ -173,6 +173,56 @@ def merge_duplicate_records(batch_size=5000):
         # Final commit
         db.commit()
         
+        # Step 4: Database cleanup to reclaim space from deleted records
+        print("\n🧹 Step 4: Database cleanup to reclaim space...")
+        
+        try:
+            # Get database connection for maintenance operations
+            database_url = get_database_url()
+            is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+            
+            if is_postgres:
+                print("  Running PostgreSQL VACUUM to reclaim space from deleted records...")
+                
+                # Close the current session before VACUUM
+                db.close()
+                
+                # Create new engine for VACUUM operations
+                maintenance_engine = create_engine(database_url, connect_args=connect_args)
+                
+                with maintenance_engine.connect() as conn:
+                    # Get size before VACUUM
+                    result = conn.execute(text("""
+                        SELECT pg_size_pretty(pg_total_relation_size('records')) as size_before
+                    """))
+                    size_before = result.fetchone()[0]
+                    print(f"  Database size before cleanup: {size_before}")
+                    
+                    # Run VACUUM to reclaim space
+                    conn.execute(text("COMMIT"))  # Ensure we're not in a transaction
+                    conn.execute(text("VACUUM records"))
+                    
+                    # Get size after VACUUM
+                    result = conn.execute(text("""
+                        SELECT pg_size_pretty(pg_total_relation_size('records')) as size_after
+                    """))
+                    size_after = result.fetchone()[0]
+                    print(f"  Database size after cleanup: {size_after}")
+                
+                # Reconnect for final operations
+                db = SessionLocal()
+                
+            else:
+                print("  SQLite database - space will be reclaimed automatically")
+                
+        except Exception as e:
+            logger.error(f"Database cleanup failed: {e}")
+            # Reconnect if cleanup failed
+            try:
+                db = SessionLocal()
+            except:
+                pass
+        
         # Get final record count
         final_count = db.query(Record).count()
         
@@ -191,7 +241,7 @@ def merge_duplicate_records(batch_size=5000):
         else:
             print(f"\n✅ ALL DUPLICATE GROUPS PROCESSED!")
         
-        # Step 4: Show sample of new category format
+        # Step 5: Show sample of new category format
         print(f"\n📋 Sample of merged categories:")
         sample_records = db.query(Record).filter(Record.category.contains(';')).limit(10).all()
         

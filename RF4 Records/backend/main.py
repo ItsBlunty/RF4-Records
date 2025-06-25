@@ -583,6 +583,73 @@ def run_database_optimizations():
     except Exception as e:
         return {"error": "Database maintenance failed", "details": str(e)}
 
+@app.post("/vacuum")
+def vacuum_database():
+    """Manually run VACUUM to reclaim space from deleted records"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "VACUUM not needed for SQLite",
+                "database_type": "SQLite"
+            }
+        
+        # Capture output
+        import io
+        import sys
+        
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            print("🧹 Running PostgreSQL VACUUM to reclaim space...")
+            
+            engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+            
+            with engine.connect() as conn:
+                # Get size before VACUUM
+                result = conn.execute(text("""
+                    SELECT pg_size_pretty(pg_total_relation_size('records')) as size_before
+                """))
+                size_before = result.fetchone()[0]
+                print(f"Database size before VACUUM: {size_before}")
+                
+                # Run VACUUM
+                conn.execute(text("COMMIT"))
+                conn.execute(text("VACUUM records"))
+                
+                # Get size after VACUUM
+                result = conn.execute(text("""
+                    SELECT pg_size_pretty(pg_total_relation_size('records')) as size_after
+                """))
+                size_after = result.fetchone()[0]
+                print(f"Database size after VACUUM: {size_after}")
+                
+        finally:
+            sys.stdout = old_stdout
+        
+        output = captured_output.getvalue()
+        
+        return {
+            "message": "VACUUM completed successfully",
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"VACUUM failed: {e}")
+        return {
+            "error": "VACUUM failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.get("/merge-duplicates/status")
 def check_merge_status():
     """Check how many duplicate groups remain without running migration"""
