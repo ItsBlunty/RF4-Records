@@ -464,56 +464,9 @@ def api_root():
     }
 
 def _get_processed_records():
-    """Helper function to get and process all records (shared by endpoints)"""
-    db: Session = SessionLocal()
-    
-    # Get all records with category information
-    records = db.query(Record).all()
-    
-    # Group records by unique combination (excluding category)
-    record_groups = {}
-    for r in records:
-        # Create a key for deduplication (excluding category)
-        key = (r.player, r.fish, r.weight, r.waterbody, r.bait1, r.bait2, r.date, r.region)
-        
-        if key not in record_groups:
-            record_groups[key] = []
-        record_groups[key].append(r)
-    
-    # For each group, select one representative record and include category info
-    result = []
-    for key, group_records in record_groups.items():
-        # Use the first record as the representative
-        representative = group_records[0]
-        
-        # Collect all categories for this record
-        categories = [r.category for r in group_records if r.category]
-        
-        # Format bait display
-        if representative.bait2:
-            # Sandwich bait - use semicolon format to match frontend expectation
-            bait_display = f"{representative.bait1}; {representative.bait2}"
-        else:
-            # Single bait
-            bait_display = representative.bait1 or representative.bait or ""
-        
-        # Optimized response - only send data actually used by frontend
-        result.append({
-            "player": representative.player,
-            "fish": representative.fish,
-            "weight": representative.weight,
-            "waterbody": representative.waterbody,
-            "bait_display": bait_display,
-            "date": representative.date,  # Fishing date from leaderboard
-            "created_at": representative.created_at.isoformat() if hasattr(representative, 'created_at') and representative.created_at else None,  # When we scraped this
-            "region": representative.region,
-            "categories": categories,  # Include all categories for filtering
-            "bait1": representative.bait1,  # Include for sandwich bait filtering
-            "bait2": representative.bait2   # Include for sandwich bait filtering
-        })
-    
-    db.close()
-    return result, len(records)
+    """Load records using simplified approach since duplicates are now merged"""
+    from simplified_records import get_simplified_records
+    return get_simplified_records()
 
 @app.get("/records/initial")
 @app.get("/api/records/initial")

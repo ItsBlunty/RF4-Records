@@ -128,33 +128,35 @@ def merge_duplicate_records():
                 db.rollback()
                 continue
         
-        # Step 3: Update single records to use new category format
+        # Step 3: Update remaining single records to use new category format
         print("\n🏷️  Step 3: Updating single record categories...")
         
         updated_singles = 0
-        for key, group_records in single_records.items():
-            try:
-                record = group_records[0]
-                if record.category:
-                    category_normalized = record.category.lower().strip()
-                    if category_normalized in category_mapping:
-                        record.category = category_mapping[category_normalized]
-                        updated_singles += 1
-                    else:
-                        record.category = 'N'  # Default to Normal for unknown categories
-                        updated_singles += 1
-                else:
-                    record.category = 'N'  # Default to Normal for null categories
-                    updated_singles += 1
-                
-                # Commit in batches
-                if updated_singles % 1000 == 0:
-                    db.commit()
-                    print(f"  Updated {updated_singles:,} single records...")
-                    
-            except Exception as e:
-                logger.error(f"Error updating single record: {e}")
-                continue
+        
+        # Use a direct query to update remaining single category records efficiently
+        try:
+            # Update records that still have old category format
+            for old_cat, new_cat in category_mapping.items():
+                result = db.execute(text(f"""
+                    UPDATE records 
+                    SET category = :new_cat 
+                    WHERE category = :old_cat
+                """), {"new_cat": new_cat, "old_cat": old_cat})
+                updated_singles += result.rowcount
+            
+            # Set null categories to Normal
+            result = db.execute(text("""
+                UPDATE records 
+                SET category = 'N' 
+                WHERE category IS NULL
+            """))
+            updated_singles += result.rowcount
+            
+            print(f"  Updated {updated_singles:,} single records with SQL batch update")
+            
+        except Exception as e:
+            logger.error(f"Error updating single records: {e}")
+            # Continue anyway as this is not critical
         
         # Final commit
         db.commit()
