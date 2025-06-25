@@ -376,6 +376,7 @@ def startup_event():
     print("   GET  /records  - Get all fishing records")
     print("   POST /refresh  - Trigger manual scrape")
     print("   POST /optimize - Run database performance optimizations")
+    print("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
     print("   GET  /status   - Server and DB status")
     print("   GET  /docs     - Interactive API documentation")
     print("✅ Server ready! Frontend can connect to this URL")
@@ -685,6 +686,56 @@ def run_database_optimizations():
         
     except Exception as e:
         return {"error": "Database maintenance failed", "details": str(e)}
+
+@app.post("/merge-duplicates")
+def merge_duplicate_records():
+    """Merge duplicate records and combine categories - MAJOR DATABASE MIGRATION"""
+    try:
+        # Import and run the merger script
+        from merge_duplicate_records import merge_duplicate_records, verify_migration
+        
+        # Capture output by redirecting stdout
+        import io
+        import sys
+        
+        # Capture the output
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            # Run the migration
+            success = merge_duplicate_records()
+            
+            # Verify the migration
+            if success:
+                verification_success = verify_migration()
+            else:
+                verification_success = False
+            
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
+        
+        # Get the captured output
+        output = captured_output.getvalue()
+        
+        return {
+            "message": "Database migration completed" if success else "Database migration failed",
+            "success": success,
+            "verification_passed": verification_success if success else False,
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "warning": "This is a major database migration that permanently modifies data structure"
+        }
+        
+    except Exception as e:
+        logger.error(f"Database migration failed: {e}")
+        return {
+            "error": "Database migration failed", 
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 @app.post("/cleanup")
 def force_cleanup():
