@@ -471,21 +471,27 @@ def _get_processed_records():
 @app.get("/records/initial")
 @app.get("/api/records/initial")
 def get_initial_records():
-    """Get all records - no batching needed after migration eliminated deduplication overhead"""
+    """Get first 1000 records for initial page load (optimized for merged records)"""
     try:
-        result, total_db_records = _get_processed_records()
+        from simplified_records import get_all_records_simple
         
-        # Get unique values for filters
-        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+        # Get all records (they're already deduplicated from merge operation)
+        all_records = get_all_records_simple()
         
-        logger.info(f"Retrieved all {len(result)} records (no deduplication needed)")
+        # Return first 1000 records for initial load
+        initial_records = all_records[:1000]
+        
+        # Get unique values for filters from ALL records (not just initial 1000)
+        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
+        
+        logger.info(f"Retrieved {len(initial_records)} initial records (from {len(all_records)} total)")
         return {
-            "records": result,
-            "total_unique_records": len(result),
-            "total_db_records": total_db_records,
-            "has_more": False,  # All records loaded at once
+            "records": initial_records,
+            "total_loaded": len(initial_records),
+            "total_available": len(all_records),
+            "has_more": len(all_records) > 1000,
             "unique_values": {
                 "fish": fish,
                 "waterbody": waterbody,
@@ -493,32 +499,57 @@ def get_initial_records():
             }
         }
     except Exception as e:
-        logger.error(f"Error retrieving records: {e}")
-        return {"error": "Failed to retrieve records"}
+        logger.error(f"Error retrieving initial records: {e}")
+        return {"error": "Failed to retrieve initial records"}
 
+@app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records():
-    """Legacy endpoint - now returns empty since all records loaded initially"""
-    return {
-        "records": [],
-        "total_unique_records": 0,
-        "total_db_records": 0,
-        "unique_values": {
-            "fish": [],
-            "waterbody": [],
-            "bait": []
+    """Get remaining records after initial 1000 (batched loading)"""
+    try:
+        from simplified_records import get_all_records_simple
+        
+        # Get all records
+        all_records = get_all_records_simple()
+        
+        # Return records after the first 1000
+        remaining_records = all_records[1000:]
+        
+        logger.info(f"Retrieved {len(remaining_records)} remaining records")
+        return {
+            "records": remaining_records,
+            "total_loaded": len(remaining_records),
+            "total_records": len(all_records)
         }
-    }
+    except Exception as e:
+        logger.error(f"Error retrieving remaining records: {e}")
+        return {"error": "Failed to retrieve remaining records"}
 
 @app.get("/records")
 @app.get("/api/records")
 def get_records():
-    """Get all records from database, deduplicated for frontend display (legacy endpoint)"""
+    """Get all records from database with filter values (for backward compatibility)"""
     try:
-        result, total_db_records = _get_processed_records()
+        from simplified_records import get_all_records_simple
         
-        logger.info(f"Retrieved {len(result)} unique records (from {total_db_records} total records) via legacy API")
-        return result
+        # Get all records
+        all_records = get_all_records_simple()
+        
+        # Get unique values for filters
+        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
+        
+        logger.info(f"Retrieved all {len(all_records)} records with filter values")
+        return {
+            "records": all_records,
+            "total_records": len(all_records),
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
+        }
     except Exception as e:
         logger.error(f"Error retrieving records: {e}")
         return {"error": "Failed to retrieve records"}
