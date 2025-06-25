@@ -476,7 +476,7 @@ def get_initial_records():
         from simplified_records import get_all_records_simple
         
         # Get all records (they're already deduplicated from merge operation)
-        all_records = get_all_records_simple()
+        all_records, total_count = get_all_records_simple()
         
         # Return first 1000 records for initial load
         initial_records = all_records[:1000]
@@ -489,8 +489,7 @@ def get_initial_records():
         logger.info(f"Retrieved {len(initial_records)} initial records (from {len(all_records)} total)")
         return {
             "records": initial_records,
-            "total_loaded": len(initial_records),
-            "total_available": len(all_records),
+            "total_unique_records": len(all_records),  # Frontend expects this field
             "has_more": len(all_records) > 1000,
             "unique_values": {
                 "fish": fish,
@@ -510,16 +509,25 @@ def get_remaining_records():
         from simplified_records import get_all_records_simple
         
         # Get all records
-        all_records = get_all_records_simple()
+        all_records, total_count = get_all_records_simple()
         
         # Return records after the first 1000
         remaining_records = all_records[1000:]
         
+        # Get unique values for filters from ALL records
+        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
+        
         logger.info(f"Retrieved {len(remaining_records)} remaining records")
         return {
             "records": remaining_records,
-            "total_loaded": len(remaining_records),
-            "total_records": len(all_records)
+            "total_unique_records": len(all_records),  # Frontend expects this field
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
         }
     except Exception as e:
         logger.error(f"Error retrieving remaining records: {e}")
@@ -533,7 +541,7 @@ def get_records():
         from simplified_records import get_all_records_simple
         
         # Get all records
-        all_records = get_all_records_simple()
+        all_records, total_count = get_all_records_simple()
         
         # Get unique values for filters
         fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
