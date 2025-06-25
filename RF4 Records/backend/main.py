@@ -1442,6 +1442,165 @@ def investigate_database_space():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.get("/database/volume-analysis")
+def analyze_volume_usage():
+    """Comprehensive analysis of all files in PostgreSQL data directory"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "Volume analysis only available for PostgreSQL",
+                "database_type": "SQLite"
+            }
+        
+        engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+        volume_analysis = {}
+        
+        with engine.connect() as conn:
+            # 1. Total database size vs volume
+            result = conn.execute(text("""
+                SELECT 
+                    pg_size_pretty(pg_database_size(current_database())) as database_size,
+                    pg_database_size(current_database()) as database_bytes
+            """))
+            db_info = result.fetchone()
+            volume_analysis["database_size"] = {
+                "size": db_info[0],
+                "bytes": db_info[1]
+            }
+            
+            # 2. ALL WAL files (not just top 10)
+            result = conn.execute(text("""
+                SELECT 
+                    COUNT(*) as wal_file_count,
+                    pg_size_pretty(SUM(size)) as total_wal_size,
+                    SUM(size) as total_wal_bytes,
+                    pg_size_pretty(AVG(size)) as avg_wal_size,
+                    pg_size_pretty(MAX(size)) as max_wal_size,
+                    pg_size_pretty(MIN(size)) as min_wal_size
+                FROM pg_ls_waldir()
+            """))
+            wal_summary = result.fetchone()
+            volume_analysis["wal_summary"] = {
+                "count": wal_summary[0],
+                "total_size": wal_summary[1],
+                "total_bytes": wal_summary[2],
+                "avg_size": wal_summary[3],
+                "max_size": wal_summary[4],
+                "min_size": wal_summary[5]
+            }
+            
+            # 3. Check pg_wal archive directory if accessible
+            try:
+                result = conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as archive_count,
+                        pg_size_pretty(SUM(size)) as total_archive_size,
+                        SUM(size) as total_archive_bytes
+                    FROM pg_ls_archive_statusdir()
+                """))
+                archive_info = result.fetchone()
+                volume_analysis["wal_archive"] = {
+                    "count": archive_info[0],
+                    "total_size": archive_info[1],
+                    "total_bytes": archive_info[2]
+                }
+            except Exception as e:
+                volume_analysis["wal_archive"] = {"error": f"Cannot access WAL archive: {str(e)}"}
+            
+            # 4. Temporary files
+            try:
+                result = conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as temp_file_count,
+                        pg_size_pretty(SUM(size)) as total_temp_size,
+                        SUM(size) as total_temp_bytes
+                    FROM pg_ls_tmpdir()
+                """))
+                temp_info = result.fetchone()
+                volume_analysis["temp_files"] = {
+                    "count": temp_info[0],
+                    "total_size": temp_info[1],
+                    "total_bytes": temp_info[2]
+                }
+            except Exception as e:
+                volume_analysis["temp_files"] = {"error": f"Cannot access temp files: {str(e)}"}
+            
+            # 5. Log files
+            try:
+                result = conn.execute(text("""
+                    SELECT 
+                        COUNT(*) as log_file_count,
+                        pg_size_pretty(SUM(size)) as total_log_size,
+                        SUM(size) as total_log_bytes
+                    FROM pg_ls_logdir()
+                """))
+                log_info = result.fetchone()
+                volume_analysis["log_files"] = {
+                    "count": log_info[0],
+                    "total_size": log_info[1],
+                    "total_bytes": log_info[2]
+                }
+            except Exception as e:
+                volume_analysis["log_files"] = {"error": f"Cannot access log files: {str(e)}"}
+            
+            # 6. PostgreSQL settings that affect disk usage
+            result = conn.execute(text("""
+                SELECT name, setting, unit, short_desc
+                FROM pg_settings 
+                WHERE name IN (
+                    'wal_keep_segments', 'wal_keep_size', 'max_wal_size', 
+                    'min_wal_size', 'checkpoint_segments', 'checkpoint_completion_target',
+                    'wal_buffers', 'shared_buffers', 'temp_file_limit'
+                )
+                ORDER BY name
+            """))
+            volume_analysis["postgres_settings"] = [
+                {
+                    "name": row[0],
+                    "setting": row[1],
+                    "unit": row[2],
+                    "description": row[3]
+                }
+                for row in result.fetchall()
+            ]
+            
+            # 7. Calculate estimated total volume usage
+            total_estimated = db_info[1]  # Database size
+            if "total_bytes" in volume_analysis.get("wal_summary", {}):
+                total_estimated += volume_analysis["wal_summary"]["total_bytes"]
+            if "total_bytes" in volume_analysis.get("temp_files", {}):
+                total_estimated += volume_analysis["temp_files"]["total_bytes"]
+            if "total_bytes" in volume_analysis.get("log_files", {}):
+                total_estimated += volume_analysis["log_files"]["total_bytes"]
+            if "total_bytes" in volume_analysis.get("wal_archive", {}):
+                total_estimated += volume_analysis["wal_archive"]["total_bytes"]
+            
+            volume_analysis["estimated_total"] = {
+                "bytes": total_estimated,
+                "size": f"{total_estimated / (1024*1024):.1f} MB"
+            }
+        
+        return {
+            "message": "Volume analysis completed",
+            "volume_analysis": volume_analysis,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "This shows all PostgreSQL files contributing to volume size"
+        }
+        
+    except Exception as e:
+        logger.error(f"Volume analysis failed: {e}")
+        return {
+            "error": "Volume analysis failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
