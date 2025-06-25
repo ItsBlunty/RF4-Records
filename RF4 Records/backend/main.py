@@ -583,9 +583,45 @@ def run_database_optimizations():
     except Exception as e:
         return {"error": "Database maintenance failed", "details": str(e)}
 
+@app.get("/merge-duplicates/status")
+def check_merge_status():
+    """Check how many duplicate groups remain without running migration"""
+    try:
+        from merge_duplicate_records import check_duplicate_status
+        
+        # Capture output
+        import io
+        import sys
+        
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            remaining_groups = check_duplicate_status()
+        finally:
+            sys.stdout = old_stdout
+        
+        output = captured_output.getvalue()
+        
+        return {
+            "remaining_duplicate_groups": remaining_groups,
+            "migration_complete": remaining_groups == 0,
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Status check failed: {e}")
+        return {
+            "error": "Status check failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.post("/merge-duplicates")
 def merge_duplicate_records():
-    """Merge duplicate records and combine categories - MAJOR DATABASE MIGRATION"""
+    """Merge duplicate records and combine categories - BATCH PROCESSING (5K groups per run)"""
     try:
         # Import and run the merger script
         from merge_duplicate_records import merge_duplicate_records, verify_migration
@@ -617,12 +653,12 @@ def merge_duplicate_records():
         output = captured_output.getvalue()
         
         return {
-            "message": "Database migration completed" if success else "Database migration failed",
+            "message": "Batch migration completed" if success else "Batch migration failed",
             "success": success,
             "verification_passed": verification_success if success else False,
             "output": output,
             "timestamp": datetime.now(timezone.utc).isoformat(),
-            "warning": "This is a major database migration that permanently modifies data structure"
+            "warning": "BATCH PROCESSING: Processes 5,000 duplicate groups per run - run multiple times if needed"
         }
         
     except Exception as e:

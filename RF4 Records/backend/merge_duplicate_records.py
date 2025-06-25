@@ -14,10 +14,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def merge_duplicate_records():
-    """Merge duplicate records and combine categories into single field"""
+def merge_duplicate_records(batch_size=5000):
+    """Merge duplicate records and combine categories into single field - BATCH PROCESSING"""
     
-    print("🔄 Starting duplicate record merger for Railway production...")
+    print("🔄 Starting BATCH duplicate record merger for Railway production...")
+    print(f"📦 Batch size: {batch_size:,} duplicate groups per run")
     
     # Get database connection
     database_url = get_database_url()
@@ -85,13 +86,24 @@ def merge_duplicate_records():
         print(f"📈 Found {len(duplicate_groups):,} groups with duplicates")
         print(f"📈 Found {len(single_records):,} unique records")
         
-        # Step 2: Process duplicate groups
-        print("\n🔄 Step 2: Merging duplicate records...")
+        # Step 2: Process duplicate groups - LIMITED BATCH SIZE FOR SAFETY
+        print(f"\n🔄 Step 2: Merging duplicate records (batch size: {batch_size:,})...")
         
         merged_count = 0
         deleted_count = 0
         
-        for key, group_records in duplicate_groups.items():
+        # Convert to list to allow slicing
+        duplicate_items = list(duplicate_groups.items())
+        total_duplicates = len(duplicate_items)
+        
+        # Process only the first batch_size groups
+        batch_to_process = duplicate_items[:batch_size]
+        remaining_after_batch = total_duplicates - len(batch_to_process)
+        
+        print(f"📊 Processing {len(batch_to_process):,} groups this run")
+        print(f"📊 {remaining_after_batch:,} groups will remain for next run")
+        
+        for key, group_records in batch_to_process:
             try:
                 # Collect all categories for this group
                 categories = []
@@ -118,8 +130,8 @@ def merge_duplicate_records():
                 
                 merged_count += 1
                 
-                # Commit in batches to avoid memory issues
-                if merged_count % 1000 == 0:
+                # Commit in smaller batches to avoid memory issues
+                if merged_count % 500 == 0:
                     db.commit()
                     print(f"  Processed {merged_count:,} groups, deleted {deleted_count:,} duplicates...")
                 
@@ -164,13 +176,20 @@ def merge_duplicate_records():
         # Get final record count
         final_count = db.query(Record).count()
         
-        print(f"\n📊 Migration Summary:")
+        print(f"\n📊 Batch Migration Summary:")
         print(f"  Initial records: {initial_count:,}")
         print(f"  Final records: {final_count:,}")
-        print(f"  Records deleted: {deleted_count:,}")
-        print(f"  Groups merged: {merged_count:,}")
+        print(f"  Records deleted this batch: {deleted_count:,}")
+        print(f"  Groups merged this batch: {merged_count:,}")
         print(f"  Singles updated: {updated_singles:,}")
-        print(f"  Space saved: {((initial_count - final_count) / initial_count * 100):.1f}%")
+        print(f"  Space saved this batch: {((initial_count - final_count) / initial_count * 100):.1f}%")
+        print(f"  Remaining duplicate groups: {remaining_after_batch:,}")
+        
+        if remaining_after_batch > 0:
+            print(f"\n⚠️  BATCH PROCESSING: {remaining_after_batch:,} duplicate groups remain")
+            print(f"💡 Run the migration again to process the next {batch_size:,} groups")
+        else:
+            print(f"\n✅ ALL DUPLICATE GROUPS PROCESSED!")
         
         # Step 4: Show sample of new category format
         print(f"\n📋 Sample of merged categories:")
@@ -181,8 +200,13 @@ def merge_duplicate_records():
         
         db.close()
         
-        print(f"\n🎉 Record merger completed successfully!")
-        print(f"💡 Frontend deduplication is no longer needed!")
+        if remaining_after_batch > 0:
+            print(f"\n🎉 Batch processing completed successfully!")
+            print(f"🔄 Run migration again to process remaining {remaining_after_batch:,} groups")
+            print(f"📈 Progress: {((total_duplicates - remaining_after_batch) / total_duplicates * 100):.1f}% complete")
+        else:
+            print(f"\n🎉 ALL DUPLICATE MERGING COMPLETED!")
+            print(f"💡 Frontend deduplication is no longer needed!")
         
         return True
         
@@ -190,6 +214,49 @@ def merge_duplicate_records():
         print(f"❌ Record merger failed: {e}")
         print(f"   Error type: {type(e).__name__}")
         return False
+
+def check_duplicate_status():
+    """Check how many duplicate groups remain without running migration"""
+    
+    print("🔍 Checking duplicate status...")
+    
+    db = SessionLocal()
+    
+    try:
+        # Get all records
+        records = db.query(Record).all()
+        initial_count = len(records)
+        
+        # Group records by unique combination (excluding category)
+        record_groups = {}
+        for r in records:
+            key = (r.player, r.fish, r.weight, r.waterbody, r.bait, r.bait1, r.bait2, r.date, r.region)
+            if key not in record_groups:
+                record_groups[key] = []
+            record_groups[key].append(r)
+        
+        # Count duplicates
+        duplicate_groups = {k: v for k, v in record_groups.items() if len(v) > 1}
+        single_records = {k: v for k, v in record_groups.items() if len(v) == 1}
+        
+        print(f"📊 Current Status:")
+        print(f"  Total records: {initial_count:,}")
+        print(f"  Duplicate groups: {len(duplicate_groups):,}")
+        print(f"  Unique records: {len(single_records):,}")
+        
+        if len(duplicate_groups) > 0:
+            print(f"  Next batch will process: {min(5000, len(duplicate_groups)):,} groups")
+            print(f"  Estimated records to delete: {sum(len(group) - 1 for group in list(duplicate_groups.values())[:5000]):,}")
+        else:
+            print(f"  ✅ No duplicate groups found - migration complete!")
+        
+        db.close()
+        return len(duplicate_groups)
+        
+    except Exception as e:
+        print(f"❌ Status check failed: {e}")
+        db.close()
+        return -1
 
 def verify_migration():
     """Verify the migration was successful"""
