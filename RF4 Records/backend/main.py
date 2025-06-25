@@ -650,6 +650,84 @@ def vacuum_database():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.post("/vacuum/full")
+def vacuum_full_database():
+    """Run VACUUM FULL to completely rebuild the database and reclaim maximum space"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "VACUUM FULL not needed for SQLite",
+                "database_type": "SQLite"
+            }
+        
+        # Capture output
+        import io
+        import sys
+        
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            print("🧹 Running PostgreSQL VACUUM FULL - this will take longer but reclaim maximum space...")
+            print("⚠️  WARNING: This locks the table during operation!")
+            
+            engine = create_engine(database_url, connect_args={'connect_timeout': 300})  # Longer timeout
+            
+            with engine.connect() as conn:
+                # Get sizes before VACUUM FULL
+                result = conn.execute(text("""
+                    SELECT 
+                        pg_size_pretty(pg_database_size(current_database())) as total_db_size,
+                        pg_size_pretty(pg_total_relation_size('records')) as table_size
+                """))
+                before = result.fetchone()
+                print(f"Total database size before: {before[0]}")
+                print(f"Records table size before: {before[1]}")
+                
+                # Run VACUUM FULL
+                conn.execute(text("COMMIT"))
+                print("Running VACUUM FULL records...")
+                conn.execute(text("VACUUM FULL records"))
+                
+                # Get sizes after VACUUM FULL
+                result = conn.execute(text("""
+                    SELECT 
+                        pg_size_pretty(pg_database_size(current_database())) as total_db_size,
+                        pg_size_pretty(pg_total_relation_size('records')) as table_size
+                """))
+                after = result.fetchone()
+                print(f"Total database size after: {after[0]}")
+                print(f"Records table size after: {after[1]}")
+                
+                print("✅ VACUUM FULL completed successfully!")
+                
+        finally:
+            sys.stdout = old_stdout
+        
+        output = captured_output.getvalue()
+        
+        return {
+            "message": "VACUUM FULL completed successfully",
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "warning": "VACUUM FULL locks the table during operation but reclaims maximum space"
+        }
+        
+    except Exception as e:
+        logger.error(f"VACUUM FULL failed: {e}")
+        return {
+            "error": "VACUUM FULL failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.get("/merge-duplicates/status")
 def check_merge_status():
     """Check how many duplicate groups remain without running migration"""
@@ -811,6 +889,169 @@ def get_status():
     except Exception as e:
         logger.error(f"Error getting status: {e}")
         return {"error": "Failed to get status"}
+
+@app.get("/database/analysis")
+def analyze_database_size():
+    """Comprehensive database size analysis to identify space usage"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "Database analysis only available for PostgreSQL",
+                "database_type": "SQLite"
+            }
+        
+        engine = create_engine(database_url, connect_args={'connect_timeout': 60})
+        analysis = {}
+        
+        with engine.connect() as conn:
+            # 1. Overall database size
+            result = conn.execute(text("""
+                SELECT 
+                    pg_database.datname,
+                    pg_size_pretty(pg_database_size(pg_database.datname)) AS size
+                FROM pg_database 
+                WHERE pg_database.datname = current_database()
+            """))
+            db_info = result.fetchone()
+            analysis["total_database_size"] = db_info[1]
+            
+            # 2. Table sizes breakdown
+            result = conn.execute(text("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as total_size,
+                    pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) as table_size,
+                    pg_size_pretty(pg_indexes_size(schemaname||'.'||tablename)) as index_size,
+                    pg_total_relation_size(schemaname||'.'||tablename) as bytes_total
+                FROM pg_tables 
+                WHERE schemaname = 'public'
+                ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+            """))
+            tables = result.fetchall()
+            analysis["tables"] = [
+                {
+                    "table": f"{row[0]}.{row[1]}",
+                    "total_size": row[2],
+                    "table_size": row[3], 
+                    "index_size": row[4],
+                    "bytes": row[5]
+                }
+                for row in tables
+            ]
+            
+            # 3. WAL (Write-Ahead Log) size
+            result = conn.execute(text("""
+                SELECT 
+                    pg_size_pretty(
+                        COALESCE(
+                            (SELECT SUM(size) FROM pg_ls_waldir()), 
+                            0
+                        )
+                    ) as wal_size
+            """))
+            wal_info = result.fetchone()
+            analysis["wal_size"] = wal_info[0] if wal_info else "Unknown"
+            
+            # 4. Temporary files
+            result = conn.execute(text("""
+                SELECT 
+                    pg_size_pretty(
+                        COALESCE(temp_bytes, 0)
+                    ) as temp_size
+                FROM pg_stat_database 
+                WHERE datname = current_database()
+            """))
+            temp_info = result.fetchone()
+            analysis["temp_files_size"] = temp_info[0] if temp_info else "0 bytes"
+            
+            # 5. Dead tuples and bloat
+            result = conn.execute(text("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    n_live_tup as live_tuples,
+                    n_dead_tup as dead_tuples,
+                    CASE 
+                        WHEN n_live_tup > 0 
+                        THEN round((n_dead_tup::float / n_live_tup::float) * 100, 2)
+                        ELSE 0 
+                    END as dead_tuple_ratio
+                FROM pg_stat_user_tables
+                WHERE schemaname = 'public'
+                ORDER BY n_dead_tup DESC
+            """))
+            bloat_info = result.fetchall()
+            analysis["table_bloat"] = [
+                {
+                    "table": f"{row[0]}.{row[1]}",
+                    "live_tuples": row[2],
+                    "dead_tuples": row[3],
+                    "dead_ratio_percent": row[4]
+                }
+                for row in bloat_info
+            ]
+            
+            # 6. Database connections and locks
+            result = conn.execute(text("""
+                SELECT 
+                    COUNT(*) as total_connections,
+                    COUNT(CASE WHEN state = 'active' THEN 1 END) as active_connections,
+                    COUNT(CASE WHEN state = 'idle' THEN 1 END) as idle_connections
+                FROM pg_stat_activity 
+                WHERE datname = current_database()
+            """))
+            conn_info = result.fetchone()
+            analysis["connections"] = {
+                "total": conn_info[0],
+                "active": conn_info[1], 
+                "idle": conn_info[2]
+            }
+            
+            # 7. Last vacuum/analyze times
+            result = conn.execute(text("""
+                SELECT 
+                    schemaname,
+                    tablename,
+                    last_vacuum,
+                    last_autovacuum,
+                    last_analyze,
+                    last_autoanalyze
+                FROM pg_stat_user_tables
+                WHERE schemaname = 'public'
+            """))
+            maintenance_info = result.fetchall()
+            analysis["maintenance_history"] = [
+                {
+                    "table": f"{row[0]}.{row[1]}",
+                    "last_vacuum": str(row[2]) if row[2] else "Never",
+                    "last_autovacuum": str(row[3]) if row[3] else "Never",
+                    "last_analyze": str(row[4]) if row[4] else "Never",
+                    "last_autoanalyze": str(row[5]) if row[5] else "Never"
+                }
+                for row in maintenance_info
+            ]
+        
+        return {
+            "message": "Database analysis completed",
+            "analysis": analysis,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "Check for WAL files, temp files, and table bloat as potential causes of size discrepancy"
+        }
+        
+    except Exception as e:
+        logger.error(f"Database analysis failed: {e}")
+        return {
+            "error": "Database analysis failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
