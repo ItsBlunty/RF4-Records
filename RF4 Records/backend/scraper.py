@@ -1393,6 +1393,8 @@ def scrape_and_update_records():
             'categories_scraped': 0,
             'regions_scraped': 0,
             'new_records': 0,
+            'truly_new_records': 0,
+            'category_updates': 0,
             'duration_seconds': 0,
             'errors_occurred': True,
             'interrupted': False,
@@ -1406,6 +1408,8 @@ def scrape_and_update_records():
     
     db = SessionLocal()
     total_new_records = 0
+    total_truly_new_records = 0  # Completely new records
+    total_category_updates = 0   # Existing records with new categories
     driver = None
     all_unique_fish = set()
     regions_scraped = 0
@@ -1433,6 +1437,9 @@ def scrape_and_update_records():
             consecutive_region_failures = 0
             category_had_success = False
             category_successful_regions = 0
+            category_new_records = 0
+            category_truly_new_records = 0
+            category_updates = 0
             
             # Loop through all regions for this category
             for region in category_info['regions']:
@@ -1479,6 +1486,8 @@ def scrape_and_update_records():
                     # Track unique fish names for this region
                     region_fish = set()
                     region_new_records = 0
+                    region_truly_new_records = 0
+                    region_category_updates = 0
                     for rec in records:
                         if should_stop_scraping:
                             break
@@ -1522,11 +1531,15 @@ def scrape_and_update_records():
                                     data['category'] = category_map.get(data['category'], data['category'])
                                     bulk_inserter.add_record(data)
                                     region_new_records += 1
+                                    region_truly_new_records += 1
                                     total_new_records += 1
+                                    total_truly_new_records += 1
                                 elif updated_id:
                                     # Record was updated with new category
                                     region_new_records += 1
+                                    region_category_updates += 1
                                     total_new_records += 1
+                                    total_category_updates += 1
                         except Exception as e:
                             logger.error(f"Error processing record in {category_info['name']} - {region['name']}: {e}")
                             errors_occurred = True
@@ -1538,6 +1551,11 @@ def scrape_and_update_records():
                     consecutive_region_failures = 0
                     category_had_success = True
                     category_successful_regions += 1
+                    
+                    # Update category totals
+                    category_new_records += region_new_records
+                    category_truly_new_records += region_truly_new_records
+                    category_updates += region_category_updates
                     
                     # Success - just track the stats, no verbose logging
                     regions_scraped += 1
@@ -1749,8 +1767,9 @@ def scrape_and_update_records():
             if not category_had_success:
                 category_failures += 1
             
-            # Simple one-line category summary
-            logger.info(f"{category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions, {total_new_records} total records")
+            # Enhanced category summary with breakdown
+            logger.info(f"📊 {category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions")
+            logger.info(f"   └─ +{category_new_records} records ({category_truly_new_records} new, {category_updates} category updates)")
             
             # ENHANCED CATEGORY-LEVEL CLEANUP - Kill ALL Chrome processes and children
             logger.info(f"🧹 CATEGORY COMPLETE: Thorough cleanup after {category_info['name']}")
@@ -1911,10 +1930,11 @@ def scrape_and_update_records():
         end_time = datetime.now()
         total_duration = (end_time - start_time).total_seconds()
         
-        # Final summary with memory usage
+        # Final summary with memory usage and record breakdown
         final_memory = get_memory_usage()
         memory_change = final_memory - initial_memory if 'initial_memory' in locals() else 0
-        logger.info(f"📊 Final: {regions_scraped} regions, +{total_new_records} new records, {total_duration:.1f}s")
+        logger.info(f"📊 Final: {regions_scraped} regions, +{total_new_records} records, {total_duration:.1f}s")
+        logger.info(f"   └─ {total_truly_new_records} truly new records, {total_category_updates} category updates")
         logger.info(f"🧠 Memory: {final_memory} MB (Δ{memory_change:+.1f} MB)")
         
         # Log cleanup failures summary
@@ -2033,6 +2053,8 @@ def scrape_and_update_records():
         'categories_scraped': len(CATEGORIES),
         'regions_scraped': regions_scraped,
         'new_records': total_new_records,
+        'truly_new_records': total_truly_new_records,
+        'category_updates': total_category_updates,
         'duration_seconds': total_duration if 'total_duration' in locals() else 0,
         'errors_occurred': errors_occurred,
         'interrupted': should_stop_scraping,
@@ -2044,6 +2066,8 @@ def scrape_limited_regions():
     print("Starting Selenium-based scrape for selected regions...")
     db = SessionLocal()
     total_new_records = 0
+    total_truly_new_records = 0
+    total_category_updates = 0
     driver = None
     all_unique_fish = set()
     regions_scraped = 0
@@ -2074,6 +2098,8 @@ def scrape_limited_regions():
                     # Track unique fish names for this region
                     region_fish = set()
                     region_new_records = 0
+                    region_truly_new_records = 0
+                    region_category_updates = 0
             
                     for rec in records:
                         try:
@@ -2117,11 +2143,15 @@ def scrape_limited_regions():
                                     data['category'] = category_map.get(data['category'], data['category'])
                                     db.add(Record(**data))
                                     region_new_records += 1
+                                    region_truly_new_records += 1
                                     total_new_records += 1
+                                    total_truly_new_records += 1
                                 elif updated_id:
                                     # Record was updated with new category
                                     region_new_records += 1
+                                    region_category_updates += 1
                                     total_new_records += 1
+                                    total_category_updates += 1
                         except Exception as e:
                             print(f"Error processing record in {category_info['name']} - {region['name']}: {e}")
                             continue
@@ -2129,7 +2159,7 @@ def scrape_limited_regions():
                     print(f"\n{category_info['name']} - {region['name']} Summary:")
                     print(f"- Fish types found: {len(region_fish)}")
                     print(f"- Total records processed: {len(records)}")
-                    print(f"- New records added: {region_new_records}")
+                    print(f"- New records added: {region_new_records} ({region_truly_new_records} new, {region_category_updates} category updates)")
                     
                     regions_scraped += 1
                     
@@ -2170,7 +2200,7 @@ def scrape_limited_regions():
             print(f"Total regions scraped: {regions_scraped}")
             print(f"Total unique fish types across all categories and regions: {len(all_unique_fish)}")
             print(f"Fish types: {', '.join(sorted(all_unique_fish))}")
-            print(f"Total new records added: {total_new_records}")
+            print(f"Total new records added: {total_new_records} ({total_truly_new_records} new, {total_category_updates} category updates)")
             print(f"Total records in database: {final_count} (was {initial_count})")
         
         if sample_record:
@@ -2194,7 +2224,7 @@ def scrape_limited_regions():
                 print("WARNING: Driver cleanup failed in scrape_limited_regions - potential memory leak risk!")
         db.close()
     
-    print(f"Multi-category scraping complete. Added {total_new_records} new records from {regions_scraped} regions across multiple categories.")
+    print(f"Multi-category scraping complete. Added {total_new_records} records ({total_truly_new_records} new, {total_category_updates} category updates) from {regions_scraped} regions across multiple categories.")
 
 def get_detailed_memory_usage():
     """Get detailed memory usage breakdown including Chrome processes"""
