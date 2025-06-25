@@ -1053,6 +1053,100 @@ def analyze_database_size():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.post("/checkpoint")
+def force_checkpoint():
+    """Force PostgreSQL checkpoint to clean up WAL files"""
+    try:
+        from database import get_database_url
+        from sqlalchemy import create_engine, text
+        
+        database_url = get_database_url()
+        is_postgres = 'postgresql' in database_url.lower() or 'postgres' in database_url.lower()
+        
+        if not is_postgres:
+            return {
+                "message": "CHECKPOINT not available for SQLite",
+                "database_type": "SQLite"
+            }
+        
+        # Capture output
+        import io
+        import sys
+        
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            print("🔄 Forcing PostgreSQL CHECKPOINT to clean up WAL files...")
+            
+            engine = create_engine(database_url, connect_args={'connect_timeout': 120})
+            
+            with engine.connect() as conn:
+                # Get WAL size before checkpoint
+                result = conn.execute(text("""
+                    SELECT 
+                        pg_size_pretty(
+                            COALESCE(
+                                (SELECT SUM(size) FROM pg_ls_waldir()), 
+                                0
+                            )
+                        ) as wal_size_before
+                """))
+                wal_before = result.fetchone()[0]
+                print(f"WAL size before checkpoint: {wal_before}")
+                
+                # Force checkpoint
+                conn.execute(text("COMMIT"))
+                print("Running CHECKPOINT...")
+                conn.execute(text("CHECKPOINT"))
+                
+                # Get WAL size after checkpoint
+                result = conn.execute(text("""
+                    SELECT 
+                        pg_size_pretty(
+                            COALESCE(
+                                (SELECT SUM(size) FROM pg_ls_waldir()), 
+                                0
+                            )
+                        ) as wal_size_after
+                """))
+                wal_after = result.fetchone()[0]
+                print(f"WAL size after checkpoint: {wal_after}")
+                
+                # Also try to clean up temporary files
+                print("Checking for temp file cleanup...")
+                result = conn.execute(text("""
+                    SELECT 
+                        pg_size_pretty(COALESCE(temp_bytes, 0)) as temp_size
+                    FROM pg_stat_database 
+                    WHERE datname = current_database()
+                """))
+                temp_size = result.fetchone()[0]
+                print(f"Temp files size: {temp_size}")
+                
+                print("✅ CHECKPOINT completed successfully!")
+                
+        finally:
+            sys.stdout = old_stdout
+        
+        output = captured_output.getvalue()
+        
+        return {
+            "message": "CHECKPOINT completed successfully",
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "note": "CHECKPOINT forces WAL file cleanup and may reduce database volume"
+        }
+        
+    except Exception as e:
+        logger.error(f"CHECKPOINT failed: {e}")
+        return {
+            "error": "CHECKPOINT failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
