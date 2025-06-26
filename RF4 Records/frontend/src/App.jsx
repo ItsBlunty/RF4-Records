@@ -127,94 +127,110 @@ function AppContent() {
     }
   };
 
-  // Fetch initial records for fast page load
-  const fetchInitialRecords = async () => {
+  // Fetch recent records for fast page load (since last reset)
+  const fetchRecentRecords = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching initial records from API...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/initial' : '/records/initial');
-      console.log('Initial API Response:', response);
+      console.log('Fetching recent records since last reset...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent' : '/records/recent');
+      console.log('Recent records API Response:', response);
       
       if (!response.data || !Array.isArray(response.data.records)) {
-        console.error('Invalid initial response format:', response.data);
+        console.error('Invalid recent response format:', response.data);
         throw new Error('Invalid response format - expected records array');
       }
       
-      const { records: initialRecords, total_unique_records, has_more, unique_values } = response.data;
+      const { 
+        records: recentRecords, 
+        recent_count, 
+        total_records, 
+        has_older_records, 
+        unique_values,
+        last_reset_date 
+      } = response.data;
       
-      setRecords(initialRecords);
-      setTotalRecords(total_unique_records);
-      setAllRecordsLoaded(!has_more);
+      setRecords(recentRecords);
+      setTotalRecords(total_records);
+      setAllRecordsLoaded(!has_older_records);
       
-      // Set unique values for filters from the full dataset
+      // Set unique values for filters from recent data
       setUniqueValues(unique_values);
-      setFilteredRecords(initialRecords);
+      setFilteredRecords(recentRecords);
       setLastRefresh(new Date());
       
-      console.log(`Successfully loaded initial ${initialRecords.length} records (${total_unique_records} total)`);
+      // Set default filter to since-reset to match what we loaded
+      setFilters(prev => ({
+        ...prev,
+        dataAge: 'since-reset'
+      }));
       
-      // Start loading remaining records in background if there are more
-      if (has_more) {
-        setTimeout(() => fetchRemainingRecords(), 1000); // Start after 1 second
+      console.log(`Successfully loaded ${recentRecords.length} recent records since ${last_reset_date}`);
+      console.log(`Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
+      
+      // Start loading older records in background if there are any
+      if (has_older_records) {
+        setTimeout(() => fetchOlderRecords(), 2000); // Start after 2 seconds
       }
       
     } catch (err) {
       console.error('Detailed error:', err);
-      setError(`Failed to fetch initial records: ${err.message}`);
+      setError(`Failed to fetch recent records: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch remaining records in background
-  const fetchRemainingRecords = async () => {
+  // Fetch older records in background (before last reset)
+  const fetchOlderRecords = async () => {
     if (allRecordsLoaded) return;
     
     try {
       setLoadingRemaining(true);
-      console.log('Fetching remaining records in background...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/remaining' : '/records/remaining');
+      console.log('Loading older records in background...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/older' : '/records/older');
       
       if (!response.data || !Array.isArray(response.data.records)) {
-        console.error('Invalid remaining response format:', response.data);
+        console.error('Invalid older records response format:', response.data);
         return;
       }
       
-      const { records: remainingRecords, total_unique_records, unique_values } = response.data;
+      const { records: olderRecords, unique_values } = response.data;
       
       setRecords(prevRecords => {
-        const allRecords = [...prevRecords, ...remainingRecords];
-        // Update filtered records if no filters are active
-        if (!filters.fish && !filters.waterbody && !filters.bait && !filters.dataAge) {
+        const allRecords = [...prevRecords, ...olderRecords];
+        // Only update filtered records if showing all data (no age filter)
+        if (!filters.dataAge || filters.dataAge === '') {
           setFilteredRecords(allRecords);
         }
         return allRecords;
       });
       
-      // Update total count and unique values with complete data
-      if (total_unique_records) {
-        setTotalRecords(total_unique_records);
-      }
+      // Merge unique values to include older records' values
       if (unique_values) {
-        setUniqueValues(unique_values);
+        setUniqueValues(prevValues => ({
+          fish: [...new Set([...prevValues.fish, ...unique_values.fish])].sort(),
+          waterbody: [...new Set([...prevValues.waterbody, ...unique_values.waterbody])].sort(),
+          bait: [...new Set([...prevValues.bait, ...unique_values.bait])].sort()
+        }));
       }
       
       setAllRecordsLoaded(true);
-      console.log(`Successfully loaded ${remainingRecords.length} remaining records`);
+      console.log(`Successfully loaded ${olderRecords.length} older records in background`);
+      console.log('All records now available for filtering and search');
       
     } catch (err) {
-      console.error('Error fetching remaining records:', err);
+      console.error('Error fetching older records:', err);
       // Don't show error to user for background loading failure
     } finally {
       setLoadingRemaining(false);
     }
   };
 
-  // Force load remaining records (for user interactions)
+  // Force load older records (for user interactions requiring all data)
   const ensureAllRecordsLoaded = async () => {
     if (!allRecordsLoaded && !loadingRemaining) {
-      await fetchRemainingRecords();
+      await fetchOlderRecords();
     }
   };
 
@@ -256,6 +272,7 @@ function AppContent() {
   const handleRefresh = () => {
     hasFetched.current = false;
     setAllRecordsLoaded(false);
+    setFilters(prev => ({ ...prev, dataAge: '' })); // Clear age filter for full refresh
     fetchAllRecords(); // Use legacy endpoint for manual refresh to get everything
   };
 
@@ -264,7 +281,7 @@ function AppContent() {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    fetchInitialRecords();
+    fetchRecentRecords(); // Load recent records first, older records load in background
   }, []);
 
   // No automatic refresh - users can manually refresh by reloading the page
@@ -513,13 +530,19 @@ function AppContent() {
                   {loadingRemaining && (
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                      <span>Loading more...</span>
+                      <span>Loading older records...</span>
                     </div>
                   )}
                   
-                  {!allRecordsLoaded && !loadingRemaining && (
+                  {!allRecordsLoaded && !loadingRemaining && filters.dataAge === 'since-reset' && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Loading remaining records in background...
+                      Showing recent data • Loading older records in background...
+                    </span>
+                  )}
+                  
+                  {!allRecordsLoaded && !loadingRemaining && (!filters.dataAge || filters.dataAge === '') && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      Loading older records in background...
                     </span>
                   )}
                 </div>

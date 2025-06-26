@@ -551,6 +551,38 @@ def get_records():
         logger.error(f"Error retrieving records: {e}")
         return {"error": "Failed to retrieve records"}
 
+@app.get("/records/recent")
+@app.get("/api/records/recent")
+def get_recent_records():
+    """Get recent records since last reset - optimized for fast initial load"""
+    try:
+        from simplified_records import get_recent_records_simple
+        
+        result = get_recent_records_simple(limit=2000)
+        
+        logger.info(f"Retrieved {len(result['records'])} recent records since {result['last_reset_date']}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error retrieving recent records: {e}")
+        return {"error": "Failed to retrieve recent records"}
+
+@app.get("/records/older")
+@app.get("/api/records/older")
+def get_older_records():
+    """Get older records (before last reset) for background loading"""
+    try:
+        from simplified_records import get_older_records_simple
+        
+        result = get_older_records_simple()
+        
+        logger.info(f"Retrieved {len(result['records'])} older records for background loading")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error retrieving older records: {e}")
+        return {"error": "Failed to retrieve older records"}
+
 @app.get("/refresh")
 def refresh_info():
     """Information about the refresh endpoint"""

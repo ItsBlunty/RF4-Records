@@ -5,9 +5,170 @@ No deduplication needed since records are already merged with combined categorie
 """
 
 from database import Record, SessionLocal
+from datetime import datetime, timedelta, timezone
 import logging
 
 logger = logging.getLogger(__name__)
+
+def get_last_record_reset_date():
+    """Calculate the last record reset date (previous Sunday at 6PM UTC)"""
+    now = datetime.now(timezone.utc)
+    current_day = now.weekday()  # 0 = Monday, 6 = Sunday
+    current_hour = now.hour
+    
+    # Convert to Sunday-based system (0 = Sunday)
+    sunday_day = (current_day + 1) % 7
+    
+    # Calculate days to subtract to get to the most recent Sunday 6PM UTC
+    if sunday_day == 0:  # Sunday
+        if current_hour >= 18:  # 6PM or later today
+            days_to_subtract = 0
+        else:
+            days_to_subtract = 7  # Use last Sunday
+    else:
+        days_to_subtract = sunday_day
+    
+    last_reset = now - timedelta(days=days_to_subtract)
+    last_reset = last_reset.replace(hour=18, minute=0, second=0, microsecond=0)
+    
+    return last_reset
+
+def get_recent_records_simple(limit: int = 2000):
+    """Get recent records since last reset - optimized for fast initial load"""
+    db = SessionLocal()
+    
+    try:
+        last_reset = get_last_record_reset_date()
+        
+        # Get recent records since last reset, ordered by most recent first
+        recent_records = db.query(Record).filter(
+            Record.created_at >= last_reset
+        ).order_by(Record.created_at.desc()).limit(limit).all()
+        
+        # Get total count of recent records
+        recent_count = db.query(Record).filter(Record.created_at >= last_reset).count()
+        total_records = db.query(Record).count()
+        
+        result = []
+        for record in recent_records:
+            # Format bait display
+            if record.bait2:
+                bait_display = f"{record.bait1}; {record.bait2}"
+            else:
+                bait_display = record.bait1 or record.bait or ""
+            
+            # Parse combined categories
+            if record.category and ';' in record.category:
+                categories = record.category.split(';')
+            else:
+                categories = [record.category] if record.category else ["N"]
+            
+            result.append({
+                "player": record.player,
+                "fish": record.fish,
+                "weight": record.weight,
+                "waterbody": record.waterbody,
+                "bait_display": bait_display,
+                "date": record.date,
+                "region": record.region,
+                "categories": categories,
+                "created_at": record.created_at.isoformat() if record.created_at else None
+            })
+        
+        # Get unique values from recent records only (faster for initial load)
+        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
+        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
+        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+        
+        db.close()
+        
+        return {
+            "records": result,
+            "recent_count": recent_count,
+            "total_records": total_records,
+            "showing_recent_only": True,
+            "has_older_records": recent_count < total_records,
+            "last_reset_date": last_reset.isoformat(),
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving recent records: {e}")
+        db.close()
+        raise
+
+def get_older_records_simple():
+    """Get all older records (before last reset) for background loading"""
+    db = SessionLocal()
+    
+    try:
+        last_reset = get_last_record_reset_date()
+        
+        # Get older records (before last reset)
+        older_records = db.query(Record).filter(
+            Record.created_at < last_reset
+        ).order_by(Record.created_at.desc()).all()
+        
+        result = []
+        for record in older_records:
+            # Format bait display
+            if record.bait2:
+                bait_display = f"{record.bait1}; {record.bait2}"
+            else:
+                bait_display = record.bait1 or record.bait or ""
+            
+            # Parse combined categories
+            if record.category and ';' in record.category:
+                categories = record.category.split(';')
+            else:
+                categories = [record.category] if record.category else ["N"]
+            
+            result.append({
+                "player": record.player,
+                "fish": record.fish,
+                "weight": record.weight,
+                "waterbody": record.waterbody,
+                "bait_display": bait_display,
+                "date": record.date,
+                "region": record.region,
+                "categories": categories,
+                "created_at": record.created_at.isoformat() if record.created_at else None
+            })
+        
+        # Get unique values from ALL older records for complete filter lists
+        all_older_records = db.query(Record).filter(Record.created_at < last_reset).all()
+        fish = sorted(list(set(r.fish for r in all_older_records if r.fish)))
+        waterbody = sorted(list(set(r.waterbody for r in all_older_records if r.waterbody)))
+        
+        bait_set = set()
+        for r in all_older_records:
+            if r.bait2:
+                bait_set.add(f"{r.bait1}; {r.bait2}")
+            else:
+                bait_set.add(r.bait1 or r.bait or "")
+        bait = sorted(list(bait_set))
+        
+        db.close()
+        
+        return {
+            "records": result,
+            "older_count": len(result),
+            "showing_older_only": True,
+            "unique_values": {
+                "fish": fish,
+                "waterbody": waterbody,
+                "bait": bait
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving older records: {e}")
+        db.close()
+        raise
 
 def get_all_records_simple():
     """Get all records from database - no deduplication needed after migration"""
