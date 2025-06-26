@@ -27,6 +27,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Reduce APScheduler logging verbosity to avoid red text in Railway
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
+
 # Initialize scheduler but don't start it yet
 scheduler = BackgroundScheduler()
 
@@ -68,8 +71,8 @@ async def lifespan(app: FastAPI):
             id='memory_cleanup_job'
         )
         
-        logger.info("Dynamic scheduler started - frequency based on weekly schedule")
-        logger.info("Periodic memory cleanup scheduled every 90 seconds")
+        print("Dynamic scheduler started - frequency based on weekly schedule", flush=True)
+        print("Periodic memory cleanup scheduled every 90 seconds", flush=True)
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
     
@@ -91,7 +94,7 @@ async def lifespan(app: FastAPI):
     print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}", flush=True)
     print("🛑 Press Ctrl+C to gracefully shut down the server", flush=True)
     
-    logger.info("Server started successfully - dynamic scheduled scraping active")
+    print("Server started successfully - dynamic scheduled scraping active", flush=True)
     
     yield  # Server is running
     
@@ -309,7 +312,7 @@ def schedule_next_scrape():
             id='scrape_job'
         )
         
-        logger.info(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Next {frequency} scrape scheduled for {next_run_time.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
         
     except Exception as e:
         logger.error(f"Error scheduling next scrape: {e}")
@@ -325,8 +328,8 @@ def update_schedule():
         frequency = current_period
         
         next_change, next_frequency = get_next_schedule_change()
-        logger.info(f"Schedule updated to {frequency} scraping")
-        logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+        print(f"Schedule updated to {frequency} scraping", flush=True)
+        print(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}", flush=True)
         
         # Schedule the first scrape based on current frequency period
         current_period = get_current_schedule_period()
@@ -345,7 +348,7 @@ def update_schedule():
             id='scrape_job'
         )
         
-        logger.info(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} ({delay_minutes}-minute delay)")
+        print(f"First scrape scheduled for {first_run_time.strftime('%Y-%m-%d %H:%M:%S')} ({delay_minutes}-minute delay)", flush=True)
         
         # Schedule the next schedule update
         scheduler.add_job(
