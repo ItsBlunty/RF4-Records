@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     """Modern lifespan event handler for startup and shutdown"""
     # Startup
     logger.info("=== SERVER STARTUP ===")
-    print("🚀 FastAPI server is starting up...")
+    logger.info("🚀 FastAPI server is starting up...")
     
     # Create/verify database tables first
     try:
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables created/verified successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
-        print(f"❌ Database error: {e}")
+        logger.error(f"❌ Database error: {e}")
     
     # Now start the scheduler after database is ready
     try:
@@ -69,23 +69,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
     
-    print("📊 Available endpoints:")
-    print("   GET  /         - Server status")
-    print("   GET  /records  - Get all fishing records")
-    print("   POST /refresh  - Trigger manual scrape")
-    print("   POST /optimize - Run database performance optimizations")
-    print("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
-    print("   GET  /status   - Server and DB status")
-    print("   GET  /docs     - Interactive API documentation")
-    print("✅ Server ready! Frontend can connect to this URL")
+    logger.info("📊 Available endpoints:")
+    logger.info("   GET  /         - Server status")
+    logger.info("   GET  /records  - Get all fishing records")
+    logger.info("   POST /refresh  - Trigger manual scrape")
+    logger.info("   POST /optimize - Run database performance optimizations")
+    logger.info("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
+    logger.info("   GET  /status   - Server and DB status")
+    logger.info("   GET  /docs     - Interactive API documentation")
+    logger.info("✅ Server ready! Frontend can connect to this URL")
     
     # Show current schedule
     current_period = get_current_schedule_period()
     frequency = current_period
     next_change, next_frequency = get_next_schedule_change()
-    print(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
-    print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
-    print("🛑 Press Ctrl+C to gracefully shut down the server")
+    logger.info(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
+    logger.info(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+    logger.info("🛑 Press Ctrl+C to gracefully shut down the server")
     
     logger.info("Server started successfully - dynamic scheduled scraping active")
     
@@ -139,7 +139,7 @@ scraping_lock = threading.Lock()
 def signal_handler(signum, frame):
     """Handle graceful shutdown"""
     logger.info(f"Received signal {signum}, shutting down gracefully...")
-    print(f"\n🛑 Shutdown signal received - stopping gracefully...")
+    logger.info(f"🛑 Shutdown signal received - stopping gracefully...")
     
     # Stop any ongoing scraping
     global should_stop_scraping
@@ -149,16 +149,16 @@ def signal_handler(signum, frame):
     with scraping_lock:
         if is_scraping:
             logger.info("Waiting for ongoing scraping to finish...")
-            print("⏳ Waiting for ongoing scraping to finish...")
+            logger.info("⏳ Waiting for ongoing scraping to finish...")
             # Give it 10 seconds to finish gracefully
             for i in range(10):
                 if not is_scraping:
                     break
                 time.sleep(1)
-                print(f"   Waiting... ({10-i}s remaining)")
+                logger.info(f"   Waiting... ({10-i}s remaining)")
     
     logger.info("Graceful shutdown complete")
-    print("✅ Server shutdown complete")
+    logger.info("✅ Server shutdown complete")
     sys.exit(0)
 
 # Register signal handlers
@@ -663,7 +663,7 @@ def vacuum_database():
         sys.stdout = captured_output
         
         try:
-            print("🧹 Running PostgreSQL VACUUM to reclaim space...")
+            logger.info("🧹 Running PostgreSQL VACUUM to reclaim space...")
             
             engine = create_engine(database_url, connect_args={'connect_timeout': 60})
             
@@ -673,7 +673,7 @@ def vacuum_database():
                     SELECT pg_size_pretty(pg_total_relation_size('records')) as size_before
                 """))
                 size_before = result.fetchone()[0]
-                print(f"Database size before VACUUM: {size_before}")
+                logger.info(f"Database size before VACUUM: {size_before}")
                 
                 # Run VACUUM
                 conn.execute(text("COMMIT"))
@@ -684,7 +684,7 @@ def vacuum_database():
                     SELECT pg_size_pretty(pg_total_relation_size('records')) as size_after
                 """))
                 size_after = result.fetchone()[0]
-                print(f"Database size after VACUUM: {size_after}")
+                logger.info(f"Database size after VACUUM: {size_after}")
                 
         finally:
             sys.stdout = old_stdout
@@ -730,8 +730,8 @@ def vacuum_full_database():
         sys.stdout = captured_output
         
         try:
-            print("🧹 Running PostgreSQL VACUUM FULL - this will take longer but reclaim maximum space...")
-            print("⚠️  WARNING: This locks the table during operation!")
+            logger.info("🧹 Running PostgreSQL VACUUM FULL - this will take longer but reclaim maximum space...")
+            logger.warning("⚠️  WARNING: This locks the table during operation!")
             
             engine = create_engine(database_url, connect_args={'connect_timeout': 300})  # Longer timeout
             
@@ -743,12 +743,12 @@ def vacuum_full_database():
                         pg_size_pretty(pg_total_relation_size('records')) as table_size
                 """))
                 before = result.fetchone()
-                print(f"Total database size before: {before[0]}")
-                print(f"Records table size before: {before[1]}")
+                logger.info(f"Total database size before: {before[0]}")
+                logger.info(f"Records table size before: {before[1]}")
                 
                 # Run VACUUM FULL
                 conn.execute(text("COMMIT"))
-                print("Running VACUUM FULL records...")
+                logger.info("Running VACUUM FULL records...")
                 conn.execute(text("VACUUM FULL records"))
                 
                 # Get sizes after VACUUM FULL
@@ -758,10 +758,10 @@ def vacuum_full_database():
                         pg_size_pretty(pg_total_relation_size('records')) as table_size
                 """))
                 after = result.fetchone()
-                print(f"Total database size after: {after[0]}")
-                print(f"Records table size after: {after[1]}")
+                logger.info(f"Total database size after: {after[0]}")
+                logger.info(f"Records table size after: {after[1]}")
                 
-                print("✅ VACUUM FULL completed successfully!")
+                logger.info("✅ VACUUM FULL completed successfully!")
                 
         finally:
             sys.stdout = old_stdout
@@ -1256,7 +1256,7 @@ def force_checkpoint():
         sys.stdout = captured_output
         
         try:
-            print("🔄 Forcing PostgreSQL CHECKPOINT to clean up WAL files...")
+            logger.info("🔄 Forcing PostgreSQL CHECKPOINT to clean up WAL files...")
             
             engine = create_engine(database_url, connect_args={'connect_timeout': 120})
             
@@ -1272,11 +1272,11 @@ def force_checkpoint():
                         ) as wal_size_before
                 """))
                 wal_before = result.fetchone()[0]
-                print(f"WAL size before checkpoint: {wal_before}")
+                logger.info(f"WAL size before checkpoint: {wal_before}")
                 
                 # Force checkpoint
                 conn.execute(text("COMMIT"))
-                print("Running CHECKPOINT...")
+                logger.info("Running CHECKPOINT...")
                 conn.execute(text("CHECKPOINT"))
                 
                 # Get WAL size after checkpoint
@@ -1290,10 +1290,10 @@ def force_checkpoint():
                         ) as wal_size_after
                 """))
                 wal_after = result.fetchone()[0]
-                print(f"WAL size after checkpoint: {wal_after}")
+                logger.info(f"WAL size after checkpoint: {wal_after}")
                 
                 # Also try to clean up temporary files
-                print("Checking for temp file cleanup...")
+                logger.info("Checking for temp file cleanup...")
                 result = conn.execute(text("""
                     SELECT 
                         pg_size_pretty(COALESCE(temp_bytes, 0)) as temp_size
@@ -1301,9 +1301,9 @@ def force_checkpoint():
                     WHERE datname = current_database()
                 """))
                 temp_size = result.fetchone()[0]
-                print(f"Temp files size: {temp_size}")
+                logger.info(f"Temp files size: {temp_size}")
                 
-                print("✅ CHECKPOINT completed successfully!")
+                logger.info("✅ CHECKPOINT completed successfully!")
                 
         finally:
             sys.stdout = old_stdout
@@ -1705,5 +1705,5 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     
-    print(f"Starting server on {host}:{port}")
+    logger.info(f"Starting server on {host}:{port}")
     uvicorn.run(app, host=host, port=port) 
