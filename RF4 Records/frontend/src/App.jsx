@@ -522,7 +522,7 @@ function AppContent() {
                 <div className="flex items-center space-x-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                     {filteredRecords.length} of {records.length} records
-                    {!allRecordsLoaded && totalRecords && typeof totalRecords === 'number' && (
+                    {!allRecordsLoaded && typeof totalRecords === 'number' && totalRecords > 0 && (
                       <span className="ml-1 text-xs">
                         (~{totalRecords} total)
                       </span>
