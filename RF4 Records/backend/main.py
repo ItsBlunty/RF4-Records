@@ -571,32 +571,55 @@ def get_recent_records():
 @app.get("/api/records/recent/all")
 def get_all_recent_records():
     """Get ALL recent records since last reset (no limit)"""
+    import time
+    api_start = time.time()
+    
     try:
         from simplified_records import get_all_recent_records_simple
         
         result = get_all_recent_records_simple()
         
-        logger.info(f"Retrieved ALL {len(result['records'])} recent records since {result['last_reset_date']}")
+        api_time = time.time() - api_start
+        
+        logger.info(f"🚀 API Response Complete:")
+        logger.info(f"  Retrieved {len(result['records'])} recent records since {result['last_reset_date']}")
+        logger.info(f"  Total API time: {api_time:.3f}s")
+        logger.info(f"  DB time: {result['performance']['query_time']}s ({result['performance']['query_time']/api_time*100:.1f}%)")
+        logger.info(f"  Processing time: {result['performance']['process_time']}s ({result['performance']['process_time']/api_time*100:.1f}%)")
+        logger.info(f"  API overhead: {api_time - result['performance']['total_time']:.3f}s")
+        
         return result
         
     except Exception as e:
-        logger.error(f"Error retrieving all recent records: {e}")
+        api_time = time.time() - api_start
+        logger.error(f"Error retrieving all recent records after {api_time:.3f}s: {e}")
         return {"error": "Failed to retrieve all recent records"}
 
 @app.get("/records/older")
 @app.get("/api/records/older")
 def get_older_records():
     """Get older records (before last reset) for background loading"""
+    import time
+    api_start = time.time()
+    
     try:
         from simplified_records import get_older_records_simple
         
         result = get_older_records_simple()
         
-        logger.info(f"Retrieved {len(result['records'])} older records for background loading")
+        api_time = time.time() - api_start
+        
+        logger.info(f"🚀 API Response Complete (Background):")
+        logger.info(f"  Retrieved {len(result['records'])} older records for background")
+        logger.info(f"  Total API time: {api_time:.3f}s")
+        logger.info(f"  DB time: {result['performance']['query_time']}s ({result['performance']['query_time']/api_time*100:.1f}%)")
+        logger.info(f"  API overhead: {api_time - result['performance']['total_time']:.3f}s")
+        
         return result
         
     except Exception as e:
-        logger.error(f"Error retrieving older records: {e}")
+        api_time = time.time() - api_start
+        logger.error(f"Error retrieving older records after {api_time:.3f}s: {e}")
         return {"error": "Failed to retrieve older records"}
 
 @app.get("/refresh")

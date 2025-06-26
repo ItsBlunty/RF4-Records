@@ -130,25 +130,35 @@ function AppContent() {
 
   // Load ALL recent records in background (no page blocking)
   const fetchRecentRecords = async () => {
+    const startTime = performance.now();
+    
     try {
       setLoadingRemaining(true); // Use table loading overlay instead of page blocking
       setError(null);
-      console.log('Loading ALL recent records since last reset...');
+      console.log('⏱️ Frontend: Starting recent records fetch...');
+      
+      const networkStart = performance.now();
       const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
-      console.log('Recent records API Response:', response);
+      const networkTime = performance.now() - networkStart;
+      
+      console.log('📡 Frontend Network Performance:');
+      console.log(`  Network request time: ${networkTime.toFixed(1)}ms`);
+      console.log(`  Response size: ${JSON.stringify(response.data).length} characters`);
       
       if (!response.data || !Array.isArray(response.data.records)) {
         console.error('Invalid recent response format:', response.data);
         throw new Error('Invalid response format - expected records array');
       }
       
+      const processingStart = performance.now();
       const { 
         records: recentRecords, 
         recent_count, 
         total_records, 
         has_older_records,
         unique_values,
-        last_reset_date 
+        last_reset_date,
+        performance: serverPerf
       } = response.data;
       
       setRecords(recentRecords);
@@ -166,8 +176,23 @@ function AppContent() {
         dataAge: 'since-reset'
       }));
       
-      console.log(`Successfully loaded ALL ${recentRecords.length} recent records since ${last_reset_date}`);
-      console.log(`Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
+      const processingTime = performance.now() - processingStart;
+      const totalTime = performance.now() - startTime;
+      
+      console.log('⚡ Frontend Processing Performance:');
+      console.log(`  Client processing time: ${processingTime.toFixed(1)}ms`);
+      console.log(`  Total frontend time: ${totalTime.toFixed(1)}ms`);
+      
+      if (serverPerf) {
+        console.log('🔍 Server Performance Breakdown:');
+        console.log(`  Server total time: ${serverPerf.total_time * 1000}ms`);
+        console.log(`  Database query time: ${serverPerf.query_time * 1000}ms`);
+        console.log(`  Records/second: ${serverPerf.records_per_second}`);
+        console.log(`  Network vs Server ratio: ${(networkTime / (serverPerf.total_time * 1000)).toFixed(1)}x`);
+      }
+      
+      console.log(`✅ Successfully loaded ALL ${recentRecords.length} recent records since ${last_reset_date}`);
+      console.log(`📊 Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
       
       // Load older records silently in background if there are any
       if (has_older_records) {
@@ -175,7 +200,8 @@ function AppContent() {
       }
       
     } catch (err) {
-      console.error('Detailed error:', err);
+      const totalTime = performance.now() - startTime;
+      console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
       setError(`Failed to fetch recent records: ${err.message}`);
     } finally {
       setLoadingRemaining(false); // Clear table loading overlay

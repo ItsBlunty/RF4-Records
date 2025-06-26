@@ -7,6 +7,7 @@ No deduplication needed since records are already merged with combined categorie
 from database import Record, SessionLocal
 from datetime import datetime, timedelta, timezone
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -114,19 +115,31 @@ def get_recent_records_simple(limit: int = 1000):
 
 def get_all_recent_records_simple():
     """Get ALL recent records since last reset (no limit) for when user filters by since-reset"""
+    start_time = time.time()
     db = SessionLocal()
     
     try:
+        # Timer: Reset date calculation
+        reset_start = time.time()
         last_reset = get_last_record_reset_date()
+        reset_time = time.time() - reset_start
         
-        # Get ALL recent records since last reset (no limit)
+        # Timer: Database query for recent records
+        query_start = time.time()
         recent_records = db.query(Record).filter(
             Record.created_at >= last_reset
         ).order_by(Record.id.desc()).all()
+        query_time = time.time() - query_start
         
+        # Timer: Total count query
+        count_start = time.time()
         total_records = db.query(Record).count()
+        count_time = time.time() - count_start
+        
         recent_count = len(recent_records)
         
+        # Timer: Data processing
+        process_start = time.time()
         result = []
         fish_set = set()
         waterbody_set = set()
@@ -165,6 +178,29 @@ def get_all_recent_records_simple():
             if bait_display:
                 bait_set.add(bait_display)
         
+        process_time = time.time() - process_start
+        
+        # Timer: Unique values sorting
+        sort_start = time.time()
+        unique_values = {
+            "fish": sorted(list(fish_set)),
+            "waterbody": sorted(list(waterbody_set)),
+            "bait": sorted(list(bait_set))
+        }
+        sort_time = time.time() - sort_start
+        
+        total_time = time.time() - start_time
+        
+        # Log performance metrics
+        logger.info(f"📊 Recent Records Performance:")
+        logger.info(f"  Reset date calc: {reset_time:.3f}s")
+        logger.info(f"  DB query ({recent_count} records): {query_time:.3f}s")
+        logger.info(f"  Total count query: {count_time:.3f}s")
+        logger.info(f"  Data processing: {process_time:.3f}s")
+        logger.info(f"  Unique values sorting: {sort_time:.3f}s")
+        logger.info(f"  TOTAL TIME: {total_time:.3f}s")
+        logger.info(f"  Performance: {recent_count/total_time:.0f} records/second")
+        
         db.close()
         
         return {
@@ -174,30 +210,41 @@ def get_all_recent_records_simple():
             "showing_all_recent": True,
             "has_older_records": recent_count < total_records,
             "last_reset_date": last_reset.isoformat(),
-            "unique_values": {
-                "fish": sorted(list(fish_set)),
-                "waterbody": sorted(list(waterbody_set)),
-                "bait": sorted(list(bait_set))
+            "unique_values": unique_values,
+            "performance": {
+                "total_time": round(total_time, 3),
+                "query_time": round(query_time, 3),
+                "process_time": round(process_time, 3),
+                "records_per_second": round(recent_count/total_time, 0)
             }
         }
         
     except Exception as e:
-        logger.error(f"Error retrieving all recent records: {e}")
+        total_time = time.time() - start_time
+        logger.error(f"Error retrieving all recent records after {total_time:.3f}s: {e}")
         db.close()
         raise
 
 def get_older_records_simple():
     """Get all older records (before last reset) for background loading"""
+    start_time = time.time()
     db = SessionLocal()
     
     try:
+        # Timer: Reset date calculation
+        reset_start = time.time()
         last_reset = get_last_record_reset_date()
+        reset_time = time.time() - reset_start
         
-        # Get older records (before last reset)
+        # Timer: Database query for older records
+        query_start = time.time()
         older_records = db.query(Record).filter(
             Record.created_at < last_reset
         ).order_by(Record.created_at.desc()).all()
+        query_time = time.time() - query_start
         
+        # Timer: Data processing
+        process_start = time.time()
         result = []
         for record in older_records:
             # Format bait display
@@ -223,35 +270,57 @@ def get_older_records_simple():
                 "categories": categories,
                 "created_at": record.created_at.isoformat() if record.created_at else None
             })
+        process_time = time.time() - process_start
         
-        # Get unique values from ALL older records for complete filter lists
-        all_older_records = db.query(Record).filter(Record.created_at < last_reset).all()
-        fish = sorted(list(set(r.fish for r in all_older_records if r.fish)))
-        waterbody = sorted(list(set(r.waterbody for r in all_older_records if r.waterbody)))
+        # Timer: Unique values calculation (reuse same query results)
+        unique_start = time.time()
+        fish = sorted(list(set(r.fish for r in older_records if r.fish)))
+        waterbody = sorted(list(set(r.waterbody for r in older_records if r.waterbody)))
         
         bait_set = set()
-        for r in all_older_records:
+        for r in older_records:
             if r.bait2:
                 bait_set.add(f"{r.bait1}; {r.bait2}")
             else:
                 bait_set.add(r.bait1 or r.bait or "")
         bait = sorted(list(bait_set))
+        unique_time = time.time() - unique_start
+        
+        total_time = time.time() - start_time
+        older_count = len(result)
+        
+        # Log performance metrics
+        logger.info(f"📊 Older Records Performance:")
+        logger.info(f"  Reset date calc: {reset_time:.3f}s")
+        logger.info(f"  DB query ({older_count} records): {query_time:.3f}s")
+        logger.info(f"  Data processing: {process_time:.3f}s")
+        logger.info(f"  Unique values calc: {unique_time:.3f}s")
+        logger.info(f"  TOTAL TIME: {total_time:.3f}s")
+        if older_count > 0:
+            logger.info(f"  Performance: {older_count/total_time:.0f} records/second")
         
         db.close()
         
         return {
             "records": result,
-            "older_count": len(result),
+            "older_count": older_count,
             "showing_older_only": True,
             "unique_values": {
                 "fish": fish,
                 "waterbody": waterbody,
                 "bait": bait
+            },
+            "performance": {
+                "total_time": round(total_time, 3),
+                "query_time": round(query_time, 3),
+                "process_time": round(process_time, 3),
+                "records_per_second": round(older_count/total_time, 0) if older_count > 0 else 0
             }
         }
         
     except Exception as e:
-        logger.error(f"Error retrieving older records: {e}")
+        total_time = time.time() - start_time
+        logger.error(f"Error retrieving older records after {total_time:.3f}s: {e}")
         db.close()
         raise
 
