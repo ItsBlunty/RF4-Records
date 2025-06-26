@@ -4,6 +4,11 @@ import { X, Clock, Settings, ChevronDown, ChevronUp, Search } from 'lucide-react
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // Check if any of the main text fields (fish, waterbody, bait) have content
+  const hasTextContent = () => {
+    return !!(filters.fish || filters.waterbody || filters.bait);
+  };
+
   const handleInputChange = (field, value) => {
     onChange(field, value);
   };
@@ -16,8 +21,10 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
 
   const handleDropdownChange = (field, value) => {
     onChange(field, value);
-    // Submit immediately for dropdowns
-    setTimeout(() => onSubmit(), 0);
+    // Only submit if there's content in at least one text field (fish, waterbody, or bait)
+    if (hasTextContent()) {
+      setTimeout(() => onSubmit(), 0);
+    }
   };
 
   const clearFilter = (field) => {
@@ -30,8 +37,10 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
 
   const handleAdvancedToggle = (field, value) => {
     onChange(field, value);
-    // Submit immediately for advanced toggles
-    setTimeout(() => onSubmit(), 0);
+    // Only submit if there's content in at least one text field (fish, waterbody, or bait)
+    if (hasTextContent()) {
+      setTimeout(() => onSubmit(), 0);
+    }
   };
 
   // Toggle Switch Component
