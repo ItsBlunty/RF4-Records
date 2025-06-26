@@ -16,11 +16,12 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def is_high_frequency_period():
+def get_current_schedule_period():
     """
-    Check if we're in the high-frequency scraping period
-    High frequency: Sunday 6PM UTC to Tuesday 6PM UTC (3 minutes after completion)
-    Low frequency: Tuesday 6PM UTC to Sunday 6PM UTC (15 minutes after completion)
+    Determine which schedule period we're currently in:
+    - 3-minute: Sunday 6PM UTC → Tuesday 6PM UTC (48 hours)
+    - 30-minute: Tuesday 6PM UTC → Thursday 6PM UTC (48 hours)  
+    - 1-hour: Thursday 6PM UTC → Sunday 6PM UTC (72 hours)
     """
     now = datetime.now(timezone.utc)
     
@@ -28,23 +29,38 @@ def is_high_frequency_period():
     current_day = now.weekday()
     current_hour = now.hour
     
-    # Sunday 6PM UTC to Tuesday 6PM UTC = high frequency
+    # Sunday 6PM UTC to Tuesday 6PM UTC = 3-minute period
     if current_day == 6:  # Sunday
-        return current_hour >= 18  # 6PM or later
+        if current_hour >= 18:  # 6PM or later
+            return "3-minute"
     elif current_day == 0:  # Monday
-        return True  # All day Monday
+        return "3-minute"  # All day Monday
     elif current_day == 1:  # Tuesday
-        return current_hour < 18  # Before 6PM
-    else:
-        return False  # Wednesday, Thursday, Friday, Saturday = low frequency
+        if current_hour < 18:  # Before 6PM
+            return "3-minute"
+    
+    # Tuesday 6PM UTC to Thursday 6PM UTC = 30-minute period
+    if current_day == 1:  # Tuesday
+        if current_hour >= 18:  # 6PM or later
+            return "30-minute"
+    elif current_day == 2:  # Wednesday
+        return "30-minute"  # All day Wednesday
+    elif current_day == 3:  # Thursday
+        if current_hour < 18:  # Before 6PM
+            return "30-minute"
+    
+    # Thursday 6PM UTC to Sunday 6PM UTC = 1-hour period
+    # This covers Thursday 6PM+, Friday, Saturday, Sunday before 6PM
+    return "1-hour"
 
 def get_next_schedule_change():
-    """Get when the next schedule change occurs"""
+    """Get when the next schedule change occurs and what it changes to"""
     now = datetime.now(timezone.utc)
     current_day = now.weekday()
+    current_period = get_current_schedule_period()
     
-    if is_high_frequency_period():
-        # We're in high frequency, next change is Tuesday 6PM
+    if current_period == "3-minute":
+        # Next change is Tuesday 6PM UTC → 30-minute
         if current_day == 6:  # Sunday
             days_to_tuesday = 2
         elif current_day == 0:  # Monday
@@ -56,9 +72,25 @@ def get_next_schedule_change():
         if current_day != 1 or now.hour >= 18:  # Not Tuesday or already past 6PM
             next_change += timedelta(days=days_to_tuesday)
         
-        return next_change, "15-minute"
-    else:
-        # We're in low frequency, next change is Sunday 6PM
+        return next_change, "30-minute"
+    
+    elif current_period == "30-minute":
+        # Next change is Thursday 6PM UTC → 1-hour
+        if current_day == 1:  # Tuesday
+            days_to_thursday = 2
+        elif current_day == 2:  # Wednesday
+            days_to_thursday = 1
+        else:  # Thursday before 6PM
+            days_to_thursday = 0
+        
+        next_change = now.replace(hour=18, minute=0, second=0, microsecond=0)
+        if current_day != 3 or now.hour >= 18:  # Not Thursday or already past 6PM
+            next_change += timedelta(days=days_to_thursday)
+        
+        return next_change, "1-hour"
+    
+    else:  # current_period == "1-hour"
+        # Next change is Sunday 6PM UTC → 3-minute
         days_to_sunday = (6 - current_day) % 7
         if days_to_sunday == 0 and now.hour >= 18:  # Already Sunday after 6PM
             days_to_sunday = 7
@@ -71,15 +103,18 @@ def get_next_schedule_change():
 def run_scheduled_scrape():
     """Run the scraping with error handling"""
     try:
-        frequency = "15-minute" if is_high_frequency_period() else "hourly"
-        logger.info(f"🕐 Starting {frequency} scheduled scrape")
+        current_period = get_current_schedule_period()
+        logger.info(f"🕐 Starting {current_period} scheduled scrape")
         
         result = scrape_and_update_records()
         
         if result['success']:
-            logger.info(f"✅ {frequency.capitalize()} scrape completed successfully")
+            logger.info(f"✅ {current_period.capitalize()} scrape completed successfully")
+            logger.info(f"   └─ {result.get('regions_scraped', 0)} regions, +{result.get('new_records', 0)} records")
+            if 'truly_new_records' in result and 'category_updates' in result:
+                logger.info(f"   └─ {result['truly_new_records']} new, {result['category_updates']} category updates")
         else:
-            logger.warning(f"⚠️ {frequency.capitalize()} scrape completed with issues")
+            logger.warning(f"⚠️ {current_period.capitalize()} scrape completed with issues")
             
     except Exception as e:
         logger.error(f"❌ Scheduled scrape failed: {e}")
@@ -89,18 +124,21 @@ def setup_dynamic_schedule():
     # Clear any existing jobs
     schedule.clear()
     
-    if is_high_frequency_period():
-        # High frequency: every 15 minutes
-        schedule.every(15).minutes.do(run_scheduled_scrape)
-        frequency = "15-minute"
-    else:
+    current_period = get_current_schedule_period()
+    
+    if current_period == "3-minute":
+        # High frequency: every 3 minutes
+        schedule.every(3).minutes.do(run_scheduled_scrape)
+    elif current_period == "30-minute":
+        # Medium frequency: every 30 minutes
+        schedule.every(30).minutes.do(run_scheduled_scrape)
+    else:  # "1-hour"
         # Low frequency: every hour
         schedule.every().hour.do(run_scheduled_scrape)
-        frequency = "hourly"
     
-    next_change, next_frequency = get_next_schedule_change()
-    logger.info(f"📅 Schedule set to {frequency} scraping")
-    logger.info(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+    next_change, next_period = get_next_schedule_change()
+    logger.info(f"📅 Schedule set to {current_period} scraping")
+    logger.info(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} → {next_period}")
     
     return next_change
 
@@ -131,13 +169,14 @@ def schedule_monitor():
 def start_scheduler():
     """Start the dynamic scheduler"""
     logger.info("🚀 Starting RF4 Records Dynamic Scheduler")
-    logger.info("📋 Schedule:")
-    logger.info("   • Sunday 6PM UTC → Tuesday 6PM UTC: 3 minutes after completion")
-    logger.info("   • Tuesday 6PM UTC → Sunday 6PM UTC: 15 minutes after completion")
+    logger.info("📋 New 3-Tier Schedule:")
+    logger.info("   • Sunday 6PM UTC → Tuesday 6PM UTC: 3-minute intervals (48 hours)")
+    logger.info("   • Tuesday 6PM UTC → Thursday 6PM UTC: 30-minute intervals (48 hours)")
+    logger.info("   • Thursday 6PM UTC → Sunday 6PM UTC: 1-hour intervals (72 hours)")
     
     # Run initial check
-    frequency = "15-minute" if is_high_frequency_period() else "hourly"
-    logger.info(f"🕐 Current period: {frequency} scraping")
+    current_period = get_current_schedule_period()
+    logger.info(f"🕐 Current period: {current_period} scraping")
     
     # Start the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=schedule_monitor, daemon=True)
