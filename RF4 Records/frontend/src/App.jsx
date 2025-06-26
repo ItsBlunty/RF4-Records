@@ -127,14 +127,14 @@ function AppContent() {
     }
   };
 
-  // Fetch recent records for fast page load (since last reset)
+  // Fetch ALL recent records for page load (since last reset) - no limit
   const fetchRecentRecords = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching recent records since last reset...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent' : '/records/recent');
-      console.log('Recent records API Response:', response);
+      console.log('Fetching ALL recent records since last reset...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
+      console.log('All recent records API Response:', response);
       
       if (!response.data || !Array.isArray(response.data.records)) {
         console.error('Invalid recent response format:', response.data);
@@ -146,7 +146,6 @@ function AppContent() {
         recent_count, 
         total_records, 
         has_older_records,
-        showing_limited,
         unique_values,
         last_reset_date 
       } = response.data;
@@ -166,12 +165,8 @@ function AppContent() {
         dataAge: 'since-reset'
       }));
       
-      console.log(`Successfully loaded ${recentRecords.length} recent records since ${last_reset_date}`);
+      console.log(`Successfully loaded ALL ${recentRecords.length} recent records since ${last_reset_date}`);
       console.log(`Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
-      
-      if (showing_limited) {
-        console.log(`Showing first 1000 of ${recent_count} recent records`);
-      }
       
       // Start loading older records in background if there are any
       if (has_older_records) {
