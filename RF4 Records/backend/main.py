@@ -630,10 +630,6 @@ def get_filtered_records_endpoint(
     bait: str = None,
     data_age: str = None,
     include_sandwich_bait: bool = True,
-    include_ultralight: bool = True,
-    include_light: bool = True,
-    include_bottomlight: bool = True,
-    include_telescopic: bool = True,
     limit: int = None,
     offset: int = None
 ):
@@ -650,10 +646,6 @@ def get_filtered_records_endpoint(
             bait=bait,
             data_age=data_age,
             include_sandwich_bait=include_sandwich_bait,
-            include_ultralight=include_ultralight,
-            include_light=include_light,
-            include_bottomlight=include_bottomlight,
-            include_telescopic=include_telescopic,
             limit=limit,
             offset=offset
         )

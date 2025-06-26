@@ -501,9 +501,7 @@ def get_remaining_records_simple(skip: int = 1000):
         raise
 
 def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None, 
-                        include_sandwich_bait=True, include_ultralight=True, 
-                        include_light=True, include_bottomlight=True, 
-                        include_telescopic=True, limit=None, offset=None):
+                        include_sandwich_bait=True, limit=None, offset=None):
     """Get filtered records from database based on criteria"""
     start_time = time.time()
     db = SessionLocal()
@@ -556,31 +554,11 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             else:
                 categories = [record.category] if record.category else ["N"]
             
-            # Apply sandwich bait filter
-            if not include_sandwich_bait and ';' in bait_display:
-                continue
-            
-            # Apply category filters
-            disabled_categories = []
-            if not include_ultralight:
-                disabled_categories.append('ultralight')
-            if not include_light:
-                disabled_categories.append('light')
-            if not include_bottomlight:
-                disabled_categories.append('bottomlight')
-            if not include_telescopic:
-                disabled_categories.append('telescopic')
-            
-            if disabled_categories:
-                # Convert categories to lowercase for comparison
-                record_categories = [cat.lower() if cat else '' for cat in categories]
-                record_categories = [cat for cat in record_categories if cat]
-                
-                if record_categories:
-                    # Check if ALL categories are disabled
-                    all_disabled = all(cat in disabled_categories for cat in record_categories)
-                    if all_disabled:
-                        continue
+            # Apply sandwich bait filter - improved reliability
+            if not include_sandwich_bait:
+                # Check if this record has sandwich bait (semicolon in bait_display)
+                if ';' in bait_display:
+                    continue
             
             # Apply data age filter for day-based filters (using fishing date)
             if data_age and data_age != 'since-reset':

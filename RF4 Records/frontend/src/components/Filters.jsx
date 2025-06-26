@@ -247,66 +247,16 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* Sandwich Bait Toggle */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <ToggleSwitch
-                  label="Include Sandwich Bait"
-                  checked={filters.includeSandwichBait !== false}
-                  onChange={(value) => handleAdvancedToggle('includeSandwichBait', value)}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records with sandwich baits (Bait1; Bait2)
-                </p>
-              </div>
-
-              {/* Ultralight Toggle */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <ToggleSwitch
-                  label="Include Ultralight"
-                  checked={filters.includeUltralight !== false}
-                  onChange={(value) => handleAdvancedToggle('includeUltralight', value)}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records from Ultralight category
-                </p>
-              </div>
-
-              {/* Light Toggle */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <ToggleSwitch
-                  label="Include Light"
-                  checked={filters.includeLight !== false}
-                  onChange={(value) => handleAdvancedToggle('includeLight', value)}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records from Light category
-                </p>
-              </div>
-
-              {/* Bottom Light Toggle */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <ToggleSwitch
-                  label="Include Bottom Light"
-                  checked={filters.includeBottomLight !== false}
-                  onChange={(value) => handleAdvancedToggle('includeBottomLight', value)}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records from Bottom Light category
-                </p>
-              </div>
-
-              {/* Telescopic Toggle */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <ToggleSwitch
-                  label="Include Telescopic"
-                  checked={filters.includeTelescopic !== false}
-                  onChange={(value) => handleAdvancedToggle('includeTelescopic', value)}
-                />
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  Show records from Telescopic category
-                </p>
-              </div>
+            {/* Sandwich Bait Toggle */}
+            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-w-md">
+              <ToggleSwitch
+                label="Include Sandwich Bait"
+                checked={filters.includeSandwichBait !== false}
+                onChange={(value) => handleAdvancedToggle('includeSandwichBait', value)}
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Show records with sandwich baits (Bait1; Bait2)
+              </p>
             </div>
           </div>
         )}

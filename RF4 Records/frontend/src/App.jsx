@@ -64,11 +64,7 @@ function AppContent() {
     bait: '',
     dataAge: '1-day',
     // Advanced filters - default to true (include all)
-    includeSandwichBait: true,
-    includeUltralight: true,
-    includeLight: true,
-    includeBottomLight: true,
-    includeTelescopic: true
+    includeSandwichBait: true
   });
   
   // Unique values for dropdowns
@@ -210,10 +206,6 @@ function AppContent() {
       
       // Advanced filters
       if (filters.includeSandwichBait !== undefined) params.append('include_sandwich_bait', filters.includeSandwichBait);
-      if (filters.includeUltralight !== undefined) params.append('include_ultralight', filters.includeUltralight);
-      if (filters.includeLight !== undefined) params.append('include_light', filters.includeLight);
-      if (filters.includeBottomLight !== undefined) params.append('include_bottomlight', filters.includeBottomLight);
-      if (filters.includeTelescopic !== undefined) params.append('include_telescopic', filters.includeTelescopic);
       
       const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
       const queryString = params.toString();
@@ -394,11 +386,7 @@ function AppContent() {
       bait: '',
       dataAge: '1-day',
       // Reset advanced filters to default (all true)
-      includeSandwichBait: true,
-      includeUltralight: true,
-      includeLight: true,
-      includeBottomLight: true,
-      includeTelescopic: true
+      includeSandwichBait: true
     });
     // Clear displayed records but keep cached data
     setFilteredRecords([]);
