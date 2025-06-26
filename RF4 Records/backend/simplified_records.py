@@ -33,23 +33,27 @@ def get_last_record_reset_date():
     
     return last_reset
 
-def get_recent_records_simple(limit: int = 2000):
-    """Get recent records since last reset - optimized for fast initial load"""
+def get_recent_records_simple(limit: int = 1000):
+    """Get recent records since last reset - SPEED OPTIMIZED for initial load"""
     db = SessionLocal()
     
     try:
         last_reset = get_last_record_reset_date()
         
-        # Get recent records since last reset, ordered by most recent first
+        # OPTIMIZATION: Get recent records only, ordered by ID desc (faster than created_at)
         recent_records = db.query(Record).filter(
             Record.created_at >= last_reset
-        ).order_by(Record.created_at.desc()).limit(limit).all()
+        ).order_by(Record.id.desc()).limit(limit).all()
         
-        # Get total count of recent records
-        recent_count = db.query(Record).filter(Record.created_at >= last_reset).count()
-        total_records = db.query(Record).count()
+        # OPTIMIZATION: Only get counts we actually need
+        recent_count = len(recent_records)  # Use actual count instead of separate query
+        total_records = db.query(Record).count()  # Keep this for total reference
         
         result = []
+        fish_set = set()
+        waterbody_set = set()
+        bait_set = set()
+        
         for record in recent_records:
             # Format bait display
             if record.bait2:
@@ -74,11 +78,14 @@ def get_recent_records_simple(limit: int = 2000):
                 "categories": categories,
                 "created_at": record.created_at.isoformat() if record.created_at else None
             })
-        
-        # Get unique values from recent records only (faster for initial load)
-        fish = sorted(list(set(r['fish'] for r in result if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in result if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in result if r['bait_display'])))
+            
+            # OPTIMIZATION: Build unique values during main loop (faster)
+            if record.fish:
+                fish_set.add(record.fish)
+            if record.waterbody:
+                waterbody_set.add(record.waterbody)
+            if bait_display:
+                bait_set.add(bait_display)
         
         db.close()
         
@@ -90,9 +97,9 @@ def get_recent_records_simple(limit: int = 2000):
             "has_older_records": recent_count < total_records,
             "last_reset_date": last_reset.isoformat(),
             "unique_values": {
-                "fish": fish,
-                "waterbody": waterbody,
-                "bait": bait
+                "fish": sorted(list(fish_set)),
+                "waterbody": sorted(list(waterbody_set)),
+                "bait": sorted(list(bait_set))
             }
         }
         

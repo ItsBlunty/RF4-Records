@@ -558,7 +558,7 @@ def get_recent_records():
     try:
         from simplified_records import get_recent_records_simple
         
-        result = get_recent_records_simple(limit=2000)
+        result = get_recent_records_simple(limit=1000)
         
         logger.info(f"Retrieved {len(result['records'])} recent records since {result['last_reset_date']}")
         return result

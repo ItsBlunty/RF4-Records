@@ -170,7 +170,7 @@ function AppContent() {
       
       // Start loading older records in background if there are any
       if (has_older_records) {
-        setTimeout(() => fetchOlderRecords(), 2000); // Start after 2 seconds
+        setTimeout(() => fetchOlderRecords(), 500); // Start after 500ms (much faster)
       }
       
     } catch (err) {
