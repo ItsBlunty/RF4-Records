@@ -40,14 +40,17 @@ def get_recent_records_simple(limit: int = 1000):
     try:
         last_reset = get_last_record_reset_date()
         
-        # OPTIMIZATION: Get recent records only, ordered by ID desc (faster than created_at)
-        recent_records = db.query(Record).filter(
+        # Get ALL recent records since last reset (not limited)
+        all_recent_records = db.query(Record).filter(
             Record.created_at >= last_reset
-        ).order_by(Record.id.desc()).limit(limit).all()
+        ).order_by(Record.id.desc()).all()
         
-        # OPTIMIZATION: Only get counts we actually need
-        recent_count = len(recent_records)  # Use actual count instead of separate query
-        total_records = db.query(Record).count()  # Keep this for total reference
+        # Get actual counts
+        recent_count = len(all_recent_records)
+        total_records = db.query(Record).count()
+        
+        # Limit for initial display but return actual count
+        recent_records = all_recent_records[:limit] if len(all_recent_records) > limit else all_recent_records
         
         result = []
         fish_set = set()
@@ -91,9 +94,10 @@ def get_recent_records_simple(limit: int = 1000):
         
         return {
             "records": result,
-            "recent_count": recent_count,
+            "recent_count": recent_count,  # Actual count of recent records
             "total_records": total_records,
             "showing_recent_only": True,
+            "showing_limited": len(recent_records) < recent_count,  # True if we're showing limited subset
             "has_older_records": recent_count < total_records,
             "last_reset_date": last_reset.isoformat(),
             "unique_values": {
@@ -105,6 +109,80 @@ def get_recent_records_simple(limit: int = 1000):
         
     except Exception as e:
         logger.error(f"Error retrieving recent records: {e}")
+        db.close()
+        raise
+
+def get_all_recent_records_simple():
+    """Get ALL recent records since last reset (no limit) for when user filters by since-reset"""
+    db = SessionLocal()
+    
+    try:
+        last_reset = get_last_record_reset_date()
+        
+        # Get ALL recent records since last reset (no limit)
+        recent_records = db.query(Record).filter(
+            Record.created_at >= last_reset
+        ).order_by(Record.id.desc()).all()
+        
+        total_records = db.query(Record).count()
+        recent_count = len(recent_records)
+        
+        result = []
+        fish_set = set()
+        waterbody_set = set()
+        bait_set = set()
+        
+        for record in recent_records:
+            # Format bait display
+            if record.bait2:
+                bait_display = f"{record.bait1}; {record.bait2}"
+            else:
+                bait_display = record.bait1 or record.bait or ""
+            
+            # Parse combined categories
+            if record.category and ';' in record.category:
+                categories = record.category.split(';')
+            else:
+                categories = [record.category] if record.category else ["N"]
+            
+            result.append({
+                "player": record.player,
+                "fish": record.fish,
+                "weight": record.weight,
+                "waterbody": record.waterbody,
+                "bait_display": bait_display,
+                "date": record.date,
+                "region": record.region,
+                "categories": categories,
+                "created_at": record.created_at.isoformat() if record.created_at else None
+            })
+            
+            # Build unique values during main loop
+            if record.fish:
+                fish_set.add(record.fish)
+            if record.waterbody:
+                waterbody_set.add(record.waterbody)
+            if bait_display:
+                bait_set.add(bait_display)
+        
+        db.close()
+        
+        return {
+            "records": result,
+            "recent_count": recent_count,
+            "total_records": total_records,
+            "showing_all_recent": True,
+            "has_older_records": recent_count < total_records,
+            "last_reset_date": last_reset.isoformat(),
+            "unique_values": {
+                "fish": sorted(list(fish_set)),
+                "waterbody": sorted(list(waterbody_set)),
+                "bait": sorted(list(bait_set))
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving all recent records: {e}")
         db.close()
         raise
 

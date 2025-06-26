@@ -145,7 +145,8 @@ function AppContent() {
         records: recentRecords, 
         recent_count, 
         total_records, 
-        has_older_records, 
+        has_older_records,
+        showing_limited,
         unique_values,
         last_reset_date 
       } = response.data;
@@ -167,6 +168,10 @@ function AppContent() {
       
       console.log(`Successfully loaded ${recentRecords.length} recent records since ${last_reset_date}`);
       console.log(`Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
+      
+      if (showing_limited) {
+        console.log(`Showing first 1000 of ${recent_count} recent records`);
+      }
       
       // Start loading older records in background if there are any
       if (has_older_records) {
@@ -199,10 +204,8 @@ function AppContent() {
       
       setRecords(prevRecords => {
         const allRecords = [...prevRecords, ...olderRecords];
-        // Only update filtered records if showing all data (no age filter)
-        if (!filters.dataAge || filters.dataAge === '') {
-          setFilteredRecords(allRecords);
-        }
+        // Don't update filtered records here - let the useEffect handle filtering
+        // This ensures the filters are applied correctly when older records load
         return allRecords;
       });
       

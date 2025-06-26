@@ -567,6 +567,22 @@ def get_recent_records():
         logger.error(f"Error retrieving recent records: {e}")
         return {"error": "Failed to retrieve recent records"}
 
+@app.get("/records/recent/all")
+@app.get("/api/records/recent/all")
+def get_all_recent_records():
+    """Get ALL recent records since last reset (no limit)"""
+    try:
+        from simplified_records import get_all_recent_records_simple
+        
+        result = get_all_recent_records_simple()
+        
+        logger.info(f"Retrieved ALL {len(result['records'])} recent records since {result['last_reset_date']}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error retrieving all recent records: {e}")
+        return {"error": "Failed to retrieve all recent records"}
+
 @app.get("/records/older")
 @app.get("/api/records/older")
 def get_older_records():
