@@ -30,6 +30,7 @@ function AppContent() {
   const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
+  const [cachedRecordCount, setCachedRecordCount] = useState(0);
   
   // Dark mode state
   const [darkMode, setDarkMode] = useState(() => {
@@ -61,7 +62,7 @@ function AppContent() {
     fish: '',
     waterbody: '',
     bait: '',
-    dataAge: '',
+    dataAge: '1-day',
     // Advanced filters - default to true (include all)
     includeSandwichBait: true,
     includeUltralight: true,
@@ -237,6 +238,7 @@ function AppContent() {
       setRecords(filteredRecords);
       setFilteredRecords(filteredRecords); // Backend already applied filters
       setTotalRecords(total_filtered);
+      setCachedRecordCount(filteredRecords.length); // Track cached records
       setLastRefresh(new Date());
       
       const processingTime = performance.now() - processingStart;
@@ -390,7 +392,7 @@ function AppContent() {
       fish: '',
       waterbody: '',
       bait: '',
-      dataAge: '',
+      dataAge: '1-day',
       // Reset advanced filters to default (all true)
       includeSandwichBait: true,
       includeUltralight: true,
@@ -398,6 +400,8 @@ function AppContent() {
       includeBottomLight: true,
       includeTelescopic: true
     });
+    // Clear displayed records but keep cached data
+    setFilteredRecords([]);
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -518,7 +522,7 @@ function AppContent() {
                 {/* Record Count */}
                 <div className="flex items-center space-x-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                    {filteredRecords.length} of {records.length} records
+                    {filteredRecords.length} of {cachedRecordCount || records.length} records
                     {!allRecordsLoaded && typeof totalRecords === 'number' && totalRecords > 0 && (
                       <span className="ml-1 text-xs">
                         (~{totalRecords} total)
