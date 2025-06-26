@@ -26,7 +26,6 @@ function AppContent() {
   const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingRemaining, setLoadingRemaining] = useState(false);
-  const [loadingMoreRecent, setLoadingMoreRecent] = useState(false);
   const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -128,14 +127,14 @@ function AppContent() {
     }
   };
 
-  // Stage 1: Fetch initial 1000 recent records for fast page display
+  // Load ALL recent records immediately (no initial subset)
   const fetchRecentRecords = async () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching initial 1000 recent records...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent' : '/records/recent');
-      console.log('Initial recent records API Response:', response);
+      console.log('Loading ALL recent records since last reset...');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
+      console.log('Recent records API Response:', response);
       
       if (!response.data || !Array.isArray(response.data.records)) {
         console.error('Invalid recent response format:', response.data);
@@ -147,7 +146,6 @@ function AppContent() {
         recent_count, 
         total_records, 
         has_older_records,
-        showing_limited,
         unique_values,
         last_reset_date 
       } = response.data;
@@ -167,18 +165,12 @@ function AppContent() {
         dataAge: 'since-reset'
       }));
       
-      console.log(`Successfully loaded ${recentRecords.length} initial recent records since ${last_reset_date}`);
+      console.log(`Successfully loaded ALL ${recentRecords.length} recent records since ${last_reset_date}`);
       console.log(`Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
       
-      // Stage 2: Load remaining recent records if there are more (with loading icon)
-      if (showing_limited && recent_count > recentRecords.length) {
-        setTimeout(() => fetchRemainingRecentRecords(), 100); // Start immediately after initial load
-      }
-      
-      // Stage 3: Load older records in background if there are any (silent)
+      // Load older records silently in background if there are any
       if (has_older_records) {
-        const delay = showing_limited ? 2000 : 500; // Wait longer if loading more recent first
-        setTimeout(() => fetchOlderRecords(), delay);
+        setTimeout(() => fetchOlderRecords(), 100); // Start very soon after recent records load
       }
       
     } catch (err) {
@@ -186,41 +178,6 @@ function AppContent() {
       setError(`Failed to fetch recent records: ${err.message}`);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Stage 2: Fetch remaining recent records (beyond first 1000) with loading indicator
-  const fetchRemainingRecentRecords = async () => {
-    try {
-      setLoadingMoreRecent(true);
-      console.log('Loading remaining recent records...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
-      
-      if (!response.data || !Array.isArray(response.data.records)) {
-        console.error('Invalid all recent response format:', response.data);
-        return;
-      }
-      
-      const { records: allRecentRecords, unique_values } = response.data;
-      
-      setRecords(allRecentRecords);
-      
-      // Update filtered records only if showing recent data
-      if (filters.dataAge === 'since-reset') {
-        setFilteredRecords(allRecentRecords);
-      }
-      
-      // Update unique values with complete recent data
-      if (unique_values) {
-        setUniqueValues(unique_values);
-      }
-      
-      console.log(`Successfully loaded ALL ${allRecentRecords.length} recent records`);
-      
-    } catch (err) {
-      console.error('Error fetching remaining recent records:', err);
-    } finally {
-      setLoadingMoreRecent(false);
     }
   };
 
@@ -572,13 +529,6 @@ function AppContent() {
                     )}
                   </span>
                   
-                  {loadingMoreRecent && (
-                    <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                      <span>Loading more recent records...</span>
-                    </div>
-                  )}
-                  
                   {loadingRemaining && (
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
@@ -586,13 +536,13 @@ function AppContent() {
                     </div>
                   )}
                   
-                  {!allRecordsLoaded && !loadingRemaining && !loadingMoreRecent && filters.dataAge === 'since-reset' && (
+                  {!allRecordsLoaded && !loadingRemaining && filters.dataAge === 'since-reset' && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       Recent data loaded • Older records loading silently...
                     </span>
                   )}
                   
-                  {!allRecordsLoaded && !loadingRemaining && !loadingMoreRecent && (!filters.dataAge || filters.dataAge === '') && (
+                  {!allRecordsLoaded && !loadingRemaining && (!filters.dataAge || filters.dataAge === '') && (
                     <span className="text-xs text-gray-500 dark:text-gray-400">
                       Loading older records silently...
                     </span>
@@ -605,7 +555,7 @@ function AppContent() {
               </div>
             </div>
             
-            <LoadingOverlay isLoading={loadingMoreRecent || loadingRemaining}>
+            <LoadingOverlay isLoading={loadingRemaining}>
               {viewMode === 'grouped' ? (
                 <GroupedRecordsTable 
                   records={filteredRecords} 
