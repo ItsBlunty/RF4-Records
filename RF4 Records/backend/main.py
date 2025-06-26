@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
@@ -22,11 +23,85 @@ import builtins
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+# Initialize scheduler but don't start it yet
+scheduler = BackgroundScheduler()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern lifespan event handler for startup and shutdown"""
+    # Startup
+    logger.info("=== SERVER STARTUP ===")
+    print("🚀 FastAPI server is starting up...")
+    
+    # Create/verify database tables first
+    try:
+        create_tables()
+        logger.info("Database tables created/verified successfully")
+    except Exception as e:
+        logger.error(f"Error creating database tables: {e}")
+        print(f"❌ Database error: {e}")
+    
+    # Now start the scheduler after database is ready
+    try:
+        scheduler.start()
+        
+        # Set up dynamic scheduling based on current time
+        update_schedule()
+        
+        # Add hourly monitoring job as fallback
+        scheduler.add_job(
+            schedule_monitor,
+            'interval',
+            hours=1,
+            id='schedule_monitor_job'
+        )
+        
+        # Add periodic memory cleanup job (every 90 seconds during idle)
+        scheduler.add_job(
+            periodic_memory_cleanup,
+            'interval',
+            seconds=90,
+            id='memory_cleanup_job'
+        )
+        
+        logger.info("Dynamic scheduler started - frequency based on weekly schedule")
+        logger.info("Periodic memory cleanup scheduled every 90 seconds")
+    except Exception as e:
+        logger.error(f"Error starting scheduler: {e}")
+    
+    print("📊 Available endpoints:")
+    print("   GET  /         - Server status")
+    print("   GET  /records  - Get all fishing records")
+    print("   POST /refresh  - Trigger manual scrape")
+    print("   POST /optimize - Run database performance optimizations")
+    print("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
+    print("   GET  /status   - Server and DB status")
+    print("   GET  /docs     - Interactive API documentation")
+    print("✅ Server ready! Frontend can connect to this URL")
+    
+    # Show current schedule
+    current_period = get_current_schedule_period()
+    frequency = current_period
+    next_change, next_frequency = get_next_schedule_change()
+    print(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
+    print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
+    print("🛑 Press Ctrl+C to gracefully shut down the server")
+    
+    logger.info("Server started successfully - dynamic scheduled scraping active")
+    
+    yield  # Server is running
+    
+    # Shutdown
+    logger.info("=== SERVER SHUTDOWN ===")
+    scheduler.shutdown()
+    logger.info("Scheduler shutdown complete")
+
+# Create FastAPI app with lifespan handler
 app = FastAPI(
     title="RF4 Records API",
     description="API for Russian Fishing 4 records data",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Add compression middleware (should be added before CORS)
@@ -58,9 +133,6 @@ else:
 # Global variables for scraping control
 is_scraping = False
 scraping_lock = threading.Lock()
-
-# Initialize scheduler but don't start it yet
-scheduler = BackgroundScheduler()
 
 # Built-in functions should be available naturally
 
@@ -339,74 +411,7 @@ def periodic_memory_cleanup():
     except Exception as e:
         logger.debug(f"Periodic cleanup error: {type(e).__name__}")
 
-@app.on_event("startup")
-def startup_event():
-    """Server startup - run migrations and start scheduler"""
-    logger.info("=== SERVER STARTUP ===")
-    print("🚀 FastAPI server is starting up...")
-    
-    # Create/verify database tables first
-    try:
-        create_tables()
-        logger.info("Database tables created/verified successfully")
-    except Exception as e:
-        logger.error(f"Error creating database tables: {e}")
-        print(f"❌ Database error: {e}")
-    
-    # Now start the scheduler after database is ready
-    try:
-        scheduler.start()
-        
-        # Set up dynamic scheduling based on current time
-        update_schedule()
-        
-        # Add hourly monitoring job as fallback
-        scheduler.add_job(
-            schedule_monitor,
-            'interval',
-            hours=1,
-            id='schedule_monitor_job'
-        )
-        
-        # Add periodic memory cleanup job (every 90 seconds during idle)
-        scheduler.add_job(
-            periodic_memory_cleanup,
-            'interval',
-            seconds=90,
-            id='memory_cleanup_job'
-        )
-        
-        logger.info("Dynamic scheduler started - frequency based on weekly schedule")
-        logger.info("Periodic memory cleanup scheduled every 90 seconds")
-    except Exception as e:
-        logger.error(f"Error starting scheduler: {e}")
-    
-    print("📊 Available endpoints:")
-    print("   GET  /         - Server status")
-    print("   GET  /records  - Get all fishing records")
-    print("   POST /refresh  - Trigger manual scrape")
-    print("   POST /optimize - Run database performance optimizations")
-    print("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
-    print("   GET  /status   - Server and DB status")
-    print("   GET  /docs     - Interactive API documentation")
-    print("✅ Server ready! Frontend can connect to this URL")
-    
-    # Show current schedule
-    current_period = get_current_schedule_period()
-    frequency = current_period
-    next_change, next_frequency = get_next_schedule_change()
-    print(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
-    print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
-    print("🛑 Press Ctrl+C to gracefully shut down the server")
-    
-    logger.info("Server started successfully - dynamic scheduled scraping active")
 
-@app.on_event("shutdown")
-def shutdown_event():
-    """Cleanup on server shutdown"""
-    logger.info("=== SERVER SHUTDOWN ===")
-    scheduler.shutdown()
-    logger.info("Scheduler shutdown complete")
 
 @app.get("/health")
 def health_check():

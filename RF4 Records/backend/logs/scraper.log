@@ -19542,3 +19542,4 @@ FROM records) AS anon_1]
 2025-06-25 17:48:16,919 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
 2025-06-25 17:48:17,660 - INFO - Retrieved 1000 initial records (from 41567 total)
 2025-06-25 19:46:12,208 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-25 19:51:06,139 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
