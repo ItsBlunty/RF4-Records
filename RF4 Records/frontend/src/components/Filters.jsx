@@ -256,8 +256,8 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 {filters.includeSandwichBait === true 
-                  ? "✅ Including sandwich bait records (Bait1; Bait2)" 
-                  : "❌ Excluding sandwich bait records (single baits only)"}
+                  ? "✅ Sandwich baits will be shown" 
+                  : "❌ Sandwich baits will be hidden"}
               </p>
             </div>
           </div>

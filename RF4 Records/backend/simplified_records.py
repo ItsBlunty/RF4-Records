@@ -554,11 +554,10 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             else:
                 categories = [record.category] if record.category else ["N"]
             
-            # Apply sandwich bait filter - use positive logic
-            if include_sandwich_bait == False:
-                # Exclude sandwich bait records (those with semicolon in bait_display)
-                if ';' in bait_display:
-                    continue
+            # Apply sandwich bait filter - SIMPLE LOGIC
+            # If include_sandwich_bait is False, exclude records with semicolon
+            if include_sandwich_bait == False and ';' in bait_display:
+                continue
             
             # Apply data age filter for day-based filters (using fishing date)
             if data_age and data_age != 'since-reset':
