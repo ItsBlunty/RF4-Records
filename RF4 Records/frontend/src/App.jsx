@@ -133,7 +133,6 @@ function AppContent() {
     const startTime = performance.now();
     
     try {
-      setLoading(true);
       setError(null);
       console.log('⏱️ Frontend: Starting filter values fetch...');
       
@@ -181,7 +180,7 @@ function AppContent() {
       console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
       setError(`Failed to fetch filter values: ${err.message}`);
     } finally {
-      setLoading(false);
+      // No loading state change needed for filter values
     }
   };
 
@@ -340,10 +339,8 @@ function AppContent() {
   // No automatic refresh - users can manually refresh by reloading the page
   // All filtering and sorting is done client-side with cached data
 
-  // Apply filters by calling backend API
-  useEffect(() => {
-    fetchFilteredRecords();
-  }, [filters]);
+  // Apply filters by calling backend API when specifically requested
+  // No automatic triggering on filter changes
 
   // Apply client-side sorting to filtered results from backend
   useEffect(() => {
@@ -410,6 +407,10 @@ function AppContent() {
     }));
   };
 
+  const handleFilterSubmit = () => {
+    fetchFilteredRecords();
+  };
+
   const handleSort = (key) => {
     setSortConfig(prevConfig => {
       if (prevConfig.key === key) {
@@ -430,7 +431,7 @@ function AppContent() {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading records...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading filters...</p>
         </div>
       </div>
     );
@@ -474,6 +475,7 @@ function AppContent() {
             filters={filters}
             uniqueValues={uniqueValues}
             onChange={handleFilterChange}
+            onSubmit={handleFilterSubmit}
             onClear={clearFilters}
           />
           <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -527,20 +529,8 @@ function AppContent() {
                   {loadingRemaining && (
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                      <span>Loading recent records...</span>
+                      <span>Loading filtered records...</span>
                     </div>
-                  )}
-                  
-                  {!allRecordsLoaded && !loadingRemaining && filters.dataAge === 'since-reset' && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Recent data loaded • Older records loading silently...
-                    </span>
-                  )}
-                  
-                  {!allRecordsLoaded && !loadingRemaining && (!filters.dataAge || filters.dataAge === '') && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      Loading older records silently...
-                    </span>
                   )}
                 </div>
               </div>
@@ -559,7 +549,7 @@ function AppContent() {
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     Apply filters above to search through the fishing records database. 
-                    You can filter by fish type, location, bait, or time period to find specific records.
+                    You can filter by fish type, location, bait, and time period to find specific records.
                   </p>
                 </div>
               ) : viewMode === 'grouped' ? (

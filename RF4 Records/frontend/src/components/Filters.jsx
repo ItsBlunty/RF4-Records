@@ -1,11 +1,23 @@
 import React, { useState } from 'react';
-import { X, Clock, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Clock, Settings, ChevronDown, ChevronUp, Search } from 'lucide-react';
 
-const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
+const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const handleInputChange = (field, value) => {
     onChange(field, value);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      onSubmit();
+    }
+  };
+
+  const handleDropdownChange = (field, value) => {
+    onChange(field, value);
+    // Submit immediately for dropdowns
+    setTimeout(() => onSubmit(), 0);
   };
 
   const clearFilter = (field) => {
@@ -18,6 +30,8 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
 
   const handleAdvancedToggle = (field, value) => {
     onChange(field, value);
+    // Submit immediately for advanced toggles
+    setTimeout(() => onSubmit(), 0);
   };
 
   // Toggle Switch Component
@@ -52,9 +66,10 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
               <input
                 type="search"
                 list="fish-list"
-                placeholder="Search fish..."
+                placeholder="Search fish... (Press Enter to search)"
                 value={filters.fish}
                 onChange={e => handleInputChange('fish', e.target.value)}
+                onKeyPress={handleKeyPress}
                 autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
@@ -82,9 +97,10 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
               <input
                 type="search"
                 list="locations"
-                placeholder="Search location..."
+                placeholder="Search location... (Press Enter to search)"
                 value={filters.waterbody}
                 onChange={e => handleInputChange('waterbody', e.target.value)}
+                onKeyPress={handleKeyPress}
                 autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
@@ -112,9 +128,10 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
               <input
                 type="search"
                 list="bait-list"
-                placeholder="Search bait..."
+                placeholder="Search bait... (Press Enter to search)"
                 value={filters.bait}
                 onChange={e => handleInputChange('bait', e.target.value)}
+                onKeyPress={handleKeyPress}
                 autoComplete="off"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
@@ -144,7 +161,7 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
             <div className="relative">
               <select
                 value={filters.dataAge || ''}
-                onChange={e => handleInputChange('dataAge', e.target.value)}
+                onChange={e => handleDropdownChange('dataAge', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
               >
                 <option value="">All Time</option>
@@ -174,6 +191,18 @@ const Filters = ({ filters, uniqueValues, onChange, onClear }) => {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Search Button */}
+          <div className="flex-shrink-0">
+            <button
+              type="button"
+              onClick={onSubmit}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-6 flex items-center space-x-2"
+            >
+              <Search className="h-4 w-4" />
+              <span>Search</span>
+            </button>
           </div>
 
           {/* Clear Button */}
