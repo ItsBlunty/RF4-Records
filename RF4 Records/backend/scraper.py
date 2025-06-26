@@ -31,7 +31,7 @@ _scraping_finished = False
 def signal_handler(signum, frame):
     """Handle interruption signals during scraping"""
     global should_stop_scraping
-    logger.info(f"🛑 Scraping interrupted by signal {signum} - stopping gracefully...")
+    print(f"🛑 Scraping interrupted by signal {signum} - stopping gracefully...", flush=True)
     should_stop_scraping = True
 
 # Register signal handler for graceful interruption

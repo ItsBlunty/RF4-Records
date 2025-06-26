@@ -19,8 +19,12 @@ import threading
 import os
 import builtins
 
-# Set up logging
-logging.basicConfig(level=logging.INFO)
+# Set up logging to stdout (not stderr) to avoid red text in Railway
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stdout  # Explicitly use stdout to avoid red text in Railway
+)
 logger = logging.getLogger(__name__)
 
 # Initialize scheduler but don't start it yet
@@ -30,8 +34,8 @@ scheduler = BackgroundScheduler()
 async def lifespan(app: FastAPI):
     """Modern lifespan event handler for startup and shutdown"""
     # Startup
-    logger.info("=== SERVER STARTUP ===")
-    logger.info("🚀 FastAPI server is starting up...")
+    print("=== SERVER STARTUP ===", flush=True)
+    print("🚀 FastAPI server is starting up...", flush=True)
     
     # Create/verify database tables first
     try:
@@ -39,7 +43,7 @@ async def lifespan(app: FastAPI):
         logger.info("Database tables created/verified successfully")
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
-        logger.error(f"❌ Database error: {e}")
+        print(f"❌ Database error: {e}", flush=True)
     
     # Now start the scheduler after database is ready
     try:
@@ -69,23 +73,23 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
     
-    logger.info("📊 Available endpoints:")
-    logger.info("   GET  /         - Server status")
-    logger.info("   GET  /records  - Get all fishing records")
-    logger.info("   POST /refresh  - Trigger manual scrape")
-    logger.info("   POST /optimize - Run database performance optimizations")
-    logger.info("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)")
-    logger.info("   GET  /status   - Server and DB status")
-    logger.info("   GET  /docs     - Interactive API documentation")
-    logger.info("✅ Server ready! Frontend can connect to this URL")
+    print("📊 Available endpoints:", flush=True)
+    print("   GET  /         - Server status", flush=True)
+    print("   GET  /records  - Get all fishing records", flush=True)
+    print("   POST /refresh  - Trigger manual scrape", flush=True)
+    print("   POST /optimize - Run database performance optimizations", flush=True)
+    print("   POST /merge-duplicates - Merge duplicate records (MAJOR MIGRATION)", flush=True)
+    print("   GET  /status   - Server and DB status", flush=True)
+    print("   GET  /docs     - Interactive API documentation", flush=True)
+    print("✅ Server ready! Frontend can connect to this URL", flush=True)
     
     # Show current schedule
     current_period = get_current_schedule_period()
     frequency = current_period
     next_change, next_frequency = get_next_schedule_change()
-    logger.info(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
-    logger.info(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
-    logger.info("🛑 Press Ctrl+C to gracefully shut down the server")
+    print(f"🔄 Dynamic scheduling active: {frequency} delay after completion", flush=True)
+    print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}", flush=True)
+    print("🛑 Press Ctrl+C to gracefully shut down the server", flush=True)
     
     logger.info("Server started successfully - dynamic scheduled scraping active")
     
@@ -139,7 +143,7 @@ scraping_lock = threading.Lock()
 def signal_handler(signum, frame):
     """Handle graceful shutdown"""
     logger.info(f"Received signal {signum}, shutting down gracefully...")
-    logger.info(f"🛑 Shutdown signal received - stopping gracefully...")
+    print(f"🛑 Shutdown signal received - stopping gracefully...", flush=True)
     
     # Stop any ongoing scraping
     global should_stop_scraping
@@ -149,16 +153,16 @@ def signal_handler(signum, frame):
     with scraping_lock:
         if is_scraping:
             logger.info("Waiting for ongoing scraping to finish...")
-            logger.info("⏳ Waiting for ongoing scraping to finish...")
+            print("⏳ Waiting for ongoing scraping to finish...", flush=True)
             # Give it 10 seconds to finish gracefully
             for i in range(10):
                 if not is_scraping:
                     break
                 time.sleep(1)
-                logger.info(f"   Waiting... ({10-i}s remaining)")
+                print(f"   Waiting... ({10-i}s remaining)", flush=True)
     
     logger.info("Graceful shutdown complete")
-    logger.info("✅ Server shutdown complete")
+    print("✅ Server shutdown complete", flush=True)
     sys.exit(0)
 
 # Register signal handlers
@@ -663,7 +667,7 @@ def vacuum_database():
         sys.stdout = captured_output
         
         try:
-            logger.info("🧹 Running PostgreSQL VACUUM to reclaim space...")
+            print("🧹 Running PostgreSQL VACUUM to reclaim space...", flush=True)
             
             engine = create_engine(database_url, connect_args={'connect_timeout': 60})
             
@@ -673,7 +677,7 @@ def vacuum_database():
                     SELECT pg_size_pretty(pg_total_relation_size('records')) as size_before
                 """))
                 size_before = result.fetchone()[0]
-                logger.info(f"Database size before VACUUM: {size_before}")
+                print(f"Database size before VACUUM: {size_before}", flush=True)
                 
                 # Run VACUUM
                 conn.execute(text("COMMIT"))
@@ -684,7 +688,7 @@ def vacuum_database():
                     SELECT pg_size_pretty(pg_total_relation_size('records')) as size_after
                 """))
                 size_after = result.fetchone()[0]
-                logger.info(f"Database size after VACUUM: {size_after}")
+                print(f"Database size after VACUUM: {size_after}", flush=True)
                 
         finally:
             sys.stdout = old_stdout
@@ -1705,5 +1709,5 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
     
-    logger.info(f"Starting server on {host}:{port}")
+    print(f"Starting server on {host}:{port}", flush=True)
     uvicorn.run(app, host=host, port=port) 
