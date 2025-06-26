@@ -33,6 +33,7 @@ def get_all_records_simple():
                 # Single category like "N" -> ["N"]
                 categories = [record.category] if record.category else ["N"]
             
+            # OPTIMIZATION: Remove unnecessary fields to reduce JSON payload size
             result.append({
                 "player": record.player,
                 "fish": record.fish,
@@ -40,11 +41,8 @@ def get_all_records_simple():
                 "waterbody": record.waterbody,
                 "bait_display": bait_display,
                 "date": record.date,
-                "created_at": record.created_at.isoformat() if hasattr(record, 'created_at') and record.created_at else None,
                 "region": record.region,
-                "categories": categories,  # Parsed from combined category field
-                "bait1": record.bait1,
-                "bait2": record.bait2
+                "categories": categories  # Parsed from combined category field
             })
         
         db.close()
@@ -77,6 +75,7 @@ def get_initial_records_simple(limit: int = 1000):
             else:
                 categories = [record.category] if record.category else ["N"]
             
+            # OPTIMIZATION: Remove unnecessary fields to reduce JSON payload size
             result.append({
                 "player": record.player,
                 "fish": record.fish,
@@ -84,11 +83,8 @@ def get_initial_records_simple(limit: int = 1000):
                 "waterbody": record.waterbody,
                 "bait_display": bait_display,
                 "date": record.date,
-                "created_at": record.created_at.isoformat() if hasattr(record, 'created_at') and record.created_at else None,
                 "region": record.region,
-                "categories": categories,
-                "bait1": record.bait1,
-                "bait2": record.bait2
+                "categories": categories
             })
         
         # Get total count
@@ -119,15 +115,16 @@ def get_initial_records_simple(limit: int = 1000):
         raise
 
 def get_remaining_records_simple(skip: int = 1000):
-    """Get remaining records after initial batch - much simpler after migration"""
+    """Get remaining records after initial batch - OPTIMIZED VERSION"""
     db = SessionLocal()
     
     try:
-        # Get all records for complete filter values
-        all_records = db.query(Record).all()
+        # OPTIMIZATION: Single query to get ALL records, then slice in Python
+        # This eliminates the double database query bottleneck
+        all_records = db.query(Record).order_by(Record.id.desc()).all()
         
-        # Get remaining records after skip
-        remaining_records = db.query(Record).order_by(Record.id.desc()).offset(skip).all()
+        # Get remaining records by slicing (much faster than second DB query)
+        remaining_records = all_records[skip:]
         
         result = []
         for record in remaining_records:
@@ -143,6 +140,7 @@ def get_remaining_records_simple(skip: int = 1000):
             else:
                 categories = [record.category] if record.category else ["N"]
             
+            # OPTIMIZATION: Remove unnecessary fields to reduce JSON payload size
             result.append({
                 "player": record.player,
                 "fish": record.fish,
@@ -150,14 +148,11 @@ def get_remaining_records_simple(skip: int = 1000):
                 "waterbody": record.waterbody,
                 "bait_display": bait_display,
                 "date": record.date,
-                "created_at": record.created_at.isoformat() if hasattr(record, 'created_at') and record.created_at else None,
                 "region": record.region,
-                "categories": categories,
-                "bait1": record.bait1,
-                "bait2": record.bait2
+                "categories": categories
             })
         
-        # Get unique values from all records for complete filter lists
+        # OPTIMIZATION: Get unique values from already-loaded records (no extra queries)
         fish = sorted(list(set(r.fish for r in all_records if r.fish)))
         waterbody = sorted(list(set(r.waterbody for r in all_records if r.waterbody)))
         
