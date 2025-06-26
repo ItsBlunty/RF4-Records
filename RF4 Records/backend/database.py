@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Index
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
@@ -9,17 +9,25 @@ Base = declarative_base()
 class Record(Base):
     __tablename__ = 'records'
     id = Column(Integer, primary_key=True)
-    player = Column(String)
-    fish = Column(String)
-    weight = Column(Integer)  # Store weight in grams as integers
-    waterbody = Column(String)
+    player = Column(String, index=True)  # Index for player filtering
+    fish = Column(String, index=True)    # Index for fish filtering
+    weight = Column(Integer, index=True) # Index for weight sorting
+    waterbody = Column(String, index=True) # Index for waterbody filtering
     bait = Column(String)  # Keep for backward compatibility
-    bait1 = Column(String)  # Primary bait for sandwich baits
-    bait2 = Column(String)  # Secondary bait for sandwich baits (None if single bait)
-    date = Column(String)  # Fishing date from RF4 leaderboard (e.g., "21.06.25")
-    created_at = Column(DateTime, server_default=func.now())  # When we scraped this record
-    region = Column(String)  # Add region field to track which region the record is from
-    category = Column(String)  # Category field: single category OR compact format for merged records (e.g., "N;U;L")
+    bait1 = Column(String, index=True)   # Index for bait filtering
+    bait2 = Column(String)
+    date = Column(String, index=True)    # Index for date sorting
+    created_at = Column(DateTime, server_default=func.now(), index=True) # Index for recent records
+    region = Column(String, index=True)  # Index for region filtering
+    category = Column(String, index=True) # Index for category filtering
+    
+    # Composite indexes for common query patterns
+    __table_args__ = (
+        Index('idx_fish_weight', 'fish', 'weight'),          # Fish leaderboards
+        Index('idx_waterbody_fish', 'waterbody', 'fish'),    # Location-specific records
+        Index('idx_region_fish', 'region', 'fish'),          # Region-specific records
+        Index('idx_created_desc', 'created_at', postgresql_using='btree'), # Recent records
+    )
 
 # Database configuration
 def get_database_url():
@@ -50,7 +58,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Create tables
 def create_tables():
+    print("Creating database tables with performance indexes...")
     Base.metadata.create_all(bind=engine)
+    print("Database tables and indexes created successfully")
 
 if __name__ == '__main__':
     create_tables() 

@@ -490,39 +490,23 @@ def api_root():
     }
 
 def _get_processed_records():
-    """Load records using simplified approach since duplicates are now merged"""
-    from simplified_records import get_all_records_simple
-    return get_all_records_simple()
+    """Load records using optimized approach for better performance"""
+    from optimized_records import get_all_records_optimized
+    return get_all_records_optimized()
 
 @app.get("/records/initial")
 @app.get("/api/records/initial")
 def get_initial_records():
-    """Get first 1000 records for initial page load (optimized for merged records)"""
+    """Get first 1000 records for initial page load (high-performance optimized)"""
     try:
-        from simplified_records import get_all_records_simple
+        from optimized_records import get_initial_records_optimized
         
-        # Get all records (they're already deduplicated from merge operation)
-        all_records, total_count = get_all_records_simple()
+        # Use optimized function that avoids loading all records
+        result = get_initial_records_optimized(limit=1000)
         
-        # Return first 1000 records for initial load
-        initial_records = all_records[:1000]
+        logger.info(f"Retrieved {len(result['records'])} initial records optimized")
+        return result
         
-        # Get unique values for filters from ALL records (not just initial 1000)
-        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
-        
-        logger.info(f"Retrieved {len(initial_records)} initial records (from {len(all_records)} total)")
-        return {
-            "records": initial_records,
-            "total_unique_records": len(all_records),  # Frontend expects this field
-            "has_more": len(all_records) > 1000,
-            "unique_values": {
-                "fish": fish,
-                "waterbody": waterbody,
-                "bait": bait
-            }
-        }
     except Exception as e:
         logger.error(f"Error retrieving initial records: {e}")
         return {"error": "Failed to retrieve initial records"}
@@ -530,31 +514,16 @@ def get_initial_records():
 @app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records():
-    """Get remaining records after initial 1000 (batched loading)"""
+    """Get remaining records after initial 1000 (high-performance optimized)"""
     try:
-        from simplified_records import get_all_records_simple
+        from optimized_records import get_remaining_records_optimized
         
-        # Get all records
-        all_records, total_count = get_all_records_simple()
+        # Use optimized function with database-level pagination
+        result = get_remaining_records_optimized(skip=1000)
         
-        # Return records after the first 1000
-        remaining_records = all_records[1000:]
+        logger.info(f"Retrieved {len(result['records'])} remaining records optimized")
+        return result
         
-        # Get unique values for filters from ALL records
-        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
-        
-        logger.info(f"Retrieved {len(remaining_records)} remaining records")
-        return {
-            "records": remaining_records,
-            "total_unique_records": len(all_records),  # Frontend expects this field
-            "unique_values": {
-                "fish": fish,
-                "waterbody": waterbody,
-                "bait": bait
-            }
-        }
     except Exception as e:
         logger.error(f"Error retrieving remaining records: {e}")
         return {"error": "Failed to retrieve remaining records"}
@@ -562,27 +531,21 @@ def get_remaining_records():
 @app.get("/records")
 @app.get("/api/records")
 def get_records():
-    """Get all records from database with filter values (for backward compatibility)"""
+    """Get all records from database with filter values (high-performance optimized)"""
     try:
-        from simplified_records import get_all_records_simple
+        from optimized_records import get_all_records_optimized, get_filter_values_optimized
         
-        # Get all records
-        all_records, total_count = get_all_records_simple()
+        # Get all records with optimized query
+        all_records, total_count = get_all_records_optimized()
         
-        # Get unique values for filters
-        fish = sorted(list(set(r['fish'] for r in all_records if r['fish'])))
-        waterbody = sorted(list(set(r['waterbody'] for r in all_records if r['waterbody'])))
-        bait = sorted(list(set(r['bait_display'] for r in all_records if r['bait_display'])))
+        # Get unique values with optimized queries
+        unique_values = get_filter_values_optimized()
         
-        logger.info(f"Retrieved all {len(all_records)} records with filter values")
+        logger.info(f"Retrieved all {len(all_records)} records optimized")
         return {
             "records": all_records,
             "total_records": len(all_records),
-            "unique_values": {
-                "fish": fish,
-                "waterbody": waterbody,
-                "bait": bait
-            }
+            "unique_values": unique_values
         }
     except Exception as e:
         logger.error(f"Error retrieving records: {e}")
@@ -633,19 +596,38 @@ def refresh():
 
 @app.post("/optimize")
 def run_database_optimizations():
-    """Manually run database performance optimizations"""
+    """Manually run database performance optimizations including indexes"""
     try:
-        # Run database maintenance
-        from db_maintenance import run_database_maintenance
-        maintenance_result = run_database_maintenance()
+        # Run performance migration to add indexes
+        from performance_migration import add_performance_indexes, verify_indexes
+        
+        logger.info("Running performance optimization...")
+        index_success = add_performance_indexes()
+        
+        if index_success:
+            verify_success = verify_indexes()
+        else:
+            verify_success = False
+        
+        # Also run database maintenance if available
+        maintenance_result = None
+        try:
+            from db_maintenance import run_database_maintenance
+            maintenance_result = run_database_maintenance()
+        except ImportError:
+            logger.info("Database maintenance module not available")
         
         return {
-            "message": "Database maintenance completed",
-            "result": maintenance_result
+            "message": "Database optimization completed",
+            "indexes_added": index_success,
+            "indexes_verified": verify_success,
+            "maintenance_result": maintenance_result,
+            "performance_improvement": "Queries should be significantly faster with new indexes"
         }
         
     except Exception as e:
-        return {"error": "Database maintenance failed", "details": str(e)}
+        logger.error(f"Database optimization failed: {e}")
+        return {"error": "Database optimization failed", "details": str(e)}
 
 @app.post("/vacuum")
 def vacuum_database():
