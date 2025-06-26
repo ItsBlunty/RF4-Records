@@ -24,7 +24,7 @@ function AppContent() {
   
   const [records, setRecords] = useState([]);
   const [filteredRecords, setFilteredRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingRemaining, setLoadingRemaining] = useState(false);
   const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [error, setError] = useState(null);
@@ -127,10 +127,10 @@ function AppContent() {
     }
   };
 
-  // Load ALL recent records immediately (no initial subset)
+  // Load ALL recent records in background (no page blocking)
   const fetchRecentRecords = async () => {
     try {
-      setLoading(true);
+      setLoadingRemaining(true); // Use table loading overlay instead of page blocking
       setError(null);
       console.log('Loading ALL recent records since last reset...');
       const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
@@ -177,7 +177,7 @@ function AppContent() {
       console.error('Detailed error:', err);
       setError(`Failed to fetch recent records: ${err.message}`);
     } finally {
-      setLoading(false);
+      setLoadingRemaining(false); // Clear table loading overlay
     }
   };
 
@@ -532,7 +532,7 @@ function AppContent() {
                   {loadingRemaining && (
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
-                      <span>Loading older records...</span>
+                      <span>Loading recent records...</span>
                     </div>
                   )}
                   
