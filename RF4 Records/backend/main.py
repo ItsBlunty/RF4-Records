@@ -21,7 +21,7 @@ import builtins
 
 # Set up logging to stdout (not stderr) to avoid red text in Railway
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.WARNING,  # Only show warnings and errors to reduce red text
     format='%(asctime)s - %(levelname)s - %(message)s',
     stream=sys.stdout  # Explicitly use stdout to avoid red text in Railway
 )
@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 
 # Reduce APScheduler logging verbosity to avoid red text in Railway
 logging.getLogger('apscheduler').setLevel(logging.WARNING)
+# Also suppress uvicorn access logs that might show as red
+logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
 
 # Initialize scheduler but don't start it yet
 scheduler = BackgroundScheduler()
@@ -43,7 +45,7 @@ async def lifespan(app: FastAPI):
     # Create/verify database tables first
     try:
         create_tables()
-        logger.info("Database tables created/verified successfully")
+        print("Database tables created/verified successfully", flush=True)
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
@@ -133,9 +135,9 @@ app.add_middleware(
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.exists(frontend_dist_path):
     app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist_path, "assets")), name="assets")
-    logger.info(f"Serving static assets from {os.path.join(frontend_dist_path, 'assets')}")
+    print(f"Serving static assets from {os.path.join(frontend_dist_path, 'assets')}", flush=True)
 else:
-    logger.warning(f"Frontend dist directory not found at {frontend_dist_path}")
+    print(f"Frontend dist directory not found at {frontend_dist_path}", flush=True)
 
 # Global variables for scraping control
 is_scraping = False
