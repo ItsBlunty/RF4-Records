@@ -622,6 +622,85 @@ def get_older_records():
         logger.error(f"Error retrieving older records after {api_time:.3f}s: {e}")
         return {"error": "Failed to retrieve older records"}
 
+@app.get("/records/filtered")
+@app.get("/api/records/filtered")
+def get_filtered_records_endpoint(
+    fish: str = None,
+    waterbody: str = None, 
+    bait: str = None,
+    data_age: str = None,
+    include_sandwich_bait: bool = True,
+    include_ultralight: bool = True,
+    include_light: bool = True,
+    include_bottomlight: bool = True,
+    include_telescopic: bool = True,
+    limit: int = None,
+    offset: int = None
+):
+    """Get filtered records based on criteria"""
+    import time
+    api_start = time.time()
+    
+    try:
+        from simplified_records import get_filtered_records
+        
+        result = get_filtered_records(
+            fish=fish,
+            waterbody=waterbody,
+            bait=bait,
+            data_age=data_age,
+            include_sandwich_bait=include_sandwich_bait,
+            include_ultralight=include_ultralight,
+            include_light=include_light,
+            include_bottomlight=include_bottomlight,
+            include_telescopic=include_telescopic,
+            limit=limit,
+            offset=offset
+        )
+        
+        api_time = time.time() - api_start
+        
+        logger.info(f"🔍 Filtered API Response Complete:")
+        logger.info(f"  Retrieved {result['showing_count']} of {result['total_filtered']} filtered records")
+        logger.info(f"  Filters: fish={fish}, waterbody={waterbody}, bait={bait}, data_age={data_age}")
+        logger.info(f"  Total API time: {api_time:.3f}s")
+        logger.info(f"  DB time: {result['performance']['query_time']}s")
+        logger.info(f"  Processing time: {result['performance']['process_time']}s")
+        
+        return result
+        
+    except Exception as e:
+        api_time = time.time() - api_start
+        logger.error(f"Error retrieving filtered records after {api_time:.3f}s: {e}")
+        return {"error": "Failed to retrieve filtered records"}
+
+@app.get("/records/filter-values") 
+@app.get("/api/records/filter-values")
+def get_filter_values_endpoint():
+    """Get unique values for filter dropdowns"""
+    import time
+    api_start = time.time()
+    
+    try:
+        from simplified_records import get_filter_values
+        
+        result = get_filter_values()
+        
+        api_time = time.time() - api_start
+        
+        logger.info(f"📋 Filter Values API Response Complete:")
+        logger.info(f"  Fish: {len(result['fish'])} options")
+        logger.info(f"  Waterbody: {len(result['waterbody'])} options")
+        logger.info(f"  Bait: {len(result['bait'])} options")
+        logger.info(f"  Total API time: {api_time:.3f}s")
+        
+        return result
+        
+    except Exception as e:
+        api_time = time.time() - api_start
+        logger.error(f"Error retrieving filter values after {api_time:.3f}s: {e}")
+        return {"error": "Failed to retrieve filter values"}
+
 @app.get("/refresh")
 def refresh_info():
     """Information about the refresh endpoint"""

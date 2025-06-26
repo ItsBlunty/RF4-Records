@@ -498,4 +498,214 @@ def get_remaining_records_simple(skip: int = 1000):
     except Exception as e:
         logger.error(f"Error retrieving remaining simplified records: {e}")
         db.close()
+        raise
+
+def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None, 
+                        include_sandwich_bait=True, include_ultralight=True, 
+                        include_light=True, include_bottomlight=True, 
+                        include_telescopic=True, limit=None, offset=None):
+    """Get filtered records from database based on criteria"""
+    start_time = time.time()
+    db = SessionLocal()
+    
+    try:
+        # Start with base query
+        query = db.query(Record)
+        
+        # Apply fish filter
+        if fish:
+            query = query.filter(Record.fish.ilike(f"%{fish}%"))
+        
+        # Apply waterbody filter
+        if waterbody:
+            query = query.filter(Record.waterbody.ilike(f"%{waterbody}%"))
+        
+        # Apply bait filter (check both bait1 and bait2)
+        if bait:
+            query = query.filter(
+                (Record.bait1.ilike(f"%{bait}%")) | 
+                (Record.bait2.ilike(f"%{bait}%")) |
+                (Record.bait.ilike(f"%{bait}%"))
+            )
+        
+        # Apply data age filter
+        if data_age:
+            if data_age == 'since-reset':
+                last_reset = get_last_record_reset_date()
+                query = query.filter(Record.created_at >= last_reset)
+        
+        # Get all matching records
+        query_start = time.time()
+        records = query.order_by(Record.id.desc()).all()
+        query_time = time.time() - query_start
+        
+        # Apply post-processing filters that can't be done in SQL easily
+        process_start = time.time()
+        filtered_records = []
+        
+        for record in records:
+            # Format bait display
+            if record.bait2:
+                bait_display = f"{record.bait1}; {record.bait2}"
+            else:
+                bait_display = record.bait1 or record.bait or ""
+            
+            # Parse combined categories
+            if record.category and ';' in record.category:
+                categories = record.category.split(';')
+            else:
+                categories = [record.category] if record.category else ["N"]
+            
+            # Apply sandwich bait filter
+            if not include_sandwich_bait and ';' in bait_display:
+                continue
+            
+            # Apply category filters
+            disabled_categories = []
+            if not include_ultralight:
+                disabled_categories.append('ultralight')
+            if not include_light:
+                disabled_categories.append('light')
+            if not include_bottomlight:
+                disabled_categories.append('bottomlight')
+            if not include_telescopic:
+                disabled_categories.append('telescopic')
+            
+            if disabled_categories:
+                # Convert categories to lowercase for comparison
+                record_categories = [cat.lower() if cat else '' for cat in categories]
+                record_categories = [cat for cat in record_categories if cat]
+                
+                if record_categories:
+                    # Check if ALL categories are disabled
+                    all_disabled = all(cat in disabled_categories for cat in record_categories)
+                    if all_disabled:
+                        continue
+            
+            # Apply data age filter for day-based filters (using fishing date)
+            if data_age and data_age != 'since-reset':
+                from datetime import datetime, timezone
+                
+                now = datetime.now(timezone.utc)
+                
+                # Parse date string (DD.MM.YY format)
+                if record.date:
+                    try:
+                        parts = record.date.split('.')
+                        if len(parts) == 3:
+                            day = int(parts[0])
+                            month = int(parts[1])
+                            year = int(parts[2])
+                            
+                            # Convert 2-digit year to 4-digit
+                            if year <= 50:
+                                year += 2000
+                            elif year < 100:
+                                year += 1900
+                            
+                            record_date = datetime(year, month, day, 12, 0, 0, tzinfo=timezone.utc)
+                            
+                            # Calculate days difference
+                            today = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+                            days_diff = (today - record_date).days
+                            
+                            max_days = {
+                                '1-day': 1, '3-days': 3, '7-days': 7, 
+                                '30-days': 30, '90-days': 90
+                            }.get(data_age)
+                            
+                            if max_days and days_diff > max_days:
+                                continue
+                    except:
+                        pass  # Keep record if date parsing fails
+            
+            # Add to filtered results
+            filtered_records.append({
+                "player": record.player,
+                "fish": record.fish,
+                "weight": record.weight,
+                "waterbody": record.waterbody,
+                "bait_display": bait_display,
+                "date": record.date,
+                "region": record.region,
+                "categories": categories,
+                "created_at": record.created_at.isoformat() if record.created_at else None
+            })
+        
+        process_time = time.time() - process_start
+        
+        # Apply pagination if specified
+        total_filtered = len(filtered_records)
+        if offset or limit:
+            start_idx = offset or 0
+            end_idx = start_idx + limit if limit else len(filtered_records)
+            filtered_records = filtered_records[start_idx:end_idx]
+        
+        total_time = time.time() - start_time
+        
+        db.close()
+        
+        return {
+            "records": filtered_records,
+            "total_filtered": total_filtered,
+            "showing_count": len(filtered_records),
+            "has_more": limit and total_filtered > (offset or 0) + len(filtered_records),
+            "performance": {
+                "total_time": round(total_time, 3),
+                "query_time": round(query_time, 3),
+                "process_time": round(process_time, 3),
+                "records_per_second": round(total_filtered/total_time, 0) if total_time > 0 else 0
+            }
+        }
+        
+    except Exception as e:
+        total_time = time.time() - start_time
+        logger.error(f"Error retrieving filtered records after {total_time:.3f}s: {e}")
+        db.close()
+        raise
+
+def get_filter_values():
+    """Get unique values for all filter dropdowns"""
+    start_time = time.time()
+    db = SessionLocal()
+    
+    try:
+        # Get all records to extract unique values
+        records = db.query(Record).all()
+        
+        fish_set = set()
+        waterbody_set = set()
+        bait_set = set()
+        
+        for record in records:
+            if record.fish:
+                fish_set.add(record.fish)
+            if record.waterbody:
+                waterbody_set.add(record.waterbody)
+            
+            # Format bait display
+            if record.bait2:
+                bait_set.add(f"{record.bait1}; {record.bait2}")
+            else:
+                bait_display = record.bait1 or record.bait or ""
+                if bait_display:
+                    bait_set.add(bait_display)
+        
+        total_time = time.time() - start_time
+        
+        db.close()
+        
+        return {
+            "fish": sorted(list(fish_set)),
+            "waterbody": sorted(list(waterbody_set)),
+            "bait": sorted(list(bait_set)),
+            "performance": {
+                "total_time": round(total_time, 3)
+            }
+        }
+        
+    except Exception as e:
+        total_time = time.time() - start_time
+        logger.error(f"Error retrieving filter values after {total_time:.3f}s: {e}")
+        db.close()
         raise 

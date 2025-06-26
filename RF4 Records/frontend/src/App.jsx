@@ -128,17 +128,99 @@ function AppContent() {
     }
   };
 
-  // Load ALL recent records in background (no page blocking)
-  const fetchRecentRecords = async () => {
+  // Load filter values only (no records initially)
+  const fetchFilterValues = async () => {
     const startTime = performance.now();
     
     try {
-      setLoadingRemaining(true); // Use table loading overlay instead of page blocking
+      setLoading(true);
       setError(null);
-      console.log('⏱️ Frontend: Starting recent records fetch...');
+      console.log('⏱️ Frontend: Starting filter values fetch...');
       
       const networkStart = performance.now();
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/recent/all' : '/records/recent/all');
+      const response = await axios.get(import.meta.env.DEV ? '/api/records/filter-values' : '/records/filter-values');
+      const networkTime = performance.now() - networkStart;
+      
+      console.log('📡 Frontend Network Performance:');
+      console.log(`  Network request time: ${networkTime.toFixed(1)}ms`);
+      console.log(`  Response size: ${JSON.stringify(response.data).length} characters`);
+      
+      if (!response.data) {
+        console.error('Invalid filter values response format:', response.data);
+        throw new Error('Invalid response format - expected filter values object');
+      }
+      
+      const processingStart = performance.now();
+      
+      // Set unique values for filters
+      setUniqueValues({
+        fish: response.data.fish || [],
+        waterbody: response.data.waterbody || [],
+        bait: response.data.bait || []
+      });
+      
+      // Start with empty records - user must apply filters
+      setRecords([]);
+      setFilteredRecords([]);
+      setLastRefresh(new Date());
+      
+      const processingTime = performance.now() - processingStart;
+      const totalTime = performance.now() - startTime;
+      
+      console.log('⚡ Frontend Processing Performance:');
+      console.log(`  Client processing time: ${processingTime.toFixed(1)}ms`);
+      console.log(`  Total frontend time: ${totalTime.toFixed(1)}ms`);
+      
+      console.log(`✅ Successfully loaded filter values:`);
+      console.log(`  Fish: ${response.data.fish?.length || 0} options`);
+      console.log(`  Waterbody: ${response.data.waterbody?.length || 0} options`);
+      console.log(`  Bait: ${response.data.bait?.length || 0} options`);
+      
+    } catch (err) {
+      const totalTime = performance.now() - startTime;
+      console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
+      setError(`Failed to fetch filter values: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch filtered records from backend
+  const fetchFilteredRecords = async () => {
+    if (!hasFilters()) {
+      // No filters applied, show empty table
+      setRecords([]);
+      setFilteredRecords([]);
+      return;
+    }
+    
+    const startTime = performance.now();
+    
+    try {
+      setLoadingRemaining(true);
+      setError(null);
+      console.log('⏱️ Frontend: Starting filtered records fetch...');
+      
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (filters.fish) params.append('fish', filters.fish);
+      if (filters.waterbody) params.append('waterbody', filters.waterbody);
+      if (filters.bait) params.append('bait', filters.bait);
+      if (filters.dataAge) params.append('data_age', filters.dataAge);
+      
+      // Advanced filters
+      if (filters.includeSandwichBait !== undefined) params.append('include_sandwich_bait', filters.includeSandwichBait);
+      if (filters.includeUltralight !== undefined) params.append('include_ultralight', filters.includeUltralight);
+      if (filters.includeLight !== undefined) params.append('include_light', filters.includeLight);
+      if (filters.includeBottomLight !== undefined) params.append('include_bottomlight', filters.includeBottomLight);
+      if (filters.includeTelescopic !== undefined) params.append('include_telescopic', filters.includeTelescopic);
+      
+      const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
+      const queryString = params.toString();
+      const fullUrl = queryString ? `${url}?${queryString}` : url;
+      
+      const networkStart = performance.now();
+      const response = await axios.get(fullUrl);
       const networkTime = performance.now() - networkStart;
       
       console.log('📡 Frontend Network Performance:');
@@ -146,35 +228,17 @@ function AppContent() {
       console.log(`  Response size: ${JSON.stringify(response.data).length} characters`);
       
       if (!response.data || !Array.isArray(response.data.records)) {
-        console.error('Invalid recent response format:', response.data);
+        console.error('Invalid filtered response format:', response.data);
         throw new Error('Invalid response format - expected records array');
       }
       
       const processingStart = performance.now();
-      const { 
-        records: recentRecords, 
-        recent_count, 
-        total_records, 
-        has_older_records,
-        unique_values,
-        last_reset_date,
-        performance: serverPerf
-      } = response.data;
+      const { records: filteredRecords, total_filtered, performance: serverPerf } = response.data;
       
-      setRecords(recentRecords);
-      setTotalRecords(total_records);
-      setAllRecordsLoaded(!has_older_records);
-      
-      // Set unique values for filters from recent data
-      setUniqueValues(unique_values);
-      setFilteredRecords(recentRecords);
+      setRecords(filteredRecords);
+      setFilteredRecords(filteredRecords); // Backend already applied filters
+      setTotalRecords(total_filtered);
       setLastRefresh(new Date());
-      
-      // Set default filter to since-reset to match what we loaded
-      setFilters(prev => ({
-        ...prev,
-        dataAge: 'since-reset'
-      }));
       
       const processingTime = performance.now() - processingStart;
       const totalTime = performance.now() - startTime;
@@ -191,64 +255,15 @@ function AppContent() {
         console.log(`  Network vs Server ratio: ${(networkTime / (serverPerf.total_time * 1000)).toFixed(1)}x`);
       }
       
-      console.log(`✅ Successfully loaded ALL ${recentRecords.length} recent records since ${last_reset_date}`);
-      console.log(`📊 Total database has ${total_records} records (${recent_count} recent, ${total_records - recent_count} older)`);
-      
-      // Load older records silently in background if there are any
-      if (has_older_records) {
-        setTimeout(() => fetchOlderRecords(), 100); // Start very soon after recent records load
-      }
+      console.log(`✅ Successfully loaded ${filteredRecords.length} filtered records`);
+      console.log(`📊 Total matching records: ${total_filtered}`);
       
     } catch (err) {
       const totalTime = performance.now() - startTime;
       console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
-      setError(`Failed to fetch recent records: ${err.message}`);
+      setError(`Failed to fetch filtered records: ${err.message}`);
     } finally {
-      setLoadingRemaining(false); // Clear table loading overlay
-    }
-  };
-
-  // Stage 3: Fetch older records silently in background (before last reset)
-  const fetchOlderRecords = async () => {
-    if (allRecordsLoaded || isLoadingOlderRecords) return;
-    
-    try {
-      setIsLoadingOlderRecords(true);
-      console.log('Loading older records silently in background...');
-      const response = await axios.get(import.meta.env.DEV ? '/api/records/older' : '/records/older');
-      
-      if (!response.data || !Array.isArray(response.data.records)) {
-        console.error('Invalid older records response format:', response.data);
-        return;
-      }
-      
-      const { records: olderRecords, unique_values } = response.data;
-      
-      setRecords(prevRecords => {
-        const allRecords = [...prevRecords, ...olderRecords];
-        // Don't update filtered records here - let the useEffect handle filtering
-        // This ensures the filters are applied correctly when older records load
-        return allRecords;
-      });
-      
-      // Merge unique values to include older records' values
-      if (unique_values) {
-        setUniqueValues(prevValues => ({
-          fish: [...new Set([...prevValues.fish, ...unique_values.fish])].sort(),
-          waterbody: [...new Set([...prevValues.waterbody, ...unique_values.waterbody])].sort(),
-          bait: [...new Set([...prevValues.bait, ...unique_values.bait])].sort()
-        }));
-      }
-      
-      setAllRecordsLoaded(true);
-      console.log(`Successfully loaded ${olderRecords.length} older records silently in background`);
-      console.log('All records now available for filtering and search');
-      
-    } catch (err) {
-      console.error('Error fetching older records:', err);
-      // Don't show error to user for background loading failure
-    } finally {
-      setIsLoadingOlderRecords(false);
+      setLoadingRemaining(false);
     }
   };
 
@@ -306,80 +321,37 @@ function AppContent() {
     fetchAllRecords(); // Use legacy endpoint for manual refresh to get everything
   };
 
+  // Helper function to check if any filters are applied
+  const hasFilters = () => {
+    return filters.fish || filters.waterbody || filters.bait || filters.dataAge ||
+           filters.includeSandwichBait === false || filters.includeUltralight === false ||
+           filters.includeLight === false || filters.includeBottomLight === false ||
+           filters.includeTelescopic === false;
+  };
+
   useEffect(() => {
     // Prevent duplicate calls in React Strict Mode
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    fetchRecentRecords(); // Load recent records first, older records load in background
+    fetchFilterValues(); // Load filter values only, no records initially
   }, []);
 
   // No automatic refresh - users can manually refresh by reloading the page
   // All filtering and sorting is done client-side with cached data
 
-  // Apply filters and sorting
+  // Apply filters by calling backend API
   useEffect(() => {
-    let filtered = records;
+    fetchFilteredRecords();
+  }, [filters]);
 
-    // Apply filters
-    if (filters.fish) {
-      filtered = filtered.filter(r => 
-        r.fish && r.fish.toLowerCase().includes(filters.fish.toLowerCase())
-      );
-    }
-    if (filters.waterbody) {
-      filtered = filtered.filter(r => 
-        r.waterbody && r.waterbody.toLowerCase().includes(filters.waterbody.toLowerCase())
-      );
-    }
-    if (filters.bait) {
-      filtered = filtered.filter(r => 
-        r.bait_display && r.bait_display.toLowerCase().includes(filters.bait.toLowerCase())
-      );
-    }
-    if (filters.dataAge) {
-      filtered = filtered.filter(r => 
-        isWithinAgeRange(r, filters.dataAge)
-      );
-    }
-
-    // Apply advanced filters
-    // Sandwich bait filter - look for ";" in bait_display (format: "Bait1; Bait2")
-    if (filters.includeSandwichBait === false) {
-      filtered = filtered.filter(r => 
-        !r.bait_display || !r.bait_display.includes(';')
-      );
-    }
-
-    // Category filters - only exclude records that ONLY exist in the disabled categories
-    // Get list of disabled categories
-    const disabledCategories = [];
-    if (filters.includeUltralight === false) disabledCategories.push('ultralight');
-    if (filters.includeLight === false) disabledCategories.push('light');
-    if (filters.includeBottomLight === false) disabledCategories.push('bottomlight');
-    if (filters.includeTelescopic === false) disabledCategories.push('telescopic');
-
-    if (disabledCategories.length > 0) {
-      filtered = filtered.filter(r => {
-        if (!r.categories || r.categories.length === 0) {
-          // If record has no categories, it's probably from "normal" fishing, so keep it
-          return true;
-        }
-        
-        // Get the record's categories in lowercase
-        const recordCategories = r.categories.map(cat => cat ? cat.toLowerCase() : '').filter(Boolean);
-        
-        // Check if ALL of the record's categories are in the disabled list
-        const allCategoriesDisabled = recordCategories.every(cat => disabledCategories.includes(cat));
-        
-        // Keep the record if NOT all its categories are disabled (meaning it exists in at least one enabled category)
-        return !allCategoriesDisabled;
-      });
-    }
+  // Apply client-side sorting to filtered results from backend
+  useEffect(() => {
+    let sorted = [...records];
 
     // Apply sorting
     if (sortConfig.key && sortConfig.direction) {
-      const sorted = [...filtered].sort((a, b) => {
+      sorted = sorted.sort((a, b) => {
         let aValue = a[sortConfig.key];
         let bValue = b[sortConfig.key];
 
@@ -391,7 +363,7 @@ function AppContent() {
         if (sortConfig.key === 'weight') {
           aValue = Number(aValue);
           bValue = Number(bValue);
-    }
+        }
 
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -401,11 +373,10 @@ function AppContent() {
         }
         return 0;
       });
-      filtered = sorted;
     }
 
-    setFilteredRecords(filtered);
-  }, [records, filters, sortConfig]);
+    setFilteredRecords(sorted);
+  }, [records, sortConfig]);
 
   // Watch filters and auto-switch view mode
   useEffect(() => {
@@ -432,18 +403,14 @@ function AppContent() {
     });
   };
 
-  const handleFilterChange = async (filterType, value) => {
-    // Ensure all records are loaded before filtering
-    await ensureAllRecordsLoaded();
+  const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
   };
 
-  const handleSort = async (key) => {
-    // Ensure all records are loaded before sorting
-    await ensureAllRecordsLoaded();
+  const handleSort = (key) => {
     setSortConfig(prevConfig => {
       if (prevConfig.key === key) {
         // If clicking the same column
@@ -584,7 +551,18 @@ function AppContent() {
             </div>
             
             <LoadingOverlay isLoading={loadingRemaining}>
-              {viewMode === 'grouped' ? (
+              {!hasFilters() ? (
+                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎣</div>
+                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Welcome to RF4 Records
+                  </h3>
+                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                    Apply filters above to search through the fishing records database. 
+                    You can filter by fish type, location, bait, or time period to find specific records.
+                  </p>
+                </div>
+              ) : viewMode === 'grouped' ? (
                 <GroupedRecordsTable 
                   records={filteredRecords} 
                   sortConfig={sortConfig}
