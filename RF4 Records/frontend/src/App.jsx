@@ -26,6 +26,7 @@ function AppContent() {
   const [filteredRecords, setFilteredRecords] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingRemaining, setLoadingRemaining] = useState(false);
+  const [isLoadingOlderRecords, setIsLoadingOlderRecords] = useState(false);
   const [allRecordsLoaded, setAllRecordsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [totalRecords, setTotalRecords] = useState(0);
@@ -183,10 +184,10 @@ function AppContent() {
 
   // Stage 3: Fetch older records silently in background (before last reset)
   const fetchOlderRecords = async () => {
-    if (allRecordsLoaded) return;
+    if (allRecordsLoaded || isLoadingOlderRecords) return;
     
     try {
-      // NO loading indicator for background loading
+      setIsLoadingOlderRecords(true);
       console.log('Loading older records silently in background...');
       const response = await axios.get(import.meta.env.DEV ? '/api/records/older' : '/records/older');
       
@@ -220,13 +221,14 @@ function AppContent() {
     } catch (err) {
       console.error('Error fetching older records:', err);
       // Don't show error to user for background loading failure
+    } finally {
+      setIsLoadingOlderRecords(false);
     }
-    // NO finally block - no loading state to clear
   };
 
   // Force load older records (for user interactions requiring all data)
   const ensureAllRecordsLoaded = async () => {
-    if (!allRecordsLoaded) {
+    if (!allRecordsLoaded && !isLoadingOlderRecords) {
       setLoadingRemaining(true);
       try {
         await fetchOlderRecords();
