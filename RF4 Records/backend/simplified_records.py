@@ -554,9 +554,9 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             else:
                 categories = [record.category] if record.category else ["N"]
             
-            # Apply sandwich bait filter - improved reliability
-            if not include_sandwich_bait:
-                # Check if this record has sandwich bait (semicolon in bait_display)
+            # Apply sandwich bait filter - use positive logic
+            if include_sandwich_bait == False:
+                # Exclude sandwich bait records (those with semicolon in bait_display)
                 if ';' in bait_display:
                     continue
             
