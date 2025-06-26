@@ -8,7 +8,7 @@ from database import SessionLocal, Record, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
-from scheduler import is_high_frequency_period, get_next_schedule_change
+from scheduler import get_current_schedule_period, get_next_schedule_change
 import logging
 import gc
 import signal
@@ -148,7 +148,8 @@ def scheduled_scrape():
         # Get memory before scrape (after cleanup)
         memory_before = get_memory_usage()
         
-        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
+        current_period = get_current_schedule_period()
+        frequency = current_period
         logger.info(f"Starting {frequency} scheduled scrape (Memory: {memory_before:.1f} MB)")
         result = scrape_and_update_records()
         
@@ -209,14 +210,19 @@ def schedule_next_scrape():
         if scheduler.get_job('scrape_job'):
             scheduler.remove_job('scrape_job')
         
-        if is_high_frequency_period():
+        current_period = get_current_schedule_period()
+        if current_period == "3-minute":
             # High frequency: 3 minutes after completion
             delay_minutes = 3
             frequency = "3-minute"
-        else:
-            # Low frequency: 15 minutes after completion
-            delay_minutes = 15
-            frequency = "15-minute"
+        elif current_period == "30-minute":
+            # Medium frequency: 30 minutes after completion
+            delay_minutes = 30
+            frequency = "30-minute"
+        else:  # "1-hour"
+            # Low frequency: 1 hour after completion
+            delay_minutes = 60
+            frequency = "1-hour"
         
         next_run_time = datetime.now(timezone.utc) + timedelta(minutes=delay_minutes)
         
@@ -239,17 +245,21 @@ def update_schedule():
         if scheduler.get_job('scrape_job'):
             scheduler.remove_job('scrape_job')
         
-        frequency = "3-minute" if is_high_frequency_period() else "15-minute"
+        current_period = get_current_schedule_period()
+        frequency = current_period
         
         next_change, next_frequency = get_next_schedule_change()
         logger.info(f"Schedule updated to {frequency} scraping")
         logger.info(f"Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
         
         # Schedule the first scrape based on current frequency period
-        if is_high_frequency_period():
+        current_period = get_current_schedule_period()
+        if current_period == "3-minute":
             delay_minutes = 3
-        else:
-            delay_minutes = 15
+        elif current_period == "30-minute":
+            delay_minutes = 30
+        else:  # "1-hour"
+            delay_minutes = 60
         
         first_run_time = datetime.now(timezone.utc) + timedelta(minutes=delay_minutes)
         scheduler.add_job(
@@ -382,7 +392,8 @@ def startup_event():
     print("✅ Server ready! Frontend can connect to this URL")
     
     # Show current schedule
-    frequency = "3-minute" if is_high_frequency_period() else "15-minute"
+    current_period = get_current_schedule_period()
+    frequency = current_period
     next_change, next_frequency = get_next_schedule_change()
     print(f"🔄 Dynamic scheduling active: {frequency} delay after completion")
     print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}")
@@ -449,7 +460,8 @@ def health_check():
 @app.get("/api")
 def api_root():
     """API root endpoint"""
-    frequency = "3-minute" if is_high_frequency_period() else "15-minute"
+    current_period = get_current_schedule_period()
+    frequency = current_period
     next_change, next_frequency = get_next_schedule_change()
     
     return {
@@ -1030,7 +1042,8 @@ def get_status():
         db.close()
         
         # Get current schedule info
-        frequency = "15-minute" if is_high_frequency_period() else "hourly"
+        current_period = get_current_schedule_period()
+        frequency = current_period
         next_change, next_frequency = get_next_schedule_change()
         
         return {
