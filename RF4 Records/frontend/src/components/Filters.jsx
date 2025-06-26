@@ -173,16 +173,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
                 onChange={e => handleDropdownChange('dataAge', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
               >
-                <option value="1-day">Fish Caught in Last 1 Day</option>
-                <option value="">All Time</option>
-                <option value="since-reset">Data Scraped Since Last Reset</option>
-                <option value="1-hour">Data Scraped in Last 1 Hour</option>
-                <option value="6-hours">Data Scraped in Last 6 Hours</option>
-                <option value="12-hours">Data Scraped in Last 12 Hours</option>
-                <option value="3-days">Fish Caught in Last 3 Days</option>
-                <option value="7-days">Fish Caught in Last 7 Days</option>
-                <option value="30-days">Fish Caught in Last 30 Days</option>
-                <option value="90-days">Fish Caught in Last 90 Days</option>
+                <option value="1-day">Fish Caught in the Last Day</option>
+                <option value="2-days">Fish Caught in the Last 2 Days</option>
+                <option value="3-days">Fish Caught in the Last 3 Days</option>
+                <option value="since-reset">Fish Caught Since Reset</option>
+                <option value="30-days">Fish Caught in the Last 30 Days</option>
               </select>
               {/* Custom dropdown arrow */}
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">

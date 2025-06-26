@@ -87,6 +87,7 @@ export function isWithinAgeRange(record, ageRange) {
       return (now.getTime() - scrapedDate.getTime()) <= (hours * 60 * 60 * 1000);
     
     case '1-day':
+    case '2-days':
     case '3-days':
     case '7-days':
     case '30-days':
@@ -101,6 +102,7 @@ export function isWithinAgeRange(record, ageRange) {
       const daysDiff = Math.floor((today.getTime() - recordDay.getTime()) / (24 * 60 * 60 * 1000));
       
       const maxDays = ageRange === '1-day' ? 1 : 
+                     ageRange === '2-days' ? 2 :
                      ageRange === '3-days' ? 3 :
                      ageRange === '7-days' ? 7 :
                      ageRange === '30-days' ? 30 : 90;
