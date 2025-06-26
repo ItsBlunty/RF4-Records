@@ -19,44 +19,47 @@ def add_performance_indexes():
         
         logger.info("🔧 Starting performance index migration...")
         
-        with engine.connect() as conn:
-            # Start transaction
-            trans = conn.begin()
+        # Check if indexes already exist to avoid errors
+        if 'postgresql' in database_url.lower():
+            # PostgreSQL index creation - CONCURRENT indexes cannot be in transaction
+            indexes_to_create = [
+                ("idx_records_player", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_player ON records (player)"),
+                ("idx_records_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_fish ON records (fish)"),
+                ("idx_records_weight", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_weight ON records (weight)"),
+                ("idx_records_waterbody", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_waterbody ON records (waterbody)"),
+                ("idx_records_bait1", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_bait1 ON records (bait1)"),
+                ("idx_records_date", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_date ON records (date)"),
+                ("idx_records_created_at", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_created_at ON records (created_at)"),
+                ("idx_records_region", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_region ON records (region)"),
+                ("idx_records_category", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_category ON records (category)"),
+                # Composite indexes for common queries
+                ("idx_records_fish_weight", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_fish_weight ON records (fish, weight)"),
+                ("idx_records_waterbody_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_waterbody_fish ON records (waterbody, fish)"),
+                ("idx_records_region_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_region_fish ON records (region, fish)"),
+                ("idx_records_created_desc", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_created_desc ON records (created_at DESC)"),
+            ]
             
-            try:
-                # Check if indexes already exist to avoid errors
-                if 'postgresql' in database_url.lower():
-                    # PostgreSQL index creation
-                    indexes_to_create = [
-                        ("idx_records_player", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_player ON records (player)"),
-                        ("idx_records_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_fish ON records (fish)"),
-                        ("idx_records_weight", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_weight ON records (weight)"),
-                        ("idx_records_waterbody", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_waterbody ON records (waterbody)"),
-                        ("idx_records_bait1", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_bait1 ON records (bait1)"),
-                        ("idx_records_date", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_date ON records (date)"),
-                        ("idx_records_created_at", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_created_at ON records (created_at)"),
-                        ("idx_records_region", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_region ON records (region)"),
-                        ("idx_records_category", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_category ON records (category)"),
-                        # Composite indexes for common queries
-                        ("idx_records_fish_weight", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_fish_weight ON records (fish, weight)"),
-                        ("idx_records_waterbody_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_waterbody_fish ON records (waterbody, fish)"),
-                        ("idx_records_region_fish", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_region_fish ON records (region, fish)"),
-                        ("idx_records_created_desc", "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_records_created_desc ON records (created_at DESC)"),
-                    ]
-                    
-                    # Create indexes one by one
-                    for index_name, create_sql in indexes_to_create:
-                        try:
-                            logger.info(f"Creating index: {index_name}")
-                            conn.execute(text(create_sql))
-                            logger.info(f"✅ Created index: {index_name}")
-                        except Exception as e:
-                            if "already exists" in str(e).lower():
-                                logger.info(f"ℹ️  Index {index_name} already exists")
-                            else:
-                                logger.error(f"❌ Failed to create index {index_name}: {e}")
+            # Create indexes one by one WITHOUT transaction (required for CONCURRENT)
+            for index_name, create_sql in indexes_to_create:
+                try:
+                    with engine.connect() as conn:
+                        # Set autocommit mode for concurrent index creation
+                        conn.execute(text("COMMIT"))
+                        logger.info(f"Creating index: {index_name}")
+                        conn.execute(text(create_sql))
+                        logger.info(f"✅ Created index: {index_name}")
+                except Exception as e:
+                    if "already exists" in str(e).lower():
+                        logger.info(f"ℹ️  Index {index_name} already exists")
+                    else:
+                        logger.error(f"❌ Failed to create index {index_name}: {e}")
+        
+        else:
+            # SQLite index creation - can use transaction
+            with engine.connect() as conn:
+                trans = conn.begin()
                 
-                else:
+                try:
                     # SQLite index creation
                     indexes_to_create = [
                         ("idx_records_player", "CREATE INDEX IF NOT EXISTS idx_records_player ON records (player)"),
@@ -82,23 +85,28 @@ def add_performance_indexes():
                             logger.info(f"✅ Created index: {index_name}")
                         except Exception as e:
                             logger.error(f"❌ Failed to create index {index_name}: {e}")
-                
-                # Commit transaction
-                trans.commit()
-                logger.info("🎉 Performance index migration completed successfully!")
-                
-                # Analyze tables to update statistics
-                if 'postgresql' in database_url.lower():
+                    
+                    # Commit transaction
+                    trans.commit()
+                    logger.info("🎉 SQLite index migration completed successfully!")
+                    
+                except Exception as e:
+                    trans.rollback()
+                    logger.error(f"❌ SQLite migration failed, rolled back: {e}")
+                    return False
+        
+        # Analyze tables to update statistics
+        if 'postgresql' in database_url.lower():
+            try:
+                with engine.connect() as conn:
                     logger.info("📊 Updating table statistics...")
                     conn.execute(text("ANALYZE records"))
                     logger.info("✅ Table statistics updated")
-                
-                return True
-                
             except Exception as e:
-                trans.rollback()
-                logger.error(f"❌ Migration failed, rolled back: {e}")
-                return False
+                logger.error(f"❌ Failed to update statistics: {e}")
+        
+        logger.info("🎉 Performance index migration completed successfully!")
+        return True
                 
     except Exception as e:
         logger.error(f"❌ Migration setup failed: {e}")
