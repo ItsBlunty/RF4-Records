@@ -9,6 +9,7 @@ import FishGroupedRecordsTable from './components/FishGroupedRecordsTable.jsx';
 import About from './components/About.jsx';
 import SkillLevelingGuides from './components/SkillLevelingGuides.jsx';
 import TrophyWeights from './components/TrophyWeights.jsx';
+import TopBaits from './components/TopBaits.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
 import Links from './components/Links.jsx';
@@ -42,6 +43,7 @@ function AppContent() {
   const getCurrentPage = () => {
     if (location.pathname === '/links') return 'links';
     if (location.pathname === '/trophyweights') return 'trophyweights';
+    if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/wearcalc') return 'wearcalc';
     if (location.pathname === '/alcohol') return 'alcohol';
@@ -114,6 +116,8 @@ function AppContent() {
       navigate('/links');
     } else if (page === 'trophyweights') {
       navigate('/trophyweights');
+    } else if (page === 'topbaits') {
+      navigate('/topbaits');
     } else if (page === 'guides') {
       navigate('/skillguides');
     } else if (page === 'wearcalc') {
@@ -606,6 +610,8 @@ function AppContent() {
         <Links />
       ) : getCurrentPage() === 'trophyweights' ? (
         <TrophyWeights />
+      ) : getCurrentPage() === 'topbaits' ? (
+        <TopBaits />
       ) : getCurrentPage() === 'guides' ? (
         <SkillLevelingGuides />
       ) : getCurrentPage() === 'wearcalc' ? (
@@ -629,6 +635,7 @@ function App() {
         <Route path="/" element={<AppContent />} />
         <Route path="/links" element={<AppContent />} />
         <Route path="/trophyweights" element={<AppContent />} />
+        <Route path="/topbaits" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />
