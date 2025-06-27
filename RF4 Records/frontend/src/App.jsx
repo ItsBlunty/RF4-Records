@@ -63,8 +63,8 @@ function AppContent() {
     waterbody: '',
     bait: '',
     dataAge: '1-day',
-    // Advanced filters - default to true (include all)
-    includeSandwichBait: true
+    // Advanced filters - default to false (exclude sandwich baits initially)
+    includeSandwichBait: false
   });
   
   // Unique values for dropdowns
@@ -385,8 +385,8 @@ function AppContent() {
       waterbody: '',
       bait: '',
       dataAge: '1-day',
-      // Reset advanced filters to default (all true)
-      includeSandwichBait: true
+      // Reset advanced filters to default (exclude sandwich baits)
+      includeSandwichBait: false
     });
     // Clear displayed records but keep cached data
     setFilteredRecords([]);
