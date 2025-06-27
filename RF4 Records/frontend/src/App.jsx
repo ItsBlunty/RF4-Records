@@ -230,7 +230,6 @@ function AppContent() {
       const { records: filteredRecords, total_filtered, performance: serverPerf } = response.data;
       
       setRecords(filteredRecords);
-      setFilteredRecords(filteredRecords); // Backend already applied filters
       setTotalRecords(total_filtered);
       setCachedRecordCount(filteredRecords.length); // Track cached records
       setLastRefresh(new Date());
@@ -296,7 +295,6 @@ function AppContent() {
       const bait = [...new Set(response.data.map(r => r.bait_display).filter(Boolean))].sort();
       
       setUniqueValues({ fish, waterbody, bait });
-      setFilteredRecords(response.data);
       setLastRefresh(new Date());
       console.log(`Successfully loaded all ${response.data.length} records`);
       
