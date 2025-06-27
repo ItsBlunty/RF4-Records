@@ -5,6 +5,7 @@ No deduplication needed since records are already merged with combined categorie
 """
 
 from database import Record, SessionLocal
+from bait_utils import normalize_bait_display, get_normalized_bait_for_filtering
 from datetime import datetime, timedelta, timezone
 import logging
 import time
@@ -66,11 +67,8 @@ def get_recent_records_simple(limit: int = 1000):
         bait_set = set()
         
         for record in recent_records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories
             if record.category and ';' in record.category:
@@ -153,11 +151,8 @@ def get_all_recent_records_simple():
         bait_set = set()
         
         for record in recent_records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories
             if record.category and ';' in record.category:
@@ -254,11 +249,8 @@ def get_older_records_simple():
         process_start = time.time()
         result = []
         for record in older_records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories
             if record.category and ';' in record.category:
@@ -286,10 +278,9 @@ def get_older_records_simple():
         
         bait_set = set()
         for r in older_records:
-            if r.bait2:
-                bait_set.add(f"{r.bait1}; {r.bait2}")
-            else:
-                bait_set.add(r.bait1 or r.bait or "")
+            bait_display = normalize_bait_display(r.bait1, r.bait2, r.bait)
+            if bait_display:
+                bait_set.add(bait_display)
         bait = sorted(list(bait_set))
         unique_time = time.time() - unique_start
         
@@ -341,11 +332,8 @@ def get_all_records_simple():
         
         result = []
         for record in records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories back to list format for frontend compatibility
             if record.category and ';' in record.category:
@@ -385,11 +373,8 @@ def get_initial_records_simple(limit: int = 1000):
         
         result = []
         for record in records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories
             if record.category and ';' in record.category:
@@ -450,11 +435,8 @@ def get_remaining_records_simple(skip: int = 1000):
         
         result = []
         for record in remaining_records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             
             # Parse combined categories
             if record.category and ';' in record.category:
@@ -481,10 +463,9 @@ def get_remaining_records_simple(skip: int = 1000):
         # For bait, we need to format them
         bait_set = set()
         for r in all_records:
-            if r.bait2:
-                bait_set.add(f"{r.bait1}; {r.bait2}")
-            else:
-                bait_set.add(r.bait1 or r.bait or "")
+            bait_display = normalize_bait_display(r.bait1, r.bait2, r.bait)
+            if bait_display:
+                bait_set.add(bait_display)
         bait = sorted(list(bait_set))
         
         total_records = len(all_records)
@@ -552,19 +533,21 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
         filtered_records = []
         
         for record in records:
-            # Format bait display
-            if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
-            else:
-                bait_display = record.bait1 or record.bait or ""
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
+            
+            # Apply additional bait filtering for exact normalized matches
+            if bait:
+                normalized_search = get_normalized_bait_for_filtering(bait)
+                # Check if the normalized bait_display contains the search term
+                if normalized_search.lower() not in bait_display.lower():
+                    continue
             
             # Parse combined categories
             if record.category and ';' in record.category:
                 categories = record.category.split(';')
             else:
                 categories = [record.category] if record.category else ["N"]
-            
-
             
             # Apply data age filter for day-based filters (using fishing date)
             if data_age and data_age not in ['since-reset', 'since-two-resets-ago']:
@@ -667,13 +650,10 @@ def get_filter_values():
             if record.waterbody:
                 waterbody_set.add(record.waterbody)
             
-            # Format bait display
-            if record.bait2:
-                bait_set.add(f"{record.bait1}; {record.bait2}")
-            else:
-                bait_display = record.bait1 or record.bait or ""
-                if bait_display:
-                    bait_set.add(bait_display)
+            # Format bait display with alphabetical ordering
+            bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
+            if bait_display:
+                bait_set.add(bait_display)
         
         total_time = time.time() - start_time
         

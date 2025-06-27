@@ -5,6 +5,7 @@ Replaces simplified_records.py with much faster queries.
 """
 
 from database import Record, SessionLocal
+from bait_utils import normalize_bait_display
 from sqlalchemy import func, distinct, text
 import logging
 
@@ -65,7 +66,7 @@ def get_initial_records_optimized(limit: int = 1000):
         for record in records:
             # Format bait display
             if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
+                bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             else:
                 bait_display = record.bait1 or record.bait or ""
             
@@ -124,7 +125,7 @@ def get_remaining_records_optimized(skip: int = 1000):
         for record in records:
             # Format bait display
             if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
+                bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             else:
                 bait_display = record.bait1 or record.bait or ""
             
@@ -178,7 +179,7 @@ def get_all_records_optimized():
         for record in records:
             # Format bait display
             if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
+                bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             else:
                 bait_display = record.bait1 or record.bait or ""
             
@@ -229,7 +230,7 @@ def get_leaderboard_optimized(fish: str = None, waterbody: str = None, limit: in
         result = []
         for record in records:
             if record.bait2:
-                bait_display = f"{record.bait1}; {record.bait2}"
+                bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
             else:
                 bait_display = record.bait1 or record.bait or ""
             
