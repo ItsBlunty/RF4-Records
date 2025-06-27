@@ -89,16 +89,10 @@ const TopBaits = () => {
     }
 
     const data = periodData[type];
-    const displayValue = type === 'caught_most' ? `${data.count}` : `${data.weight}g`;
     
     return (
-      <div>
-        <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
-          {data.bait}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          {displayValue}
-        </div>
+      <div className="font-medium text-gray-900 dark:text-white text-sm">
+        {data.bait}
       </div>
     );
   };
