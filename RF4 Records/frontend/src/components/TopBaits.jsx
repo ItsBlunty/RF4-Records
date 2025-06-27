@@ -90,6 +90,18 @@ const TopBaits = () => {
 
     const data = periodData[type];
     
+    // Check if bait contains multiple baits separated by semicolon
+    if (data.bait && data.bait.includes(';')) {
+      const baits = data.bait.split(';').map(bait => bait.trim());
+      return (
+        <div className="font-medium text-gray-900 dark:text-white text-sm">
+          {baits.map((bait, index) => (
+            <div key={index}>{bait}</div>
+          ))}
+        </div>
+      );
+    }
+    
     return (
       <div className="font-medium text-gray-900 dark:text-white text-sm">
         {data.bait}
