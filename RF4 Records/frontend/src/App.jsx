@@ -335,20 +335,25 @@ function AppContent() {
     
     // Check for URL parameters and load them into filters
     const urlParams = new URLSearchParams(location.search);
-    const urlFilters = {
-      fish: urlParams.get('fish') || '',
-      waterbody: urlParams.get('waterbody') || '',
-      bait: urlParams.get('bait') || '',
-      dataAge: urlParams.get('data_age') || '1-day'
-    };
     
     // Only update filters if there are URL parameters
     if (urlParams.get('fish') || urlParams.get('waterbody') || urlParams.get('bait') || urlParams.get('data_age')) {
-      setFilters(urlFilters);
-      // Trigger search with URL parameters after a brief delay to ensure filter values are loaded
+      const urlFilters = {
+        fish: urlParams.get('fish') || '',
+        waterbody: urlParams.get('waterbody') || '',
+        bait: urlParams.get('bait') || '',
+        dataAge: urlParams.get('data_age') || '1-day'
+      };
+      
+      setFilters(prevFilters => ({
+        ...prevFilters,
+        ...urlFilters
+      }));
+      
+      // Force search execution since we know there are meaningful URL parameters
       setTimeout(() => {
         fetchFilteredRecordsWithFilters(urlFilters);
-      }, 100);
+      }, 300);
     }
   }, [location.search]);
 
