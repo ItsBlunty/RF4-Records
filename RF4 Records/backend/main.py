@@ -50,22 +50,6 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
     
-    # Generate top baits cache on startup if needed
-    try:
-        from top_baits_cache import generate_top_baits_cache, is_cache_valid
-        
-        if not is_cache_valid():
-            print("🎣 Generating top baits cache on startup...", flush=True)
-            success = generate_top_baits_cache()
-            if success:
-                print("✅ Top baits cache generated successfully", flush=True)
-            else:
-                print("⚠️ Failed to generate top baits cache on startup", flush=True)
-        else:
-            print("✅ Top baits cache already exists and is valid", flush=True)
-    except Exception as e:
-        logger.error(f"Error generating top baits cache on startup: {e}")
-    
     # Now start the scheduler after database is ready
     try:
         scheduler.start()
@@ -91,6 +75,16 @@ async def lifespan(app: FastAPI):
         
         print("Dynamic scheduler started - frequency based on weekly schedule", flush=True)
         print("Periodic memory cleanup scheduled every 90 seconds", flush=True)
+        
+        # Schedule delayed cache generation to allow data loading first
+        scheduler.add_job(
+            delayed_cache_generation,
+            'date',
+            run_date=datetime.now(timezone.utc) + timedelta(seconds=30),
+            id='delayed_cache_generation'
+        )
+        print("🎣 Top baits cache generation scheduled for 30 seconds after startup", flush=True)
+        
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
     
@@ -189,6 +183,34 @@ def signal_handler(signum, frame):
 # Register signal handlers
 signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
 signal.signal(signal.SIGTERM, signal_handler)  # Termination signal
+
+def delayed_cache_generation():
+    """Generate top baits cache after startup delay to ensure database is populated"""
+    try:
+        from top_baits_cache import generate_top_baits_cache, is_cache_valid
+        from database import SessionLocal, Record
+        
+        # Check if we have any data first
+        db = SessionLocal()
+        record_count = db.query(Record).count()
+        db.close()
+        
+        if record_count == 0:
+            print("⚠️ No records in database yet, skipping cache generation", flush=True)
+            return
+            
+        if not is_cache_valid():
+            print("🎣 Generating top baits cache (delayed startup)...", flush=True)
+            success = generate_top_baits_cache()
+            if success:
+                print("✅ Top baits cache generated successfully", flush=True)
+            else:
+                print("⚠️ Failed to generate top baits cache", flush=True)
+        else:
+            print("✅ Top baits cache already exists and is valid", flush=True)
+            
+    except Exception as e:
+        logger.error(f"Error in delayed cache generation: {e}")
 
 def scheduled_scrape():
     """Wrapper function for scheduled scraping with error handling and memory management"""
