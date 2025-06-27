@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Trophy, Target, Calendar, TrendingUp } from 'lucide-react';
+import { Search, Trophy, Hash, Calendar, TrendingUp } from 'lucide-react';
 import LoadingOverlay from './LoadingOverlay';
 
 const TopBaits = () => {
@@ -84,21 +84,19 @@ const TopBaits = () => {
   const formatBaitCell = (periodData, type) => {
     if (!periodData || !periodData[type]) {
       return (
-        <div className="text-center p-3 min-h-[70px] flex items-center justify-center">
-          <div className="text-gray-400 dark:text-gray-500 text-xs">No data</div>
-        </div>
+        <div className="text-gray-400 dark:text-gray-500 text-xs">No data</div>
       );
     }
 
     const data = periodData[type];
-    const displayValue = type === 'caught_most' ? `${data.count} fish` : `${data.weight}g`;
+    const displayValue = type === 'caught_most' ? `${data.count}` : `${data.weight}g`;
     
     return (
-      <div className="text-center p-3 min-h-[70px] flex flex-col justify-center">
-        <div className="font-medium text-xs text-gray-800 dark:text-gray-200 mb-2 break-words line-clamp-2 leading-tight">
+      <div>
+        <div className="font-medium text-gray-900 dark:text-white text-sm mb-1">
           {data.bait}
         </div>
-        <div className="text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md inline-block">
+        <div className="text-xs text-gray-500 dark:text-gray-400">
           {displayValue}
         </div>
       </div>
@@ -143,23 +141,6 @@ const TopBaits = () => {
         </p>
       </div>
 
-      {/* Performance Info */}
-      {topBaitsData?.performance && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{topBaitsData.performance.total_fish_species}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Fish Species</div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{topBaitsData.performance.total_records.toLocaleString()}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Records Analyzed</div>
-          </div>
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">{topBaitsData.cache_info?.generation_time ? `${topBaitsData.cache_info.generation_time.toFixed(3)}s` : 'N/A'}</div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">Processing Time</div>
-          </div>
-        </div>
-      )}
 
       {/* Show message if no data */}
       {topBaitsData?.performance?.total_records === 0 && (
@@ -217,12 +198,12 @@ const TopBaits = () => {
       {filteredFishData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
+                {/* Period Names Row */}
                 <tr>
                   <th 
-                    className="px-4 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
-                    style={{width: '200px', minWidth: '200px'}}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                     onClick={() => handleSort('fish_name')}
                   >
                     <div className="flex items-center">
@@ -234,58 +215,63 @@ const TopBaits = () => {
                       )}
                     </div>
                   </th>
-                  
-                  {/* This Week */}
-                  <th className="px-3 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '280px'}}>
-                    <div className="flex items-center justify-center mb-2">
-                      <Calendar size={14} className="mr-1" />
-                      <span>This Week</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center">
-                        <Trophy size={14} className="mx-auto mb-1 text-yellow-600" />
-                        <div className="text-xs font-medium">Most Caught</div>
-                      </div>
-                      <div className="text-center">
-                        <Target size={14} className="mx-auto mb-1 text-green-600" />
-                        <div className="text-xs font-medium">Biggest</div>
-                      </div>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                    <div className="flex items-center justify-center">
+                      <Calendar size={14} className="mr-2" />
+                      This Week
                     </div>
                   </th>
-                  
-                  {/* Last Week */}
-                  <th className="px-3 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '280px'}}>
-                    <div className="flex items-center justify-center mb-2">
-                      <Calendar size={14} className="mr-1" />
-                      <span>Last Week</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center">
-                        <Trophy size={14} className="mx-auto mb-1 text-yellow-600" />
-                        <div className="text-xs font-medium">Most Caught</div>
-                      </div>
-                      <div className="text-center">
-                        <Target size={14} className="mx-auto mb-1 text-green-600" />
-                        <div className="text-xs font-medium">Biggest</div>
-                      </div>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                    <div className="flex items-center justify-center">
+                      <Calendar size={14} className="mr-2" />
+                      Last Week
                     </div>
                   </th>
-                  
-                  {/* 3 Weeks Ago */}
-                  <th className="px-3 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" style={{width: '280px'}}>
-                    <div className="flex items-center justify-center mb-2">
-                      <Calendar size={14} className="mr-1" />
-                      <span>3 Weeks Ago</span>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                    <div className="flex items-center justify-center">
+                      <Calendar size={14} className="mr-2" />
+                      3 Weeks Ago
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="text-center">
-                        <Trophy size={14} className="mx-auto mb-1 text-yellow-600" />
-                        <div className="text-xs font-medium">Most Caught</div>
-                      </div>
-                      <div className="text-center">
-                        <Target size={14} className="mx-auto mb-1 text-green-600" />
-                        <div className="text-xs font-medium">Biggest</div>
-                      </div>
+                  </th>
+                </tr>
+                
+                {/* Type Labels Row */}
+                <tr className="bg-gray-100 dark:bg-gray-600">
+                  <th className="px-6 py-2"></th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Hash size={14} className="mr-1 text-blue-600" />
+                      Most Caught
+                    </div>
+                  </th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      Biggest
+                    </div>
+                  </th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Hash size={14} className="mr-1 text-blue-600" />
+                      Most Caught
+                    </div>
+                  </th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      Biggest
+                    </div>
+                  </th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Hash size={14} className="mr-1 text-blue-600" />
+                      Most Caught
+                    </div>
+                  </th>
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <div className="flex items-center justify-center">
+                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      Biggest
                     </div>
                   </th>
                 </tr>
@@ -295,32 +281,38 @@ const TopBaits = () => {
                   const fishData = topBaitsData.fish_data[fishName];
                   return (
                     <tr key={fishName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white" style={{width: '200px', minWidth: '200px'}}>
-                        <div className="break-words leading-tight">{fishName}</div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {fishName}
                       </td>
                       
-                      {/* This Week */}
-                      <td className="px-3 py-3" style={{width: '280px'}}>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>{formatBaitCell(fishData.this_week, 'caught_most')}</div>
-                          <div>{formatBaitCell(fishData.this_week, 'caught_biggest')}</div>
-                        </div>
+                      {/* This Week - Most Caught */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.this_week, 'caught_most')}
                       </td>
                       
-                      {/* Last Week */}
-                      <td className="px-3 py-3" style={{width: '280px'}}>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>{formatBaitCell(fishData.last_week, 'caught_most')}</div>
-                          <div>{formatBaitCell(fishData.last_week, 'caught_biggest')}</div>
-                        </div>
+                      {/* This Week - Biggest */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.this_week, 'caught_biggest')}
                       </td>
                       
-                      {/* 3 Weeks Ago */}
-                      <td className="px-3 py-3" style={{width: '280px'}}>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>{formatBaitCell(fishData.three_weeks_ago, 'caught_most')}</div>
-                          <div>{formatBaitCell(fishData.three_weeks_ago, 'caught_biggest')}</div>
-                        </div>
+                      {/* Last Week - Most Caught */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.last_week, 'caught_most')}
+                      </td>
+                      
+                      {/* Last Week - Biggest */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.last_week, 'caught_biggest')}
+                      </td>
+                      
+                      {/* 3 Weeks Ago - Most Caught */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.three_weeks_ago, 'caught_most')}
+                      </td>
+                      
+                      {/* 3 Weeks Ago - Biggest */}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                        {formatBaitCell(fishData.three_weeks_ago, 'caught_biggest')}
                       </td>
                     </tr>
                   );
