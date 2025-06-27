@@ -629,7 +629,7 @@ def get_filtered_records_endpoint(
     waterbody: str = None, 
     bait: str = None,
     data_age: str = None,
-    include_sandwich_bait: bool = True,
+    exclude_sandwich_bait: bool = True,
     limit: int = None,
     offset: int = None
 ):
@@ -645,7 +645,7 @@ def get_filtered_records_endpoint(
             waterbody=waterbody,
             bait=bait,
             data_age=data_age,
-            include_sandwich_bait=include_sandwich_bait,
+            exclude_sandwich_bait=exclude_sandwich_bait,
             limit=limit,
             offset=offset
         )
@@ -655,7 +655,7 @@ def get_filtered_records_endpoint(
         logger.info(f"🔍 Filtered API Response Complete:")
         logger.info(f"  Retrieved {result['showing_count']} of {result['total_filtered']} filtered records")
         logger.info(f"  Filters: fish={fish}, waterbody={waterbody}, bait={bait}, data_age={data_age}")
-        logger.info(f"  SANDWICH BAIT DEBUG: include_sandwich_bait={include_sandwich_bait} (type: {type(include_sandwich_bait)})")
+        logger.info(f"  SANDWICH BAIT DEBUG: exclude_sandwich_bait={exclude_sandwich_bait} (type: {type(exclude_sandwich_bait)})")
         logger.info(f"  Total API time: {api_time:.3f}s")
         logger.info(f"  DB time: {result['performance']['query_time']}s")
         logger.info(f"  Processing time: {result['performance']['process_time']}s")

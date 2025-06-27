@@ -205,7 +205,7 @@ function AppContent() {
       if (filters.dataAge) params.append('data_age', filters.dataAge);
       
       // Advanced filters
-      params.append('include_sandwich_bait', filters.includeSandwichBait);
+      params.append('exclude_sandwich_bait', filters.includeSandwichBait);
       
       const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
       const queryString = params.toString();
