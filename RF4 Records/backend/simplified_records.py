@@ -42,6 +42,20 @@ def get_two_resets_ago_date():
     
     return two_resets_ago
 
+def get_three_resets_ago_date():
+    """Calculate the reset date from three resets ago (three weeks before last reset)"""
+    last_reset = get_last_record_reset_date()
+    three_resets_ago = last_reset - timedelta(days=14)  # Go back two more weeks
+    
+    return three_resets_ago
+
+def get_four_resets_ago_date():
+    """Calculate the reset date from four resets ago (four weeks before last reset)"""
+    last_reset = get_last_record_reset_date()
+    four_resets_ago = last_reset - timedelta(days=21)  # Go back three more weeks
+    
+    return four_resets_ago
+
 def get_recent_records_simple(limit: int = 1000):
     """Get recent records since last reset - SPEED OPTIMIZED for initial load"""
     db = SessionLocal()
@@ -673,3 +687,164 @@ def get_filter_values():
         logger.error(f"Error retrieving filter values after {total_time:.3f}s: {e}")
         db.close()
         raise 
+
+def get_top_baits_data():
+    """Get top baits analysis for the past 3 weeks with Sunday 6PM UTC markers"""
+    start_time = time.time()
+    db = SessionLocal()
+    
+    try:
+        # Calculate weekly boundaries
+        last_reset = get_last_record_reset_date()
+        two_resets_ago = get_two_resets_ago_date() 
+        three_resets_ago = get_three_resets_ago_date()
+        four_resets_ago = get_four_resets_ago_date()
+        
+        # Define the three weekly periods
+        periods = {
+            'this_week': (last_reset, None),
+            'last_week': (two_resets_ago, last_reset),
+            'three_weeks_ago': (three_resets_ago, two_resets_ago)
+        }
+        
+        logger.info(f"🎣 Analyzing top baits for periods:")
+        logger.info(f"  This Week: {last_reset.strftime('%Y-%m-%d %H:%M')} - Present")
+        logger.info(f"  Last Week: {two_resets_ago.strftime('%Y-%m-%d %H:%M')} - {last_reset.strftime('%Y-%m-%d %H:%M')}")
+        logger.info(f"  3 Weeks Ago: {three_resets_ago.strftime('%Y-%m-%d %H:%M')} - {two_resets_ago.strftime('%Y-%m-%d %H:%M')}")
+        
+        # Get all records from 3 weeks ago onwards
+        query_start = time.time()
+        all_records = db.query(Record).filter(
+            Record.created_at >= three_resets_ago
+        ).all()
+        query_time = time.time() - query_start
+        
+        logger.info(f"📊 Retrieved {len(all_records)} records in {query_time:.3f}s")
+        
+        # Get all unique fish names
+        fish_names = set()
+        for record in all_records:
+            if record.fish:
+                fish_names.add(record.fish)
+        
+        fish_names = sorted(list(fish_names))
+        logger.info(f"🐟 Analyzing {len(fish_names)} unique fish species")
+        
+        # Process each fish and period
+        process_start = time.time()
+        results = {}
+        
+        for fish_name in fish_names:
+            results[fish_name] = {}
+            
+            for period_name, (start_date, end_date) in periods.items():
+                # Filter records for this fish and period
+                period_records = [
+                    record for record in all_records 
+                    if record.fish == fish_name and 
+                       record.created_at >= start_date and 
+                       (end_date is None or record.created_at < end_date)
+                ]
+                
+                if not period_records:
+                    results[fish_name][period_name] = {
+                        'caught_most': None,
+                        'caught_biggest': None
+                    }
+                    continue
+                
+                # Analyze baits for this period
+                bait_stats = {}
+                
+                for record in period_records:
+                    # Get normalized bait display
+                    bait_display = normalize_bait_display(record.bait1, record.bait2, record.bait)
+                    
+                    if not bait_display or bait_display.strip() == '':
+                        continue
+                        
+                    if bait_display not in bait_stats:
+                        bait_stats[bait_display] = {
+                            'count': 0,
+                            'max_weight': 0,
+                            'records': []
+                        }
+                    
+                    bait_stats[bait_display]['count'] += 1
+                    bait_stats[bait_display]['max_weight'] = max(
+                        bait_stats[bait_display]['max_weight'], 
+                        record.weight or 0
+                    )
+                    bait_stats[bait_display]['records'].append({
+                        'weight': record.weight,
+                        'player': record.player,
+                        'date': record.date
+                    })
+                
+                # Find top baits
+                if bait_stats:
+                    # Most caught: bait with highest count
+                    most_caught_bait = max(bait_stats.items(), key=lambda x: x[1]['count'])
+                    
+                    # Biggest caught: bait with highest max weight
+                    biggest_caught_bait = max(bait_stats.items(), key=lambda x: x[1]['max_weight'])
+                    
+                    results[fish_name][period_name] = {
+                        'caught_most': {
+                            'bait': most_caught_bait[0],
+                            'count': most_caught_bait[1]['count']
+                        },
+                        'caught_biggest': {
+                            'bait': biggest_caught_bait[0],
+                            'weight': biggest_caught_bait[1]['max_weight']
+                        }
+                    }
+                else:
+                    results[fish_name][period_name] = {
+                        'caught_most': None,
+                        'caught_biggest': None
+                    }
+        
+        process_time = time.time() - process_start
+        total_time = time.time() - start_time
+        
+        logger.info(f"🎯 Top baits analysis completed:")
+        logger.info(f"  Query time: {query_time:.3f}s")
+        logger.info(f"  Processing time: {process_time:.3f}s") 
+        logger.info(f"  Total time: {total_time:.3f}s")
+        
+        db.close()
+        
+        return {
+            "fish_data": results,
+            "periods": {
+                "this_week": {
+                    "label": "This Week",
+                    "start_date": last_reset.isoformat(),
+                    "end_date": None
+                },
+                "last_week": {
+                    "label": "Last Week", 
+                    "start_date": two_resets_ago.isoformat(),
+                    "end_date": last_reset.isoformat()
+                },
+                "three_weeks_ago": {
+                    "label": "3 Weeks Ago",
+                    "start_date": three_resets_ago.isoformat(),
+                    "end_date": two_resets_ago.isoformat()
+                }
+            },
+            "performance": {
+                "total_records": len(all_records),
+                "total_fish_species": len(fish_names),
+                "query_time": round(query_time, 3),
+                "processing_time": round(process_time, 3),
+                "total_time": round(total_time, 3)
+            }
+        }
+        
+    except Exception as e:
+        total_time = time.time() - start_time
+        logger.error(f"Error analyzing top baits after {total_time:.3f}s: {e}")
+        db.close()
+        raise

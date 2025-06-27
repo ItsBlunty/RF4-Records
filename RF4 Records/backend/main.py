@@ -691,6 +691,31 @@ def get_filter_values_endpoint():
         logger.error(f"Error retrieving filter values after {api_time:.3f}s: {e}")
         return {"error": "Failed to retrieve filter values"}
 
+@app.get("/records/top-baits")
+@app.get("/api/records/top-baits")
+def get_top_baits():
+    """Get top baits analysis for each fish across 3 weekly periods (Sunday 6PM UTC markers)"""
+    api_start = time.time()
+    
+    try:
+        from simplified_records import get_top_baits_data
+        
+        result = get_top_baits_data()
+        
+        api_time = time.time() - api_start
+        
+        logger.info(f"🎣 Top Baits API Response Complete:")
+        logger.info(f"  Fish analyzed: {result['performance']['total_fish_species']} species")
+        logger.info(f"  Records processed: {result['performance']['total_records']} records")
+        logger.info(f"  Total API time: {api_time:.3f}s")
+        
+        return result
+        
+    except Exception as e:
+        api_time = time.time() - api_start
+        logger.error(f"Error retrieving top baits data after {api_time:.3f}s: {e}")
+        return {"error": "Failed to retrieve top baits data"}
+
 @app.get("/refresh")
 def refresh_info():
     """Information about the refresh endpoint"""
