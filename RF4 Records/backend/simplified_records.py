@@ -739,12 +739,20 @@ def get_top_baits_data():
             
             for period_name, (start_date, end_date) in periods.items():
                 # Filter records for this fish and period
-                period_records = [
-                    record for record in all_records 
-                    if record.fish == fish_name and 
-                       record.created_at >= start_date and 
-                       (end_date is None or record.created_at < end_date)
-                ]
+                period_records = []
+                for record in all_records:
+                    if record.fish != fish_name:
+                        continue
+                    
+                    # Ensure record.created_at is timezone-aware
+                    record_created_at = record.created_at
+                    if record_created_at.tzinfo is None:
+                        # If naive, assume UTC
+                        record_created_at = record_created_at.replace(tzinfo=timezone.utc)
+                    
+                    # Now we can safely compare timezone-aware datetimes
+                    if record_created_at >= start_date and (end_date is None or record_created_at < end_date):
+                        period_records.append(record)
                 
                 if not period_records:
                     results[fish_name][period_name] = {

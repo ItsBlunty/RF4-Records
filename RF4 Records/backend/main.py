@@ -714,9 +714,7 @@ def get_top_baits():
     except Exception as e:
         api_time = time.time() - api_start
         logger.error(f"Error retrieving top baits data after {api_time:.3f}s: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"error": f"Failed to retrieve top baits data: {str(e)}"}
+        return {"error": "Failed to retrieve top baits data"}
 
 @app.get("/refresh")
 def refresh_info():
