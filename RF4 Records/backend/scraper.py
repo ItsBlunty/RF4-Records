@@ -2048,8 +2048,27 @@ def scrape_and_update_records():
             final_memory = get_memory_usage()
             if final_memory > 300:
                 logger.critical(f"Memory remains very high ({final_memory}MB) after cleanup!")
+    
+    # Update top baits cache if scrape was successful and had new records
+    scrape_successful = not errors_occurred and not should_stop_scraping
+    if scrape_successful and total_new_records > 0:
+        try:
+            logger.info(f"🎣 Updating top baits cache after successful scrape ({total_new_records} new records)")
+            from top_baits_cache import generate_top_baits_cache
+            cache_start = time.time()
+            cache_success = generate_top_baits_cache()
+            cache_time = time.time() - cache_start
+            
+            if cache_success:
+                logger.info(f"✅ Top baits cache updated successfully in {cache_time:.3f}s")
+            else:
+                logger.warning(f"⚠️ Top baits cache update failed after {cache_time:.3f}s")
+                
+        except Exception as cache_error:
+            logger.error(f"❌ Error updating top baits cache: {cache_error}")
+    
     return {
-        'success': not errors_occurred and not should_stop_scraping,
+        'success': scrape_successful,
         'categories_scraped': len(CATEGORIES),
         'regions_scraped': regions_scraped,
         'new_records': total_new_records,

@@ -698,16 +698,35 @@ def get_top_baits():
     api_start = time.time()
     
     try:
-        from simplified_records import get_top_baits_data
+        from top_baits_cache import load_top_baits_cache, is_cache_valid, generate_top_baits_cache
         
+        # Try to load from cache first
+        if is_cache_valid():
+            result = load_top_baits_cache()
+            if result:
+                api_time = time.time() - api_start
+                logger.info(f"🎣 Top Baits API Response Complete (CACHED):")
+                logger.info(f"  Fish analyzed: {result['performance']['total_fish_species']} species")
+                logger.info(f"  Records processed: {result['performance']['total_records']} records")
+                logger.info(f"  Total API time: {api_time:.3f}s (cached)")
+                return result
+        
+        # Cache miss or invalid - generate on demand (fallback)
+        logger.warning("Top baits cache miss - generating on demand (this will be slow)")
+        from simplified_records import get_top_baits_data
         result = get_top_baits_data()
         
-        api_time = time.time() - api_start
+        # Try to update cache in background (don't block response)
+        try:
+            generate_top_baits_cache()
+        except Exception as cache_error:
+            logger.error(f"Failed to update cache: {cache_error}")
         
-        logger.info(f"🎣 Top Baits API Response Complete:")
+        api_time = time.time() - api_start
+        logger.info(f"🎣 Top Baits API Response Complete (LIVE):")
         logger.info(f"  Fish analyzed: {result['performance']['total_fish_species']} species")
         logger.info(f"  Records processed: {result['performance']['total_records']} records")
-        logger.info(f"  Total API time: {api_time:.3f}s")
+        logger.info(f"  Total API time: {api_time:.3f}s (live generation)")
         
         return result
         
@@ -715,6 +734,57 @@ def get_top_baits():
         api_time = time.time() - api_start
         logger.error(f"Error retrieving top baits data after {api_time:.3f}s: {e}")
         return {"error": "Failed to retrieve top baits data"}
+
+@app.post("/admin/regenerate-top-baits-cache")
+def regenerate_top_baits_cache():
+    """Manually regenerate the top baits cache"""
+    try:
+        from top_baits_cache import generate_top_baits_cache, get_cache_info
+        
+        logger.info("Manual top baits cache regeneration requested")
+        success = generate_top_baits_cache()
+        
+        if success:
+            info = get_cache_info()
+            return {
+                "message": "Top baits cache regenerated successfully",
+                "success": True,
+                "cache_info": info,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "error": "Failed to regenerate top baits cache",
+                "success": False,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+            
+    except Exception as e:
+        logger.error(f"Error regenerating top baits cache: {e}")
+        return {
+            "error": f"Cache regeneration failed: {str(e)}",
+            "success": False,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+@app.get("/admin/top-baits-cache-info")
+def get_top_baits_cache_info():
+    """Get information about the top baits cache status"""
+    try:
+        from top_baits_cache import get_cache_info
+        
+        info = get_cache_info()
+        return {
+            "cache_info": info,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting cache info: {e}")
+        return {
+            "error": f"Failed to get cache info: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 @app.get("/refresh")
 def refresh_info():

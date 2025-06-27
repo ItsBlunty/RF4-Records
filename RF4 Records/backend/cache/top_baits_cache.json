@@ -1,0 +1,27 @@
+{
+  "fish_data": {},
+  "periods": {
+    "this_week": {
+      "label": "This Week",
+      "start_date": "2025-06-22T18:00:00+00:00",
+      "end_date": null
+    },
+    "last_week": {
+      "label": "Last Week",
+      "start_date": "2025-06-15T18:00:00+00:00",
+      "end_date": "2025-06-22T18:00:00+00:00"
+    },
+    "three_weeks_ago": {
+      "label": "3 Weeks Ago",
+      "start_date": "2025-06-08T18:00:00+00:00",
+      "end_date": "2025-06-15T18:00:00+00:00"
+    }
+  },
+  "performance": {
+    "total_records": 0,
+    "total_fish_species": 0,
+    "query_time": 0.006,
+    "processing_time": 0.0,
+    "total_time": 0.006
+  }
+}
