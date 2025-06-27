@@ -154,8 +154,8 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
                 <option value="1-day">Fish Caught in the Last Day</option>
                 <option value="2-days">Fish Caught in the Last 2 Days</option>
                 <option value="3-days">Fish Caught in the Last 3 Days</option>
-                <option value="since-reset">Fish Caught Since Reset</option>
-                <option value="30-days">Fish Caught in the Last 30 Days</option>
+                <option value="since-reset">Fish Caught Since Last Reset</option>
+                <option value="since-two-resets-ago">Fish Caught Since Two Resets Ago</option>
               </select>
               {/* Custom dropdown arrow */}
               <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">

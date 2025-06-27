@@ -28,6 +28,18 @@ export function getLastRecordResetDate() {
 }
 
 /**
+ * Calculate the reset date from two resets ago (two weeks before last reset)
+ * This is the Sunday 6PM UTC from two weeks ago
+ */
+export function getTwoResetsAgoDate() {
+  const lastReset = getLastRecordResetDate();
+  const twoResetsAgo = new Date(lastReset);
+  twoResetsAgo.setUTCDate(lastReset.getUTCDate() - 7); // Go back one more week
+  
+  return twoResetsAgo;
+}
+
+/**
  * Parse date string in DD.MM.YY format to a proper Date object
  */
 function parseDateString(dateString) {
@@ -74,6 +86,14 @@ export function isWithinAgeRange(record, ageRange) {
       if (isNaN(resetScrapedDate.getTime())) return true;
       const lastReset = getLastRecordResetDate();
       return resetScrapedDate >= lastReset;
+    
+    case 'since-two-resets-ago':
+      // Use created_at (scrape time) for reset comparison - show data scraped since two resets ago
+      if (!record.created_at) return true; // No scrape timestamp, include it
+      const twoResetScrapedDate = new Date(record.created_at);
+      if (isNaN(twoResetScrapedDate.getTime())) return true;
+      const twoResetsAgo = getTwoResetsAgoDate();
+      return twoResetScrapedDate >= twoResetsAgo;
     
     case '1-hour':
     case '6-hours':

@@ -34,6 +34,13 @@ def get_last_record_reset_date():
     
     return last_reset
 
+def get_two_resets_ago_date():
+    """Calculate the reset date from two resets ago (two weeks before last reset)"""
+    last_reset = get_last_record_reset_date()
+    two_resets_ago = last_reset - timedelta(days=7)  # Go back one more week
+    
+    return two_resets_ago
+
 def get_recent_records_simple(limit: int = 1000):
     """Get recent records since last reset - SPEED OPTIMIZED for initial load"""
     db = SessionLocal()
@@ -531,6 +538,9 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             if data_age == 'since-reset':
                 last_reset = get_last_record_reset_date()
                 query = query.filter(Record.created_at >= last_reset)
+            elif data_age == 'since-two-resets-ago':
+                two_resets_ago = get_two_resets_ago_date()
+                query = query.filter(Record.created_at >= two_resets_ago)
         
         # Get all matching records
         query_start = time.time()
@@ -557,7 +567,7 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
 
             
             # Apply data age filter for day-based filters (using fishing date)
-            if data_age and data_age != 'since-reset':
+            if data_age and data_age not in ['since-reset', 'since-two-resets-ago']:
                 from datetime import datetime, timezone
                 
                 now = datetime.now(timezone.utc)
