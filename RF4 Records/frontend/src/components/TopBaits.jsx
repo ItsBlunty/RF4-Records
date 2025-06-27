@@ -96,7 +96,10 @@ const TopBaits = () => {
       return (
         <div className="font-medium text-gray-900 dark:text-white text-sm">
           {baits.map((bait, index) => (
-            <div key={index}>{bait}</div>
+            <div key={index} className="flex items-center justify-center">
+              {index > 0 && <span className="text-xs text-gray-500 dark:text-gray-400 mx-1">+</span>}
+              <span>{bait}</span>
+            </div>
           ))}
         </div>
       );
