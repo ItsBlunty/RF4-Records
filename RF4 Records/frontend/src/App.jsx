@@ -153,9 +153,7 @@ function AppContent() {
         bait: response.data.bait || []
       });
       
-      // Start with empty records - user must apply filters
-      setRecords([]);
-      setFilteredRecords([]);
+      // Filter values loaded - records state managed separately
       setLastRefresh(new Date());
       
       const processingTime = performance.now() - processingStart;
