@@ -800,6 +800,160 @@ def get_top_baits_cache_info():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.get("/admin/debug-top-baits-dates")
+def debug_top_baits_dates():
+    """Debug endpoint to check Top Baits date ranges and data availability"""
+    try:
+        from simplified_records import get_last_record_reset_date, get_two_resets_ago_date, get_three_resets_ago_date, get_four_resets_ago_date
+        from database import SessionLocal, Record
+        import os
+        
+        # Get current time
+        now = datetime.now(timezone.utc)
+        
+        # Calculate reset dates
+        last_reset = get_last_record_reset_date()
+        two_resets_ago = get_two_resets_ago_date()
+        three_resets_ago = get_three_resets_ago_date()
+        four_resets_ago = get_four_resets_ago_date()
+        
+        # Database connection info
+        db_url = os.getenv('DATABASE_URL', 'sqlite:///./rf4_records.db')
+        
+        # Connect to database
+        db = SessionLocal()
+        
+        # Get total record count
+        total_records = db.query(Record).count()
+        
+        # Get oldest and newest records
+        oldest_record = db.query(Record).order_by(Record.created_at.asc()).first()
+        newest_record = db.query(Record).order_by(Record.created_at.desc()).first()
+        
+        # Count records in each period
+        this_week_count = db.query(Record).filter(Record.created_at >= last_reset).count()
+        last_week_count = db.query(Record).filter(
+            Record.created_at >= two_resets_ago,
+            Record.created_at < last_reset
+        ).count()
+        three_weeks_ago_count = db.query(Record).filter(
+            Record.created_at >= three_resets_ago,
+            Record.created_at < two_resets_ago
+        ).count()
+        
+        # Get sample records from each period
+        this_week_samples = db.query(Record).filter(Record.created_at >= last_reset).limit(3).all()
+        last_week_samples = db.query(Record).filter(
+            Record.created_at >= two_resets_ago,
+            Record.created_at < last_reset
+        ).limit(3).all()
+        three_weeks_ago_samples = db.query(Record).filter(
+            Record.created_at >= three_resets_ago,
+            Record.created_at < two_resets_ago
+        ).limit(3).all()
+        
+        # Get records around reset boundaries for debugging
+        around_last_reset = db.query(Record).filter(
+            Record.created_at >= last_reset - timedelta(hours=2),
+            Record.created_at <= last_reset + timedelta(hours=2)
+        ).order_by(Record.created_at).limit(5).all()
+        
+        db.close()
+        
+        # Format sample records
+        def format_samples(samples):
+            return [
+                {
+                    "fish": record.fish,
+                    "player": record.player,
+                    "weight": record.weight,
+                    "created_at": record.created_at.isoformat() if record.created_at else None,
+                    "date": record.date
+                }
+                for record in samples
+            ]
+        
+        # Build response
+        result = {
+            "timestamp": now.isoformat(),
+            "database_info": {
+                "url": db_url.split('@')[0] + '@***' if '@' in db_url else db_url,  # Hide password
+                "total_records": total_records,
+                "oldest_record": oldest_record.created_at.isoformat() if oldest_record and oldest_record.created_at else None,
+                "newest_record": newest_record.created_at.isoformat() if newest_record and newest_record.created_at else None
+            },
+            "reset_dates": {
+                "current_time": now.isoformat(),
+                "last_reset": last_reset.isoformat(),
+                "two_resets_ago": two_resets_ago.isoformat(),
+                "three_resets_ago": three_resets_ago.isoformat(),
+                "four_resets_ago": four_resets_ago.isoformat(),
+                "verification": {
+                    "last_reset_day": last_reset.strftime('%A'),
+                    "two_resets_ago_day": two_resets_ago.strftime('%A'),
+                    "three_resets_ago_day": three_resets_ago.strftime('%A')
+                }
+            },
+            "period_analysis": {
+                "this_week": {
+                    "label": "This Week",
+                    "start": last_reset.isoformat(),
+                    "end": "Present",
+                    "record_count": this_week_count,
+                    "duration_days": (now - last_reset).days,
+                    "samples": format_samples(this_week_samples)
+                },
+                "last_week": {
+                    "label": "Last Week", 
+                    "start": two_resets_ago.isoformat(),
+                    "end": last_reset.isoformat(),
+                    "record_count": last_week_count,
+                    "duration_days": 7,
+                    "samples": format_samples(last_week_samples)
+                },
+                "three_weeks_ago": {
+                    "label": "3 Weeks Ago",
+                    "start": three_resets_ago.isoformat(),
+                    "end": two_resets_ago.isoformat(),
+                    "record_count": three_weeks_ago_count,
+                    "duration_days": 7,
+                    "samples": format_samples(three_weeks_ago_samples)
+                }
+            },
+            "boundary_analysis": {
+                "records_around_last_reset": format_samples(around_last_reset),
+                "description": f"Records within 2 hours of last reset ({last_reset.isoformat()})"
+            },
+            "issues_detected": [],
+            "recommendations": []
+        }
+        
+        # Detect issues and add recommendations
+        if total_records == 0:
+            result["issues_detected"].append("Database is completely empty")
+            result["recommendations"].append("Check data import process or database connection")
+        
+        if last_week_count == 0 and total_records > 0:
+            result["issues_detected"].append("No records found in 'Last Week' period")
+            result["recommendations"].append("Check if records exist with created_at timestamps in the expected date range")
+        
+        if this_week_count == 0 and total_records > 0:
+            result["issues_detected"].append("No records found in 'This Week' period")
+            result["recommendations"].append("Verify recent data import and timezone handling")
+        
+        if oldest_record and oldest_record.created_at and oldest_record.created_at > three_resets_ago:
+            result["issues_detected"].append("Oldest record is newer than 3 weeks ago")
+            result["recommendations"].append("Data may not cover the full 3-week analysis period")
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error in debug endpoint: {e}")
+        return {
+            "error": f"Debug analysis failed: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.get("/refresh")
 def refresh_info():
     """Information about the refresh endpoint"""
