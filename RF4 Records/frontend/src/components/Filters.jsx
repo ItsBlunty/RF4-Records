@@ -251,11 +251,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
             <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-w-md">
               <ToggleSwitch
                 label="Include Sandwich Bait"
-                checked={filters.includeSandwichBait === true}
-                onChange={(value) => handleAdvancedToggle('includeSandwichBait', value)}
+                checked={filters.includeSandwichBait === false}
+                onChange={(value) => handleAdvancedToggle('includeSandwichBait', !value)}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {filters.includeSandwichBait === true 
+                {filters.includeSandwichBait === false 
                   ? "✅ Sandwich baits are included" 
                   : "❌ Sandwich baits are excluded"}
               </p>
