@@ -50,6 +50,22 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
     
+    # Generate top baits cache on startup if needed
+    try:
+        from top_baits_cache import generate_top_baits_cache, is_cache_valid
+        
+        if not is_cache_valid():
+            print("🎣 Generating top baits cache on startup...", flush=True)
+            success = generate_top_baits_cache()
+            if success:
+                print("✅ Top baits cache generated successfully", flush=True)
+            else:
+                print("⚠️ Failed to generate top baits cache on startup", flush=True)
+        else:
+            print("✅ Top baits cache already exists and is valid", flush=True)
+    except Exception as e:
+        logger.error(f"Error generating top baits cache on startup: {e}")
+    
     # Now start the scheduler after database is ready
     try:
         scheduler.start()
