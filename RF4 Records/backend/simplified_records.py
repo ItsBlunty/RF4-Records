@@ -501,7 +501,7 @@ def get_remaining_records_simple(skip: int = 1000):
         raise
 
 def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None, 
-                        exclude_sandwich_bait=False, limit=None, offset=None):
+                        exclude_sandwich_bait=True, limit=None, offset=None):
     """Get filtered records from database based on criteria"""
     start_time = time.time()
     db = SessionLocal()
@@ -554,8 +554,8 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             else:
                 categories = [record.category] if record.category else ["N"]
             
-            # Apply sandwich bait filter - FLIPPED LOGIC TO FIX BACKWARDS BEHAVIOR
-            # If exclude_sandwich_bait is True, exclude records with semicolon (opposite of intuitive)
+            # Apply sandwich bait filter
+            # If exclude_sandwich_bait is True
             if exclude_sandwich_bait == True and ';' in bait_display:
                 continue
             

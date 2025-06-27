@@ -629,7 +629,7 @@ def get_filtered_records_endpoint(
     waterbody: str = None, 
     bait: str = None,
     data_age: str = None,
-    exclude_sandwich_bait: bool = False,
+    exclude_sandwich_bait: bool = True,
     limit: int = None,
     offset: int = None
 ):
