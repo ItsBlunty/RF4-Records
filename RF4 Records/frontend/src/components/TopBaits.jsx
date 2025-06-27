@@ -192,7 +192,7 @@ const TopBaits = () => {
                 {/* Period Names Row */}
                 <tr>
                   <th 
-                    className="w-1/4 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
+                    className="w-48 px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600"
                     onClick={() => handleSort('fish_name')}
                   >
                     <div className="flex items-center">
@@ -204,19 +204,19 @@ const TopBaits = () => {
                       )}
                     </div>
                   </th>
-                  <th className="w-1/4 px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
                       This Reset
                     </div>
                   </th>
-                  <th className="w-1/4 px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
                       Last Reset
                     </div>
                   </th>
-                  <th className="w-1/4 px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
+                  <th className="px-2 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
                       3 Resets Ago
@@ -270,7 +270,7 @@ const TopBaits = () => {
                   const fishData = topBaitsData.fish_data[fishName];
                   return (
                     <tr key={fishName} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white w-48">
                         {fishName}
                       </td>
                       
