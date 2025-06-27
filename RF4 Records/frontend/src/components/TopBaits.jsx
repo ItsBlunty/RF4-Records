@@ -130,7 +130,7 @@ const TopBaits = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="w-full p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
           <Target className="w-8 h-8 mr-3 text-blue-500" />
@@ -157,26 +157,6 @@ const TopBaits = () => {
         </div>
       )}
 
-      {/* Period Information */}
-      {topBaitsData?.periods && topBaitsData.performance.total_records > 0 && (
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-          {Object.entries(topBaitsData.periods).map(([key, period]) => (
-            <div key={key} className="text-center">
-              <div className="font-semibold text-blue-800 dark:text-blue-200 flex items-center justify-center">
-                <Calendar size={16} className="mr-2" />
-                {period.label}
-              </div>
-              <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                {new Date(period.start_date).toLocaleDateString()}
-                {period.end_date && (
-                  <> - {new Date(period.end_date).toLocaleDateString()}</>
-                )}
-                {!period.end_date && <> - Present</>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
 
       {/* Search and Filter Controls */}
       {topBaitsData?.performance?.total_records > 0 && (
@@ -196,9 +176,9 @@ const TopBaits = () => {
 
       {/* Top Baits Table */}
       {filteredFishData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-full">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 {/* Period Names Row */}
                 <tr>
@@ -236,41 +216,41 @@ const TopBaits = () => {
                 </tr>
                 
                 {/* Type Labels Row */}
-                <tr className="bg-gray-100 dark:bg-gray-600">
+                <tr className="bg-gray-700 dark:bg-gray-600">
                   <th className="px-6 py-2"></th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Hash size={14} className="mr-1 text-blue-600" />
+                      <Hash size={14} className="mr-1 text-blue-300" />
                       Most Caught
                     </div>
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      <Trophy size={14} className="mr-1 text-yellow-400" />
                       Biggest
                     </div>
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Hash size={14} className="mr-1 text-blue-600" />
+                      <Hash size={14} className="mr-1 text-blue-300" />
                       Most Caught
                     </div>
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      <Trophy size={14} className="mr-1 text-yellow-400" />
                       Biggest
                     </div>
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Hash size={14} className="mr-1 text-blue-600" />
+                      <Hash size={14} className="mr-1 text-blue-300" />
                       Most Caught
                     </div>
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-white uppercase tracking-wider">
                     <div className="flex items-center justify-center">
-                      <Trophy size={14} className="mr-1 text-yellow-600" />
+                      <Trophy size={14} className="mr-1 text-yellow-400" />
                       Biggest
                     </div>
                   </th>
