@@ -198,19 +198,19 @@ const TopBaits = () => {
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
-                      This Week
+                      This Reset
                     </div>
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
-                      Last Week
+                      Last Reset
                     </div>
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider" colSpan="2">
                     <div className="flex items-center justify-center">
                       <Calendar size={14} className="mr-2" />
-                      3 Weeks Ago
+                      3 Resets Ago
                     </div>
                   </th>
                 </tr>
