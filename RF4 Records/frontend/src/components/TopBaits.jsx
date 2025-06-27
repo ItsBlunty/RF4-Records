@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Trophy, Hash, Calendar, TrendingUp } from 'lucide-react';
+import { Search, Trophy, Hash, Calendar, TrendingUp, Target } from 'lucide-react';
 import LoadingOverlay from './LoadingOverlay';
 
 const TopBaits = () => {
