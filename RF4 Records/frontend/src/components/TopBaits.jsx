@@ -15,12 +15,16 @@ const TopBaits = () => {
         setLoading(true);
         setError(null);
         
+        console.log('Fetching top baits data...');
         const response = await fetch('/api/records/top-baits');
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
         const data = await response.json();
+        console.log('Top baits data received:', data);
         setTopBaitsData(data);
       } catch (err) {
         console.error('Error fetching top baits data:', err);
@@ -94,6 +98,8 @@ const TopBaits = () => {
     );
   };
 
+  console.log('Render state:', { loading, error, topBaitsData });
+
   if (loading) {
     return <LoadingOverlay message="Loading top baits analysis..." />;
   }
@@ -130,6 +136,13 @@ const TopBaits = () => {
         <p className="text-gray-600 dark:text-gray-400">
           Weekly bait performance analysis using Sunday 6PM UTC reset markers
         </p>
+        
+        {/* Debug info */}
+        <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded text-sm">
+          <strong>Debug:</strong> Loading: {loading.toString()}, Error: {error || 'none'}, 
+          Data: {topBaitsData ? 'loaded' : 'null'}, 
+          Records: {topBaitsData?.performance?.total_records || 'unknown'}
+        </div>
       </div>
 
       {/* Performance Info */}
