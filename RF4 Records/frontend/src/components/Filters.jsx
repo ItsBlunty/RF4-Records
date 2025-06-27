@@ -18,14 +18,6 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
     }
   };
 
-  const handleDropdownChange = (field, value) => {
-    onChange(field, value);
-    // Only submit if there's content in at least one text field (fish, waterbody, or bait)
-    if (hasTextContent()) {
-      setTimeout(() => onSubmit(), 0);
-    }
-  };
-
   const handleDataAgeChange = (field, value) => {
     onChange(field, value);
     // Data age filter should not auto-submit, only submit on button press

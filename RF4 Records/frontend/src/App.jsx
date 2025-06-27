@@ -227,7 +227,6 @@ function AppContent() {
       const processingStart = performance.now();
       const { records: filteredRecords, total_filtered, performance: serverPerf } = response.data;
       
-      console.log('📊 Fetch completed, setting records to:', filteredRecords.length, 'items');
       setRecords(filteredRecords);
       setTotalRecords(total_filtered);
       setCachedRecordCount(filteredRecords.length); // Track cached records
@@ -320,9 +319,7 @@ function AppContent() {
   
   // Helper function to check if any filters are applied with specific filter values
   const hasFiltersWithValues = (filtersToCheck) => {
-    const hasFilters = filtersToCheck.fish || filtersToCheck.waterbody || filtersToCheck.bait || filtersToCheck.dataAge;
-    console.log('🔍 hasFiltersWithValues check:', filtersToCheck, '→', hasFilters);
-    return hasFilters;
+    return filtersToCheck.fish || filtersToCheck.waterbody || filtersToCheck.bait || filtersToCheck.dataAge;
   };
 
   useEffect(() => {
@@ -353,9 +350,7 @@ function AppContent() {
       }));
       
       // Force search execution since we know there are meaningful URL parameters
-      console.log('🔗 URL parameters detected, will search with filters:', urlFilters);
       setTimeout(() => {
-        console.log('🔗 Executing URL-based search now');
         fetchFilteredRecordsWithFilters(urlFilters);
       }, 300);
     }
@@ -369,7 +364,6 @@ function AppContent() {
 
   // Apply client-side sorting to filtered results from backend
   useEffect(() => {
-    console.log('🔄 Sorting useEffect triggered with records:', records.length, 'sortConfig:', sortConfig);
     let sorted = [...records];
 
     // Apply sorting
@@ -398,7 +392,6 @@ function AppContent() {
       });
     }
 
-    console.log('🔄 Setting filteredRecords to:', sorted.length, 'records');
     setFilteredRecords(sorted);
   }, [records, sortConfig]);
 
