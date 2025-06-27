@@ -62,9 +62,7 @@ function AppContent() {
     fish: '',
     waterbody: '',
     bait: '',
-    dataAge: '1-day',
-    // Advanced filters - default to true (include sandwich baits initially)
-    excludeSandwichBait: false
+    dataAge: '1-day'
   });
   
   // Unique values for dropdowns
@@ -204,8 +202,7 @@ function AppContent() {
       if (filters.bait) params.append('bait', filters.bait);
       if (filters.dataAge) params.append('data_age', filters.dataAge);
       
-      // Advanced filters
-      params.append('exclude_sandwich_bait', filters.excludeSandwichBait);
+
       
       const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
       const queryString = params.toString();
@@ -316,10 +313,7 @@ function AppContent() {
 
   // Helper function to check if any filters are applied
   const hasFilters = () => {
-    return filters.fish || filters.waterbody || filters.bait || filters.dataAge ||
-           filters.excludeSandwichBait === false || filters.includeUltralight === false ||
-           filters.includeLight === false || filters.includeBottomLight === false ||
-           filters.includeTelescopic === false;
+    return filters.fish || filters.waterbody || filters.bait || filters.dataAge;
   };
 
   useEffect(() => {
@@ -384,9 +378,7 @@ function AppContent() {
       fish: '',
       waterbody: '',
       bait: '',
-      dataAge: '1-day',
-      // Reset advanced filters to default (include sandwich baits)
-      excludeSandwichBait: false
+      dataAge: '1-day'
     });
     // Clear displayed records but keep cached data
     setFilteredRecords([]);

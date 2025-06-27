@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { X, Clock, Settings, ChevronDown, ChevronUp, Search } from 'lucide-react';
+import { X, Clock, Search } from 'lucide-react';
 
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
@@ -35,33 +34,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
     e.preventDefault(); // Prevent actual form submission
   };
 
-  const handleAdvancedToggle = (field, value) => {
-    onChange(field, value);
-    // Only submit if there's content in at least one text field (fish, waterbody, or bait)
-    if (hasTextContent()) {
-      setTimeout(() => onSubmit(), 0);
-    }
-  };
 
-  // Toggle Switch Component
-  const ToggleSwitch = ({ label, checked, onChange }) => (
-    <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-          checked ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
-        }`}
-      >
-        <span
-          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-            checked ? 'translate-x-6' : 'translate-x-1'
-          }`}
-        />
-      </button>
-    </div>
-  );
 
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
@@ -220,48 +193,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
             </button>
           </div>
 
-          {/* Advanced Filters Toggle */}
-          <div className="flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors mt-6"
-              title="Advanced Filters"
-            >
-              <Settings className="h-5 w-5" />
-            </button>
-          </div>
+
         </div>
 
         {/* Advanced Filters Panel */}
-        {showAdvanced && (
-          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Advanced Filters</h3>
-              <button
-                type="button"
-                onClick={() => setShowAdvanced(false)}
-                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </button>
-            </div>
-            
-            {/* Sandwich Bait Toggle */}
-            <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg max-w-md">
-              <ToggleSwitch
-                label="Include Sandwich Bait"
-                checked={filters.excludeSandwichBait === false}
-                onChange={(value) => handleAdvancedToggle('excludeSandwichBait', value)}
-              />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {filters.excludeSandwichBait === false 
-                  ? "✅ Sandwich baits are included" 
-                  : "❌ Sandwich baits are excluded"}
-              </p>
-            </div>
-          </div>
-        )}
+
       </div>
     </div>
   );
