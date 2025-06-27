@@ -50,6 +50,18 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
     
+    # Generate top baits cache on startup (database is ready at this point)
+    try:
+        from top_baits_cache import generate_top_baits_cache
+        print("🎣 Generating top baits cache on startup...", flush=True)
+        success = generate_top_baits_cache()
+        if success:
+            print("✅ Top baits cache generated successfully", flush=True)
+        else:
+            print("⚠️ Failed to generate top baits cache on startup", flush=True)
+    except Exception as e:
+        logger.error(f"Error generating top baits cache on startup: {e}")
+    
     # Now start the scheduler after database is ready
     try:
         scheduler.start()
@@ -75,8 +87,6 @@ async def lifespan(app: FastAPI):
         
         print("Dynamic scheduler started - frequency based on weekly schedule", flush=True)
         print("Periodic memory cleanup scheduled every 90 seconds", flush=True)
-        
-        # Note: Top baits cache will be generated on-demand when first requested
         
     except Exception as e:
         logger.error(f"Error starting scheduler: {e}")
