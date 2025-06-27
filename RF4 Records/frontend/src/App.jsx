@@ -181,7 +181,12 @@ function AppContent() {
 
   // Fetch filtered records from backend
   const fetchFilteredRecords = async () => {
-    if (!hasFilters()) {
+    await fetchFilteredRecordsWithFilters(filters);
+  };
+  
+  // Helper function to fetch filtered records with specific filters
+  const fetchFilteredRecordsWithFilters = async (filtersToUse) => {
+    if (!hasFiltersWithValues(filtersToUse)) {
       // No filters applied, show empty table
       setRecords([]);
       setFilteredRecords([]);
@@ -197,10 +202,10 @@ function AppContent() {
       
       // Build query parameters
       const params = new URLSearchParams();
-      if (filters.fish) params.append('fish', filters.fish);
-      if (filters.waterbody) params.append('waterbody', filters.waterbody);
-      if (filters.bait) params.append('bait', filters.bait);
-      if (filters.dataAge) params.append('data_age', filters.dataAge);
+      if (filtersToUse.fish) params.append('fish', filtersToUse.fish);
+      if (filtersToUse.waterbody) params.append('waterbody', filtersToUse.waterbody);
+      if (filtersToUse.bait) params.append('bait', filtersToUse.bait);
+      if (filtersToUse.dataAge) params.append('data_age', filtersToUse.dataAge);
       
 
       
@@ -315,6 +320,11 @@ function AppContent() {
   const hasFilters = () => {
     return filters.fish || filters.waterbody || filters.bait || filters.dataAge;
   };
+  
+  // Helper function to check if any filters are applied with specific filter values
+  const hasFiltersWithValues = (filtersToCheck) => {
+    return filtersToCheck.fish || filtersToCheck.waterbody || filtersToCheck.bait || filtersToCheck.dataAge;
+  };
 
   useEffect(() => {
     // Prevent duplicate calls in React Strict Mode
@@ -322,7 +332,25 @@ function AppContent() {
     hasFetched.current = true;
 
     fetchFilterValues(); // Load filter values only, no records initially
-  }, []);
+    
+    // Check for URL parameters and load them into filters
+    const urlParams = new URLSearchParams(location.search);
+    const urlFilters = {
+      fish: urlParams.get('fish') || '',
+      waterbody: urlParams.get('waterbody') || '',
+      bait: urlParams.get('bait') || '',
+      dataAge: urlParams.get('data_age') || '1-day'
+    };
+    
+    // Only update filters if there are URL parameters
+    if (urlParams.get('fish') || urlParams.get('waterbody') || urlParams.get('bait') || urlParams.get('data_age')) {
+      setFilters(urlFilters);
+      // Trigger search with URL parameters after a brief delay to ensure filter values are loaded
+      setTimeout(() => {
+        fetchFilteredRecordsWithFilters(urlFilters);
+      }, 100);
+    }
+  }, [location.search]);
 
   // No automatic refresh - users can manually refresh by reloading the page
   // All filtering and sorting is done client-side with cached data
@@ -382,6 +410,8 @@ function AppContent() {
     });
     // Clear displayed records but keep cached data
     setFilteredRecords([]);
+    // Clear URL parameters
+    navigate(location.pathname, { replace: true });
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -392,6 +422,16 @@ function AppContent() {
   };
 
   const handleFilterSubmit = () => {
+    // Update URL with current filters
+    const params = new URLSearchParams();
+    if (filters.fish) params.append('fish', filters.fish);
+    if (filters.waterbody) params.append('waterbody', filters.waterbody);
+    if (filters.bait) params.append('bait', filters.bait);
+    if (filters.dataAge && filters.dataAge !== '1-day') params.append('data_age', filters.dataAge);
+    
+    const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    navigate(newUrl, { replace: true });
+    
     fetchFilteredRecords();
   };
 
