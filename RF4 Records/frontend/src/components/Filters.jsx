@@ -26,6 +26,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
     }
   };
 
+  const handleDataAgeChange = (field, value) => {
+    onChange(field, value);
+    // Data age filter should not auto-submit, only submit on button press
+  };
+
   const clearFilter = (field) => {
     onChange(field, '');
   };
@@ -143,7 +148,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
             <div className="relative">
               <select
                 value={filters.dataAge || '1-day'}
-                onChange={e => handleDropdownChange('dataAge', e.target.value)}
+                onChange={e => handleDataAgeChange('dataAge', e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
               >
                 <option value="1-day">Fish Caught in the Last Day</option>
