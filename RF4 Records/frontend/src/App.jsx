@@ -333,7 +333,10 @@ function AppContent() {
     hasFetched.current = true;
 
     fetchFilterValues(); // Load filter values only, no records initially
-    
+  }, []);
+
+  // Separate useEffect for URL parameter handling
+  useEffect(() => {
     // Check for URL parameters and load them into filters
     const urlParams = new URLSearchParams(location.search);
     
