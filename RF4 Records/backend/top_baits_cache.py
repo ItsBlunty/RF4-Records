@@ -97,7 +97,7 @@ def load_top_baits_cache():
         return None
 
 def is_cache_valid():
-    """Check if the cache exists and is relatively fresh"""
+    """Check if the cache exists and contains actual data"""
     try:
         if not CACHE_FILE.exists() or not CACHE_METADATA_FILE.exists():
             return False
@@ -105,7 +105,12 @@ def is_cache_valid():
         with open(CACHE_METADATA_FILE, 'r') as f:
             metadata = json.load(f)
         
-        # Cache is valid if it exists (we'll regenerate it after scrapes)
+        # Cache is only valid if it contains actual data (not empty)
+        total_records = metadata.get("total_records", 0)
+        if total_records == 0:
+            logger.warning(f"Cache exists but is empty (0 records), marking as invalid")
+            return False
+            
         return True
         
     except Exception as e:
