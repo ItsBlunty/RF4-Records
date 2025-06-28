@@ -746,23 +746,9 @@ const SkillTrees = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Collections Input */}
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-4">Skill Trees</h1>
-          
-          {/* Collections Input */}
-          <div className="mb-4">
-            <label className="text-lg text-gray-300 mr-3">Collections:</label>
-            <input
-              type="number"
-              min="0"
-              max="999"
-              value={collections}
-              onChange={(e) => setCollections(Math.max(0, parseInt(e.target.value) || 0))}
-              className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 w-20 text-center focus:outline-none focus:border-blue-500"
-            />
-            <span className="text-sm text-gray-400 ml-2">(Each collection provides +1 skill point)</span>
-          </div>
           
           <div className="text-xl">
             Total Level: <span className="text-yellow-400 font-bold">
@@ -772,7 +758,18 @@ const SkillTrees = () => {
               Total Points Used: <span className="text-green-400 font-bold">{getTotalInvestedPoints()}</span>
             </span>
             <span className="ml-6">
-              Collection Points: <span className="text-blue-400 font-bold">{collections}</span>
+              Collections: <input
+                type="number"
+                min="0"
+                max="999"
+                value={collections}
+                onChange={(e) => setCollections(Math.max(0, parseInt(e.target.value) || 0))}
+                className="bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 w-16 text-center focus:outline-none focus:border-blue-500 ml-2"
+                style={{
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'textfield'
+                }}
+              />
             </span>
           </div>
         </div>
