@@ -764,6 +764,7 @@ const SkillTrees = () => {
                 max="99"
                 value={collections}
                 onChange={(e) => setCollections(Math.max(0, parseInt(e.target.value) || 0))}
+                onFocus={(e) => e.target.select()}
                 className="bg-gray-700 text-white px-1 py-0.5 rounded border border-gray-600 w-12 text-center focus:outline-none focus:border-blue-500 ml-2 text-sm"
                 style={{
                   WebkitAppearance: 'none',
