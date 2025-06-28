@@ -258,7 +258,7 @@ function AppContent() {
 
   // Helper function to check if any filters are applied
   const hasFilters = () => {
-    return filters.fish || filters.waterbody || filters.bait || filters.dataAge;
+    return filters.fish || filters.waterbody || filters.bait;
   };
   
   // Helper function to check if any filters are applied with specific filter values
@@ -339,15 +339,6 @@ function AppContent() {
     setFilteredRecords(sorted);
   }, [records, sortConfig]);
 
-  // Watch filters and auto-switch view mode
-  useEffect(() => {
-    if (filters.bait && viewMode !== 'fish-grouped') {
-      setViewMode('fish-grouped');
-    } else if (filters.fish && viewMode !== 'grouped') {
-      setViewMode('grouped');
-    }
-    // Do not auto-switch if both are empty or both are set
-  }, [filters.bait, filters.fish]);
 
   const clearFilters = () => {
     setFilters({
@@ -379,6 +370,16 @@ function AppContent() {
     
     const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
     navigate(newUrl, { replace: true });
+    
+    // Auto-switch view mode based on search filters (only when search is submitted)
+    if (filters.bait && !filters.fish) {
+      // If only bait is searched, switch to fish grouping to see which fish work with that bait
+      setViewMode('fish-grouped');
+    } else if (filters.fish && !filters.bait) {
+      // If only fish is searched, switch to bait grouping to see which baits work for that fish
+      setViewMode('grouped');
+    }
+    // If both fish and bait are provided, don't auto-switch since both groupings show the same result
     
     fetchFilteredRecords();
   };
@@ -520,8 +521,8 @@ function AppContent() {
                     Welcome to RF4 Records
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                    Apply filters above to search through the fishing records database. 
-                    You can filter by fish type, location, bait, and time period to find specific records.
+                    Enter a fish, location, or bait in the filters above, pick a time frame, then press Enter or click Search. 
+                    Results are grouped by bait to show which baits work best for each fish.
                   </p>
                 </div>
               ) : viewMode === 'grouped' ? (
