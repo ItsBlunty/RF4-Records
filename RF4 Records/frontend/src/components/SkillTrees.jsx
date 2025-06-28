@@ -5,7 +5,7 @@ const SkillTrees = () => {
   const [selectedTree, setSelectedTree] = useState(null);
   const [skillData, setSkillData] = useState({});
   const [investedPoints, setInvestedPoints] = useState({});
-  const [availablePoints, setAvailablePoints] = useState(100); // Start with some points for testing
+  // No available points - just track total used points and required level
 
   // Skill tree definitions matching the game layout
   const skillTrees = [
@@ -280,9 +280,32 @@ const SkillTrees = () => {
   };
 
   const getTotalInvestedPoints = () => {
-    return Object.values(investedPoints).reduce((total, treePoints) => {
-      return total + Object.values(treePoints).reduce((sum, points) => sum + points, 0);
-    }, 0);
+    const countedSkills = new Set(); // Track which skill names we've already counted
+    let totalPoints = 0;
+
+    Object.keys(skillData).forEach(treeId => {
+      const tree = skillData[treeId] || [];
+      const treePoints = investedPoints[treeId] || {};
+      
+      tree.forEach(skill => {
+        const points = treePoints[skill.id] || 0;
+        if (points > 0) {
+          // For shared skills, only count once based on skill name
+          if (skill.sharedWith && skill.sharedWith.length > 0) {
+            const skillKey = skill.name.toLowerCase();
+            if (!countedSkills.has(skillKey)) {
+              countedSkills.add(skillKey);
+              totalPoints += points;
+            }
+          } else {
+            // For non-shared skills, count normally
+            totalPoints += points;
+          }
+        }
+      });
+    });
+
+    return totalPoints;
   };
 
   const getTreeProgress = (treeId) => {
@@ -309,7 +332,7 @@ const SkillTrees = () => {
   const investPoint = (treeId, skillId) => {
     const tree = skillData[treeId] || [];
     const skill = tree.find(s => s.id === skillId);
-    if (!skill || availablePoints <= 0) return;
+    if (!skill) return;
 
     const currentPoints = investedPoints[treeId]?.[skillId] || 0;
     if (currentPoints >= skill.maxPoints) return;
@@ -398,7 +421,6 @@ const SkillTrees = () => {
       ...prev,
       ...updates
     }));
-    setAvailablePoints(prev => prev - 1);
   };
 
   const removePoint = (treeId, skillId) => {
@@ -493,7 +515,6 @@ const SkillTrees = () => {
       ...prev,
       ...updates
     }));
-    setAvailablePoints(prev => prev + 1);
   };
 
   const SkillTreeGrid = ({ treeId }) => {
@@ -524,7 +545,7 @@ const SkillTrees = () => {
               </h1>
             </div>
             <div className="text-xl font-bold">
-              Available points: <span className="text-green-400">{availablePoints}</span>
+              Total Points Used: <span className="text-green-400">{getTotalInvestedPoints()}</span>
             </div>
           </div>
 
@@ -545,7 +566,7 @@ const SkillTrees = () => {
             {gridLayout.map((skill, index) => {
               const invested = treePoints[skill.id] || 0;
               const isMaxed = invested >= skill.maxPoints;
-              const canInvest = availablePoints > 0 && !isMaxed && skill.maxPoints > 0;
+              const canInvest = !isMaxed && skill.maxPoints > 0;
               const canRemove = invested > 0;
               
               return (
@@ -607,7 +628,7 @@ const SkillTrees = () => {
               {calculateRequiredLevel(getTotalInvestedPoints())}
             </span>
             <span className="ml-6">
-              Available Points: <span className="text-green-400 font-bold">{availablePoints}</span>
+              Total Points Used: <span className="text-green-400 font-bold">{getTotalInvestedPoints()}</span>
             </span>
           </div>
         </div>
