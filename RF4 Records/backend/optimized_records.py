@@ -87,7 +87,8 @@ def get_initial_records_optimized(limit: int = 1000):
                 "region": record.region,
                 "categories": categories,
                 "bait1": record.bait1,
-                "bait2": record.bait2
+                "bait2": record.bait2,
+                "trophy_class": record.trophy_class
             })
         
         # Get filter values efficiently
@@ -146,7 +147,8 @@ def get_remaining_records_optimized(skip: int = 1000):
                 "region": record.region,
                 "categories": categories,
                 "bait1": record.bait1,
-                "bait2": record.bait2
+                "bait2": record.bait2,
+                "trophy_class": record.trophy_class
             })
         
         # Get filter values efficiently (cached or optimized)
@@ -200,7 +202,8 @@ def get_all_records_optimized():
                 "region": record.region,
                 "categories": categories,
                 "bait1": record.bait1,
-                "bait2": record.bait2
+                "bait2": record.bait2,
+                "trophy_class": record.trophy_class
             })
         
         return result, len(records)
@@ -250,7 +253,8 @@ def get_leaderboard_optimized(fish: str = None, waterbody: str = None, limit: in
                 "region": record.region,
                 "categories": categories,
                 "bait1": record.bait1,
-                "bait2": record.bait2
+                "bait2": record.bait2,
+                "trophy_class": record.trophy_class
             })
         
         return result

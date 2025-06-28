@@ -99,7 +99,8 @@ def get_recent_records_simple(limit: int = 1000):
                 "date": record.date,
                 "region": record.region,
                 "categories": categories,
-                "created_at": record.created_at.isoformat() if record.created_at else None
+                "created_at": record.created_at.isoformat() if record.created_at else None,
+                "trophy_class": record.trophy_class
             })
             
             # OPTIMIZATION: Build unique values during main loop (faster)
@@ -183,7 +184,8 @@ def get_all_recent_records_simple():
                 "date": record.date,
                 "region": record.region,
                 "categories": categories,
-                "created_at": record.created_at.isoformat() if record.created_at else None
+                "created_at": record.created_at.isoformat() if record.created_at else None,
+                "trophy_class": record.trophy_class
             })
             
             # Build unique values during main loop
@@ -281,7 +283,8 @@ def get_older_records_simple():
                 "date": record.date,
                 "region": record.region,
                 "categories": categories,
-                "created_at": record.created_at.isoformat() if record.created_at else None
+                "created_at": record.created_at.isoformat() if record.created_at else None,
+                "trophy_class": record.trophy_class
             })
         process_time = time.time() - process_start
         
@@ -610,7 +613,8 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
                 "date": record.date,
                 "region": record.region,
                 "categories": categories,
-                "created_at": record.created_at.isoformat() if record.created_at else None
+                "created_at": record.created_at.isoformat() if record.created_at else None,
+                "trophy_class": record.trophy_class
             })
         
         process_time = time.time() - process_start
