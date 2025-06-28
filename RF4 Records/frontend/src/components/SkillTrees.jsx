@@ -707,7 +707,7 @@ const SkillTrees = () => {
                     }}
                     disabled={!canInvest && !canRemove}
                     className={`
-                      w-20 h-20 rounded-full border-4 flex items-center justify-center text-lg font-bold
+                      w-20 h-20 rounded-full border-4 flex flex-col items-center justify-center text-lg font-bold
                       transition-all duration-200 relative
                       ${invested > 0 
                         ? 'bg-green-600 border-green-400 text-white' 
@@ -718,7 +718,12 @@ const SkillTrees = () => {
                       ${(canInvest || canRemove) ? 'hover:scale-105 cursor-pointer' : ''}
                     `}
                   >
-                    {skill.maxPoints > 0 ? invested : ''}
+                    {skill.maxPoints > 0 ? (
+                      <>
+                        <span className="text-sm">{invested}</span>
+                        <span className="text-xs text-gray-300">({skill.unlockAt})</span>
+                      </>
+                    ) : ('')}
                   </button>
                   <div className="mt-2 text-center max-w-24">
                     <div className="text-xs text-gray-300 break-words leading-tight">
@@ -786,7 +791,6 @@ const SkillTrees = () => {
               <div className="text-4xl mb-2">{tree.icon}</div>
               <h3 className="text-sm font-bold mb-2">{tree.name}</h3>
               <div className="text-xs text-gray-400 space-y-1">
-                <div>Skill progress: <span className="text-green-400">{getTreeProgress(tree.id).toFixed(1)}%</span></div>
                 <div>Unlocked abilities: <span className="text-blue-400">{getUnlockedAbilities(tree.id)} / {(skillData[tree.id] || []).filter(s => s.maxPoints > 0).length}</span></div>
                 <div>Invested points: <span className="text-yellow-400">{getTotalTreePoints(tree.id)}</span></div>
               </div>
