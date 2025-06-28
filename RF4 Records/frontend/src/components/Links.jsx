@@ -134,44 +134,94 @@ const Links = () => {
           </p>
         </div>
 
-        {/* Fixed top 3 cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start mb-6">
-          {linkCategories.slice(0, 3).map((category, categoryIndex) => (
-            <div
-              key={categoryIndex}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-            >
-              <div className="flex items-center mb-3">
-                <div className="text-blue-600 dark:text-blue-400 mr-3">
-                  {category.icon}
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {category.title}
-                </h2>
-              </div>
-              
-              <div className="space-y-1">
-                {category.links.map((link, linkIndex) => (
-                  <a
-                    key={linkIndex}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
-                  >
-                    <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
-                      {link.name}
-                    </span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Remaining cards in masonry layout */}
+        {/* All cards in a single masonry layout */}
         <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
+          {/* First, render the 3 priority cards in specific order */}
+          <div className="md:order-1 lg:order-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+            <div className="flex items-center mb-3">
+              <div className="text-blue-600 dark:text-blue-400 mr-3">
+                {linkCategories[0].icon}
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {linkCategories[0].title}
+              </h2>
+            </div>
+            
+            <div className="space-y-1">
+              {linkCategories[0].links.map((link, linkIndex) => (
+                <a
+                  key={linkIndex}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
+                    {link.name}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:order-2 lg:order-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+            <div className="flex items-center mb-3">
+              <div className="text-blue-600 dark:text-blue-400 mr-3">
+                {linkCategories[1].icon}
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {linkCategories[1].title}
+              </h2>
+            </div>
+            
+            <div className="space-y-1">
+              {linkCategories[1].links.map((link, linkIndex) => (
+                <a
+                  key={linkIndex}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
+                    {link.name}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          <div className="md:order-1 lg:order-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+            <div className="flex items-center mb-3">
+              <div className="text-blue-600 dark:text-blue-400 mr-3">
+                {linkCategories[2].icon}
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {linkCategories[2].title}
+              </h2>
+            </div>
+            
+            <div className="space-y-1">
+              {linkCategories[2].links.map((link, linkIndex) => (
+                <a
+                  key={linkIndex}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
+                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
+                    {link.name}
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* All remaining cards */}
           {linkCategories.slice(3).map((category, categoryIndex) => (
             <div
               key={categoryIndex + 3}
