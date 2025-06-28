@@ -20,6 +20,7 @@ class Record(Base):
     created_at = Column(DateTime, server_default=func.now(), index=True) # Index for recent records
     region = Column(String, index=True)  # Index for region filtering
     category = Column(String, index=True) # Index for category filtering
+    trophy_class = Column(String, index=True) # Trophy classification: 'record', 'trophy', 'normal'
     
     # Composite indexes for common query patterns
     __table_args__ = (

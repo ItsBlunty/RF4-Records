@@ -1031,6 +1031,71 @@ def run_database_optimizations():
         logger.error(f"Database optimization failed: {e}")
         return {"error": "Database optimization failed", "details": str(e)}
 
+@app.post("/migrate-trophy-classification")
+def migrate_trophy_classification():
+    """Run trophy classification migration to add trophy_class column and backfill existing records"""
+    try:
+        # Import and run the migration script
+        from add_trophy_classification import add_trophy_column, backfill_trophy_classifications, verify_migration
+        
+        # Capture output by redirecting stdout
+        import io
+        import sys
+        
+        # Capture the output
+        captured_output = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured_output
+        
+        try:
+            logger.info("Starting trophy classification migration...")
+            
+            # Step 1: Add the column
+            column_success = add_trophy_column()
+            if not column_success:
+                return {
+                    "error": "Failed to add trophy_class column",
+                    "success": False,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            # Step 2: Backfill existing records
+            backfill_success = backfill_trophy_classifications()
+            if not backfill_success:
+                return {
+                    "error": "Failed to backfill trophy classifications",
+                    "success": False,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+            
+            # Step 3: Verify migration
+            verification_success = verify_migration()
+            
+        finally:
+            # Restore stdout
+            sys.stdout = old_stdout
+        
+        # Get the captured output
+        output = captured_output.getvalue()
+        
+        return {
+            "message": "Trophy classification migration completed successfully" if verification_success else "Migration completed with issues",
+            "success": verification_success,
+            "column_added": column_success,
+            "backfill_completed": backfill_success,
+            "verification_passed": verification_success,
+            "output": output,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Trophy classification migration failed: {e}")
+        return {
+            "error": "Trophy classification migration failed", 
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.post("/vacuum")
 def vacuum_database():
     """Manually run VACUUM to reclaim space from deleted records"""

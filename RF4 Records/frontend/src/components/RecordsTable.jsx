@@ -1,10 +1,21 @@
 import React from 'react';
 import { formatWeight } from '../utils/formatWeight.js';
 import useWindowScroll from '../hooks/useWindowScroll.js';
+import trophyIcon from '../assets/trophy.png';
+import superTrophyIcon from '../assets/super-trophy.png';
 
 const RecordsTable = ({ records, sortConfig, onSort }) => {
   // Use window scroll for dynamic loading
   const { visibleData: visibleRecords, hasMore, displayCount, totalCount } = useWindowScroll(records || [], 100, 50);
+
+  const getTrophyIcon = (trophyClass) => {
+    if (trophyClass === 'record') {
+      return <img src={superTrophyIcon} alt="Record" className="w-4 h-4 mr-1 inline-block" />;
+    } else if (trophyClass === 'trophy') {
+      return <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1 inline-block" />;
+    }
+    return null;
+  };
 
   const getSortIndicator = (columnKey) => {
     if (sortConfig.key !== columnKey) return '↕';
@@ -101,7 +112,10 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
                             <td className="px-6 py-2.5 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">{record.fish || '-'}</td>
             <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.bait_display || '-'}</td>
             <td className="px-6 py-2.5 whitespace-nowrap font-semibold text-blue-800 dark:text-blue-400">
-              {formatWeight(record.weight)}
+              <div className="flex items-center">
+                {getTrophyIcon(record.trophy_class)}
+                {formatWeight(record.weight)}
+              </div>
             </td>
             <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.waterbody || '-'}</td>
             <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.date || '-'}</td>

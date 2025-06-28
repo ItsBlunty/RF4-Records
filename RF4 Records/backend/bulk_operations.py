@@ -7,6 +7,7 @@ Replaces individual inserts with efficient bulk operations.
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 from database import Record, SessionLocal
+from trophy_classifier import classify_trophy
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,7 +21,11 @@ class BulkRecordInserter:
         self.db = db_session  # Use provided session instead of creating new one
         
     def add_record(self, record_data):
-        """Add a record to the pending batch"""
+        """Add a record to the pending batch with trophy classification"""
+        # Add trophy classification if not already present
+        if 'trophy_class' not in record_data and 'fish' in record_data and 'weight' in record_data:
+            record_data['trophy_class'] = classify_trophy(record_data['fish'], record_data['weight'])
+        
         self.pending_records.append(record_data)
         
         # Auto-flush when batch is full

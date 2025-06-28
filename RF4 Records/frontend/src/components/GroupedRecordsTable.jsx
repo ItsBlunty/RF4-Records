@@ -1,9 +1,20 @@
 import React, { useState } from 'react';
 import { formatWeight } from '../utils/formatWeight.js';
 import useWindowScroll from '../hooks/useWindowScroll.js';
+import trophyIcon from '../assets/trophy.png';
+import superTrophyIcon from '../assets/super-trophy.png';
 
 const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
+
+  const getTrophyIcon = (trophyClass) => {
+    if (trophyClass === 'record') {
+      return <img src={superTrophyIcon} alt="Record" className="w-4 h-4 mr-1 inline-block" />;
+    } else if (trophyClass === 'trophy') {
+      return <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1 inline-block" />;
+    }
+    return null;
+  };
 
   // Group records by bait
   const groupedRecords = records.reduce((groups, record) => {
@@ -227,7 +238,10 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       {bait}
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                      {formatWeight(largestFish?.weight)}
+                      <div className="flex items-center">
+                        {getTrophyIcon(largestFish?.trophy_class)}
+                        {formatWeight(largestFish?.weight)}
+                      </div>
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.waterbody || groupRecords[0]?.waterbody || '-'}
@@ -267,7 +281,10 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         {record.bait_display || '-'}
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                            {formatWeight(record.weight)}
+                        <div className="flex items-center">
+                          {getTrophyIcon(record.trophy_class)}
+                          {formatWeight(record.weight)}
+                        </div>
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.waterbody || '-'}
