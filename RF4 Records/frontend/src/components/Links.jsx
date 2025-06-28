@@ -138,9 +138,9 @@ const Links = () => {
           {linkCategories.map((category, categoryIndex) => (
             <div
               key={categoryIndex}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
             >
-              <div className="flex items-center mb-4">
+              <div className="flex items-center mb-3">
                 <div className="text-blue-600 dark:text-blue-400 mr-3">
                   {category.icon}
                 </div>
@@ -149,17 +149,17 @@ const Links = () => {
                 </h2>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {category.links.map((link, linkIndex) => (
                   <a
                     key={linkIndex}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-md transition-colors"
+                    className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
                   >
                     <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-relaxed">
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
                       {link.name}
                     </span>
                   </a>
