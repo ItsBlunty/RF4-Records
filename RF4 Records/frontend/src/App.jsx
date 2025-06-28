@@ -14,6 +14,7 @@ import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
 import WaterbodyPrices from './components/WaterbodyPrices.jsx';
 import Links from './components/Links.jsx';
+import SkillTrees from './components/SkillTrees.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 
@@ -46,6 +47,7 @@ function AppContent() {
     if (location.pathname === '/trophyweights') return 'trophyweights';
     if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
+    if (location.pathname === '/skilltrees') return 'skilltrees';
     if (location.pathname === '/wearcalc') return 'wearcalc';
     if (location.pathname === '/waterbodyprices') return 'waterbodyprices';
     if (location.pathname === '/alcohol') return 'alcohol';
@@ -118,6 +120,8 @@ function AppContent() {
       navigate('/topbaits');
     } else if (page === 'guides') {
       navigate('/skillguides');
+    } else if (page === 'skilltrees') {
+      navigate('/skilltrees');
     } else if (page === 'wearcalc') {
       navigate('/wearcalc');
     } else if (page === 'waterbodyprices') {
@@ -555,6 +559,8 @@ function AppContent() {
         <TopBaits />
       ) : getCurrentPage() === 'guides' ? (
         <SkillLevelingGuides />
+      ) : getCurrentPage() === 'skilltrees' ? (
+        <SkillTrees />
       ) : getCurrentPage() === 'wearcalc' ? (
         <WearCalculator />
       ) : getCurrentPage() === 'waterbodyprices' ? (
@@ -580,6 +586,7 @@ function App() {
         <Route path="/trophyweights" element={<AppContent />} />
         <Route path="/topbaits" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
+        <Route path="/skilltrees" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
         <Route path="/waterbodyprices" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />
