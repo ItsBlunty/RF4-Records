@@ -518,7 +518,7 @@ function AppContent() {
             </div>
             
             <LoadingOverlay isLoading={loadingRemaining}>
-              {!hasFilters() ? (
+              {!hasFiltersWithValues(filters) ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                   <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎣</div>
                   <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
