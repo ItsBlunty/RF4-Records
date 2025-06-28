@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
+// Import skill tree icons
+import floatFishingIcon from '../assets/float-fishing-icon.png';
+import spinFishingIcon from '../assets/spin-fishing-icon.png';
+import bottomFishingIcon from '../assets/bottom-fishing-icon.png';
+import marineFishingIcon from '../assets/marine-fishing-icon.png';
+import harvestingBaitsIcon from '../assets/harvesting-baits-icon.png';
+import cookingIcon from '../assets/cooking-icon.png';
+import makingGroundbaitIcon from '../assets/making-groundbait-icon.png';
+import makingLuresIcon from '../assets/making-lures-icon.png';
+
 const SkillTrees = () => {
   const [selectedTree, setSelectedTree] = useState(null);
   const [skillData, setSkillData] = useState({});
@@ -10,14 +20,14 @@ const SkillTrees = () => {
 
   // Skill tree definitions matching the game layout
   const skillTrees = [
-    { id: 'float-fishing', name: 'FLOAT FISHING', icon: '🎣' },
-    { id: 'spin-fishing', name: 'SPIN FISHING', icon: '🎯' },
-    { id: 'bottom-fishing', name: 'BOTTOM FISHING', icon: '⚓' },
-    { id: 'marine-fishing', name: 'MARINE FISHING', icon: '🌊' },
-    { id: 'harvesting-baits', name: 'HARVESTING BAITS', icon: '🐛' },
-    { id: 'cooking', name: 'COOKING', icon: '🍳' },
-    { id: 'making-groundbait', name: 'MAKING GROUNDBAIT', icon: '🥄' },
-    { id: 'making-lures', name: 'MAKING LURES', icon: '🎨' }
+    { id: 'float-fishing', name: 'FLOAT FISHING', icon: floatFishingIcon },
+    { id: 'spin-fishing', name: 'SPIN FISHING', icon: spinFishingIcon },
+    { id: 'bottom-fishing', name: 'BOTTOM FISHING', icon: bottomFishingIcon },
+    { id: 'marine-fishing', name: 'MARINE FISHING', icon: marineFishingIcon },
+    { id: 'harvesting-baits', name: 'HARVESTING BAITS', icon: harvestingBaitsIcon },
+    { id: 'cooking', name: 'COOKING', icon: cookingIcon },
+    { id: 'making-groundbait', name: 'MAKING GROUNDBAIT', icon: makingGroundbaitIcon },
+    { id: 'making-lures', name: 'MAKING LURES', icon: makingLuresIcon }
   ];
 
   // Parse CSV data and organize by skill tree
@@ -788,7 +798,9 @@ const SkillTrees = () => {
               onClick={() => setSelectedTree(tree.id)}
               className="bg-gray-800 border border-gray-600 rounded-lg p-4 hover:border-gray-400 transition-colors text-center w-64"
             >
-              <div className="text-4xl mb-2">{tree.icon}</div>
+              <div className="mb-2">
+                <img src={tree.icon} alt={tree.name} className="w-16 h-16 mx-auto" />
+              </div>
               <h3 className="text-sm font-bold mb-2">{tree.name}</h3>
               <div className="text-xs text-gray-400 space-y-1">
                 <div>Unlocked abilities: <span className="text-blue-400">{getUnlockedAbilities(tree.id)} / {(skillData[tree.id] || []).filter(s => s.maxPoints > 0).length}</span></div>
