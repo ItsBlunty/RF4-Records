@@ -667,7 +667,7 @@ const SkillTrees = () => {
                 <span>Back</span>
               </button>
               <h1 className="text-2xl font-bold text-green-400">
-                {skillTrees.find(t => t.id === treeId)?.name} - {getTreeProgress(treeId).toFixed(1)}%
+                {skillTrees.find(t => t.id === treeId)?.name}
               </h1>
             </div>
             <div className="text-xl font-bold">
