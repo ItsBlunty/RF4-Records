@@ -62,12 +62,11 @@ const SkillTrees = () => {
     }
   }, [location.search]);
 
-  // Generate shareable URL
-  const generateShareableURL = () => {
-    const baseURL = window.location.origin + window.location.pathname;
+  // Update URL automatically when skill points or collections change
+  useEffect(() => {
     const params = new URLSearchParams();
     
-    // Encode invested points
+    // Encode invested points if any exist
     if (Object.keys(investedPoints).length > 0) {
       const encodedPoints = btoa(JSON.stringify(investedPoints));
       params.set('points', encodedPoints);
@@ -78,12 +77,16 @@ const SkillTrees = () => {
       params.set('collections', collections.toString());
     }
     
-    return params.toString() ? `${baseURL}?${params.toString()}` : baseURL;
-  };
+    // Update URL without triggering navigation
+    const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    if (newUrl !== `${location.pathname}${location.search}`) {
+      navigate(newUrl, { replace: true });
+    }
+  }, [investedPoints, collections, location.pathname, location.search, navigate]);
 
-  // Copy shareable URL to clipboard
+  // Copy current URL to clipboard (always up-to-date)
   const shareSkillBuild = async () => {
-    const url = generateShareableURL();
+    const url = window.location.href;
     try {
       await navigator.clipboard.writeText(url);
       alert('Skill tree URL copied to clipboard!');
