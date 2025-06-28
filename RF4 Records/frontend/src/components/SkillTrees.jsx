@@ -915,17 +915,6 @@ const SkillTrees = () => {
               />
             </span>
           </div>
-          
-          {/* Share Button */}
-          <div className="mt-4">
-            <button
-              onClick={shareSkillBuild}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
-            >
-              <Share2 className="w-4 h-4" />
-              <span>Share Skill Build</span>
-            </button>
-          </div>
         </div>
 
         {/* Skill Trees Grid - Responsive */}
@@ -946,6 +935,17 @@ const SkillTrees = () => {
               </div>
             </button>
           ))}
+        </div>
+
+        {/* Share Button - Bottom of page */}
+        <div className="mt-8 text-center">
+          <button
+            onClick={shareSkillBuild}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+          >
+            <Share2 className="w-4 h-4" />
+            <span>Share Skill Build</span>
+          </button>
         </div>
       </div>
     </div>
