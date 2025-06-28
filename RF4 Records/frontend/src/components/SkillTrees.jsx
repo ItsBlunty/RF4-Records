@@ -329,10 +329,10 @@ const SkillTrees = () => {
       return nameMap[treeName];
     };
 
-    // Helper function to find skill by name in a tree
+    // Helper function to find skill by name in a tree (case-insensitive)
     const findSkillByName = (targetTreeId, skillName) => {
       const targetTree = skillData[targetTreeId] || [];
-      return targetTree.find(s => s.name === skillName);
+      return targetTree.find(s => s.name.toLowerCase() === skillName.toLowerCase());
     };
 
     // Prepare updates for shared skills
@@ -392,33 +392,6 @@ const SkillTrees = () => {
       });
     }
 
-    // Additionally, for skills with the exact same name, find all instances across trees
-    // This handles cases like "Using a spinning reel" that should be shared but might not have complete sharedWith data
-    const skillNameVariations = [
-      skill.name,
-      'Using a Spinning Reel', // Capitalize variation
-      'Using a spinning reel'   // lowercase variation
-    ];
-    
-    Object.keys(skillData).forEach(otherTreeId => {
-      if (otherTreeId !== treeId) {
-        const otherTree = skillData[otherTreeId] || [];
-        otherTree.forEach(otherSkill => {
-          if (skillNameVariations.some(variation => 
-              otherSkill.name.toLowerCase() === variation.toLowerCase()) &&
-              otherSkill.maxPoints > 0) {
-            
-            const otherCurrentPoints = investedPoints[otherTreeId]?.[otherSkill.id] || 0;
-            if (otherCurrentPoints < otherSkill.maxPoints) {
-              if (!updates[otherTreeId]) {
-                updates[otherTreeId] = { ...investedPoints[otherTreeId] };
-              }
-              updates[otherTreeId][otherSkill.id] = otherCurrentPoints + 1;
-            }
-          }
-        });
-      }
-    });
 
     // Apply all updates at once
     setInvestedPoints(prev => ({
@@ -451,10 +424,10 @@ const SkillTrees = () => {
       return nameMap[treeName];
     };
 
-    // Helper function to find skill by name in a tree
+    // Helper function to find skill by name in a tree (case-insensitive)
     const findSkillByName = (targetTreeId, skillName) => {
       const targetTree = skillData[targetTreeId] || [];
-      return targetTree.find(s => s.name === skillName);
+      return targetTree.find(s => s.name.toLowerCase() === skillName.toLowerCase());
     };
 
     // Prepare updates for shared skills
@@ -514,33 +487,6 @@ const SkillTrees = () => {
       });
     }
 
-    // Additionally, for skills with the exact same name, find all instances across trees
-    // This handles cases like "Using a spinning reel" that should be shared but might not have complete sharedWith data
-    const skillNameVariations = [
-      skill.name,
-      'Using a Spinning Reel', // Capitalize variation
-      'Using a spinning reel'   // lowercase variation
-    ];
-    
-    Object.keys(skillData).forEach(otherTreeId => {
-      if (otherTreeId !== treeId) {
-        const otherTree = skillData[otherTreeId] || [];
-        otherTree.forEach(otherSkill => {
-          if (skillNameVariations.some(variation => 
-              otherSkill.name.toLowerCase() === variation.toLowerCase()) &&
-              otherSkill.maxPoints > 0) {
-            
-            const otherCurrentPoints = investedPoints[otherTreeId]?.[otherSkill.id] || 0;
-            if (otherCurrentPoints > 0) {
-              if (!updates[otherTreeId]) {
-                updates[otherTreeId] = { ...investedPoints[otherTreeId] };
-              }
-              updates[otherTreeId][otherSkill.id] = otherCurrentPoints - 1;
-            }
-          }
-        });
-      }
-    });
 
     // Apply all updates at once
     setInvestedPoints(prev => ({
