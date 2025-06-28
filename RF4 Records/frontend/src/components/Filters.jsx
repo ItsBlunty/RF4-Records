@@ -55,7 +55,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
                 title="Trophy Weights"
               >
                 <Trophy className="w-3 h-3 mr-1" />
-                Trophy
+                Trophy Weights
               </button>
             </div>
           )}
