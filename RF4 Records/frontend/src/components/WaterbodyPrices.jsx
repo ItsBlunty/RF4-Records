@@ -63,7 +63,7 @@ const WaterbodyPrices = () => {
   };
 
   return (
-    <div className="w-full p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center">
           <DollarSign className="w-8 h-8 mr-3 text-green-500" />
@@ -88,10 +88,17 @@ const WaterbodyPrices = () => {
         </div>
       </div>
 
+      {/* Results Count */}
+      <div className="mb-4">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          Showing {filteredData.length} of {waterbodyData.length} waterbodies
+        </p>
+      </div>
+
       {/* Price Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden w-full">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -119,23 +126,23 @@ const WaterbodyPrices = () => {
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {filteredData.map((item, index) => (
-                <tr key={item.location} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                <tr key={item.location} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                     {item.location}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-center">
                     {formatTravel(item.travel)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-center">
                     {formatPercentage(item.fishSell)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-center">
                     {formatPercentage(item.tackle)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-center">
                     {formatPercentage(item.hardware)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
+                  <td className="px-6 py-2.5 whitespace-nowrap text-sm text-center">
                     {formatPercentage(item.grocery)}
                   </td>
                 </tr>
@@ -143,45 +150,14 @@ const WaterbodyPrices = () => {
             </tbody>
           </table>
         </div>
-        
-        {filteredData.length > 0 && (
-          <div className="bg-gray-50 dark:bg-gray-700 px-6 py-3 text-center text-sm text-gray-600 dark:text-gray-400">
-            Showing {filteredData.length} waterbodies
-          </div>
-        )}
       </div>
 
-      {/* No search results */}
-      {filteredData.length === 0 && searchTerm && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
-          <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No waterbodies found</h3>
-          <p className="text-gray-600 dark:text-gray-400">No waterbodies match your search term "{searchTerm}"</p>
+      {filteredData.length === 0 && (
+        <div className="text-center py-12">
+          <DollarSign className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">No waterbodies found matching your criteria</p>
         </div>
       )}
-
-      {/* Legend */}
-      <div className="mt-6 bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
-        <h3 className="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">Price Color Legend</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-          <div className="flex items-center">
-            <span className="w-3 h-3 bg-green-500 rounded mr-2"></span>
-            <span className="text-green-600 dark:text-green-400">100% (Base Price)</span>
-          </div>
-          <div className="flex items-center">
-            <span className="w-3 h-3 bg-yellow-500 rounded mr-2"></span>
-            <span className="text-yellow-600 dark:text-yellow-400">110-120% (Moderate)</span>
-          </div>
-          <div className="flex items-center">
-            <span className="w-3 h-3 bg-red-500 rounded mr-2"></span>
-            <span className="text-red-600 dark:text-red-400">&gt;120% (Expensive)</span>
-          </div>
-          <div className="flex items-center">
-            <span className="w-3 h-3 bg-gray-500 rounded mr-2"></span>
-            <span className="text-gray-500">None/Unknown</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
