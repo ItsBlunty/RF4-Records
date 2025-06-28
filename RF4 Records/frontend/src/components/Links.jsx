@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ExternalLink, Globe, Users, BookOpen, Video, Gamepad2 } from 'lucide-react';
 
 const Links = () => {
+  const containerRef = useRef(null);
+
   const linkCategories = [
     {
       title: "Top Links",
@@ -17,6 +19,32 @@ const Links = () => {
       ]
     },
     {
+      title: "VK Links",
+      icon: <Globe className="w-5 h-5" />,
+      links: [
+        { name: "Mosquito Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BA%D0%BE%D0%BC%D0%B0%D1%80%D0%B8%D0%BD%D0%BE%D0%B5" },
+        { name: "Elk Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BB%D0%BE%D1%81%D0%B8%D0%BD%D0%BE%D0%B5" },
+        { name: "Winding Rivulet", url: "https://vk.com/wall-161310162?q=%23%D0%B2%D1%8C%D1%8E%D0%BD%D0%BE%D0%BA" },
+        { name: "Old Burg", url: "https://vk.com/wall-161310162?q=%23%D0%BE%D1%81%D1%82%D1%80%D0%BE%D0%B3" },
+        { name: "Belaya", url: "https://vk.com/wall-161310162?q=%23%D0%B1%D0%B5%D0%BB%D0%B0%D1%8F" },
+        { name: "Kouri Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BA%D1%83%D0%BE%D1%80%D0%B8" },
+        { name: "Bear Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BC%D0%B5%D0%B4%D0%B2%D0%B5%D0%B6%D1%8C%D0%B5" },
+        { name: "Volkhov River", url: "https://vk.com/wall-161310162?q=%23%D0%B2%D0%BE%D0%BB%D1%85%D0%BE%D0%B2" },
+        { name: "Seversky Donets River", url: "https://vk.com/wall-161310162?q=%23%D0%B4%D0%BE%D0%BD%D0%B5%D1%86" },
+        { name: "Sura River", url: "https://vk.com/wall-161310162?q=%23%D1%81%D1%83%D1%80%D0%B0" },
+        { name: "Ladoga Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BB%D0%B0%D0%B4%D0%BE%D0%B6%D1%81%D0%BA%D0%BE%D0%B5" },
+        { name: "The Amber Lake", url: "https://vk.com/wall-161310162?q=%23%D1%8F%D0%BD%D1%82%D0%B0%D1%80%D0%BD%D0%BE%D0%B5" },
+        { name: "Ladoga Archipelago", url: "https://vk.com/wall-161310162?q=%23%D0%B0%D1%80%D1%85%D0%B8%D0%BF%D0%B5%D0%BB%D0%B0%D0%B3" },
+        { name: "Akhtuba River", url: "https://vk.com/wall-161310162?q=%23%D0%B0%D1%85%D1%82%D1%83%D0%B1%D0%B0" },
+        { name: "Copper Lake", url: "https://vk.com/wall-161310162?q=%23%D0%BC%D0%B5%D0%B4%D0%BD%D0%BE%D0%B5" },
+        { name: "Lower Tunguska River", url: "https://vk.com/wall-161310162?q=%23%D1%82%D1%83%D0%BD%D0%B3%D1%83%D1%81%D0%BA%D0%B0" },
+        { name: "Yama River", url: "https://vk.com/wall-161310162?q=%23%D1%8F%D0%BC%D0%B0" },
+        { name: "Norwegian Sea", url: "https://vk.com/wall-161310162?q=%23%D0%BD%D0%BE%D1%80%D0%B2%D0%B5%D0%B6%D1%81%D0%BA%D0%BE%D0%B5" },
+        { name: "China Hotspots", url: "https://vk.com/rf4chinaspot" },
+        { name: "China Hotspots (Alternative)", url: "https://vk.com/pp4farmtrof" }
+      ]
+    },
+    {
       title: "Discord Communities",
       icon: <Users className="w-5 h-5" />,
       links: [
@@ -29,9 +57,7 @@ const Links = () => {
       icon: <Gamepad2 className="w-5 h-5" />,
       links: [
         { name: "VK - Spots Sharing (Russian/Need to Use Page Translate)", url: "https://vk.com/pp4wikipedia" },
-        { name: "User Submitted Spots and Knowledge Base/Maps", url: "https://rufish4.ru/en" },
-        { name: "China Hotspots", url: "https://vk.com/rf4chinaspot" },
-        { name: "China Hotspots (Alternative)", url: "https://vk.com/pp4farmtrof" }
+        { name: "User Submitted Spots and Knowledge Base/Maps", url: "https://rufish4.ru/en" }
       ]
     },
     {
@@ -98,6 +124,62 @@ const Links = () => {
     }
   ];
 
+  useEffect(() => {
+    const handleMasonryLayout = () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      const items = Array.from(container.children);
+      const gap = 24; // 6 * 4px = 24px gap
+      
+      // Get container width and calculate column width
+      const containerWidth = container.offsetWidth;
+      const columns = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+      const columnWidth = (containerWidth - (columns - 1) * gap) / columns;
+      
+      // Reset container height
+      container.style.height = 'auto';
+      container.style.position = 'relative';
+      
+      // Track column heights
+      const columnHeights = new Array(columns).fill(0);
+      
+      items.forEach((item, index) => {
+        item.style.position = 'absolute';
+        item.style.width = `${columnWidth}px`;
+        
+        // For first 3 items (top row), use fixed positions
+        if (index < 3 && columns === 3) {
+          item.style.left = `${index * (columnWidth + gap)}px`;
+          item.style.top = '0px';
+          columnHeights[index] = item.offsetHeight + gap;
+        } else {
+          // For remaining items, find the shortest column
+          const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+          
+          item.style.left = `${shortestColumnIndex * (columnWidth + gap)}px`;
+          item.style.top = `${columnHeights[shortestColumnIndex]}px`;
+          
+          columnHeights[shortestColumnIndex] += item.offsetHeight + gap;
+        }
+      });
+      
+      // Set container height to tallest column
+      container.style.height = `${Math.max(...columnHeights)}px`;
+    };
+
+    // Run layout after render
+    const timer = setTimeout(handleMasonryLayout, 100);
+    
+    // Re-run on window resize
+    window.addEventListener('resize', handleMasonryLayout);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleMasonryLayout);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -110,13 +192,14 @@ const Links = () => {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* JavaScript-powered masonry layout with fixed top 3 */}
+        <div ref={containerRef} className="relative">
           {linkCategories.map((category, categoryIndex) => (
             <div
               key={categoryIndex}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
             >
-              <div className="flex items-center mb-4">
+              <div className="flex items-center mb-3">
                 <div className="text-blue-600 dark:text-blue-400 mr-3">
                   {category.icon}
                 </div>
@@ -125,17 +208,17 @@ const Links = () => {
                 </h2>
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-1">
                 {category.links.map((link, linkIndex) => (
                   <a
                     key={linkIndex}
                     href={link.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-2 rounded-md transition-colors"
+                    className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
                   >
                     <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-relaxed">
+                    <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
                       {link.name}
                     </span>
                   </a>
