@@ -14,7 +14,8 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
     } else if (trophyClass === 'trophy') {
       return <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1 inline-block" />;
     }
-    return null;
+    // Return spacer element to maintain alignment
+    return <span className="w-4 h-4 mr-1 inline-block"></span>;
   };
 
   const getSortIndicator = (columnKey) => {
