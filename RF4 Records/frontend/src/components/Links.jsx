@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ExternalLink, Globe, Users, BookOpen, Video, Gamepad2 } from 'lucide-react';
 
 const Links = () => {
+  const containerRef = useRef(null);
+
   const linkCategories = [
     {
       title: "Top Links",
@@ -122,6 +124,62 @@ const Links = () => {
     }
   ];
 
+  useEffect(() => {
+    const handleMasonryLayout = () => {
+      if (!containerRef.current) return;
+      
+      const container = containerRef.current;
+      const items = Array.from(container.children);
+      const gap = 24; // 6 * 4px = 24px gap
+      
+      // Get container width and calculate column width
+      const containerWidth = container.offsetWidth;
+      const columns = window.innerWidth >= 1024 ? 3 : window.innerWidth >= 768 ? 2 : 1;
+      const columnWidth = (containerWidth - (columns - 1) * gap) / columns;
+      
+      // Reset container height
+      container.style.height = 'auto';
+      container.style.position = 'relative';
+      
+      // Track column heights
+      const columnHeights = new Array(columns).fill(0);
+      
+      items.forEach((item, index) => {
+        item.style.position = 'absolute';
+        item.style.width = `${columnWidth}px`;
+        
+        // For first 3 items (top row), use fixed positions
+        if (index < 3 && columns === 3) {
+          item.style.left = `${index * (columnWidth + gap)}px`;
+          item.style.top = '0px';
+          columnHeights[index] = item.offsetHeight + gap;
+        } else {
+          // For remaining items, find the shortest column
+          const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
+          
+          item.style.left = `${shortestColumnIndex * (columnWidth + gap)}px`;
+          item.style.top = `${columnHeights[shortestColumnIndex]}px`;
+          
+          columnHeights[shortestColumnIndex] += item.offsetHeight + gap;
+        }
+      });
+      
+      // Set container height to tallest column
+      container.style.height = `${Math.max(...columnHeights)}px`;
+    };
+
+    // Run layout after render
+    const timer = setTimeout(handleMasonryLayout, 100);
+    
+    // Re-run on window resize
+    window.addEventListener('resize', handleMasonryLayout);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleMasonryLayout);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-4">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,99 +192,11 @@ const Links = () => {
           </p>
         </div>
 
-        {/* CSS Grid with explicit positioning for top 3, auto-placement for rest */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 grid-rows-[auto] auto-rows-min items-start">
-          {/* Top Links - explicitly positioned */}
-          <div className="lg:col-start-1 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center mb-3">
-              <div className="text-blue-600 dark:text-blue-400 mr-3">
-                {linkCategories[0].icon}
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {linkCategories[0].title}
-              </h2>
-            </div>
-            
-            <div className="space-y-1">
-              {linkCategories[0].links.map((link, linkIndex) => (
-                <a
-                  key={linkIndex}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
-                    {link.name}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* VK Links - explicitly positioned */}
-          <div className="lg:col-start-2 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center mb-3">
-              <div className="text-blue-600 dark:text-blue-400 mr-3">
-                {linkCategories[1].icon}
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {linkCategories[1].title}
-              </h2>
-            </div>
-            
-            <div className="space-y-1">
-              {linkCategories[1].links.map((link, linkIndex) => (
-                <a
-                  key={linkIndex}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
-                    {link.name}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* Discord Communities - explicitly positioned */}
-          <div className="lg:col-start-3 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
-            <div className="flex items-center mb-3">
-              <div className="text-blue-600 dark:text-blue-400 mr-3">
-                {linkCategories[2].icon}
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {linkCategories[2].title}
-              </h2>
-            </div>
-            
-            <div className="space-y-1">
-              {linkCategories[2].links.map((link, linkIndex) => (
-                <a
-                  key={linkIndex}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-start group hover:bg-gray-50 dark:hover:bg-gray-700 p-1.5 rounded-md transition-colors"
-                >
-                  <ExternalLink className="w-4 h-4 text-gray-400 dark:text-gray-500 mt-0.5 mr-2 flex-shrink-0 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                  <span className="text-sm text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 leading-snug">
-                    {link.name}
-                  </span>
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {/* All remaining cards - auto-placed */}
-          {linkCategories.slice(3).map((category, categoryIndex) => (
+        {/* JavaScript-powered masonry layout with fixed top 3 */}
+        <div ref={containerRef} className="relative">
+          {linkCategories.map((category, categoryIndex) => (
             <div
-              key={categoryIndex + 3}
+              key={categoryIndex}
               className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
             >
               <div className="flex items-center mb-3">
