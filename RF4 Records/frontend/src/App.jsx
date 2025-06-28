@@ -87,19 +87,15 @@ function AppContent() {
 
   // Dark mode effect
   useEffect(() => {
-    console.log('Dark mode useEffect triggered:', darkMode);
     if (darkMode) {
       document.documentElement.classList.add('dark');
-      console.log('Added dark class. Current classes:', document.documentElement.className);
     } else {
       document.documentElement.classList.remove('dark');
-      console.log('Removed dark class. Current classes:', document.documentElement.className);
     }
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
   }, [darkMode]);
 
   const toggleDarkMode = () => {
-    console.log('Toggle dark mode clicked. Current:', darkMode, 'Will become:', !darkMode);
     setDarkMode(!darkMode);
   };
 
@@ -133,26 +129,14 @@ function AppContent() {
 
   // Load filter values only (no records initially)
   const fetchFilterValues = async () => {
-    const startTime = performance.now();
-    
     try {
       setError(null);
-      console.log('⏱️ Frontend: Starting filter values fetch...');
-      
-      const networkStart = performance.now();
       const response = await axios.get(import.meta.env.DEV ? '/api/records/filter-values' : '/records/filter-values');
-      const networkTime = performance.now() - networkStart;
-      
-      console.log('📡 Frontend Network Performance:');
-      console.log(`  Network request time: ${networkTime.toFixed(1)}ms`);
-      console.log(`  Response size: ${JSON.stringify(response.data).length} characters`);
       
       if (!response.data) {
         console.error('Invalid filter values response format:', response.data);
         throw new Error('Invalid response format - expected filter values object');
       }
-      
-      const processingStart = performance.now();
       
       // Set unique values for filters
       setUniqueValues({
@@ -164,24 +148,9 @@ function AppContent() {
       // Filter values loaded - records state managed separately
       setLastRefresh(new Date());
       
-      const processingTime = performance.now() - processingStart;
-      const totalTime = performance.now() - startTime;
-      
-      console.log('⚡ Frontend Processing Performance:');
-      console.log(`  Client processing time: ${processingTime.toFixed(1)}ms`);
-      console.log(`  Total frontend time: ${totalTime.toFixed(1)}ms`);
-      
-      console.log(`✅ Successfully loaded filter values:`);
-      console.log(`  Fish: ${response.data.fish?.length || 0} options`);
-      console.log(`  Waterbody: ${response.data.waterbody?.length || 0} options`);
-      console.log(`  Bait: ${response.data.bait?.length || 0} options`);
-      
     } catch (err) {
-      const totalTime = performance.now() - startTime;
-      console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
+      console.error('Error fetching filter values:', err);
       setError(`Failed to fetch filter values: ${err.message}`);
-    } finally {
-      // No loading state change needed for filter values
     }
   };
 
@@ -199,12 +168,9 @@ function AppContent() {
       return;
     }
     
-    const startTime = performance.now();
-    
     try {
       setLoadingRemaining(true);
       setError(null);
-      console.log('⏱️ Frontend: Starting filtered records fetch...');
       
       // Build query parameters
       const params = new URLSearchParams();
@@ -213,54 +179,26 @@ function AppContent() {
       if (filtersToUse.bait) params.append('bait', filtersToUse.bait);
       if (filtersToUse.dataAge) params.append('data_age', filtersToUse.dataAge);
       
-
-      
       const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
       const queryString = params.toString();
       const fullUrl = queryString ? `${url}?${queryString}` : url;
       
-      const networkStart = performance.now();
       const response = await axios.get(fullUrl);
-      const networkTime = performance.now() - networkStart;
-      
-      console.log('📡 Frontend Network Performance:');
-      console.log(`  Network request time: ${networkTime.toFixed(1)}ms`);
-      console.log(`  Response size: ${JSON.stringify(response.data).length} characters`);
       
       if (!response.data || !Array.isArray(response.data.records)) {
         console.error('Invalid filtered response format:', response.data);
         throw new Error('Invalid response format - expected records array');
       }
       
-      const processingStart = performance.now();
-      const { records: filteredRecords, total_filtered, performance: serverPerf } = response.data;
+      const { records: filteredRecords, total_filtered } = response.data;
       
       setRecords(filteredRecords);
       setTotalRecords(total_filtered);
       setCachedRecordCount(filteredRecords.length); // Track cached records
       setLastRefresh(new Date());
       
-      const processingTime = performance.now() - processingStart;
-      const totalTime = performance.now() - startTime;
-      
-      console.log('⚡ Frontend Processing Performance:');
-      console.log(`  Client processing time: ${processingTime.toFixed(1)}ms`);
-      console.log(`  Total frontend time: ${totalTime.toFixed(1)}ms`);
-      
-      if (serverPerf) {
-        console.log('🔍 Server Performance Breakdown:');
-        console.log(`  Server total time: ${serverPerf.total_time * 1000}ms`);
-        console.log(`  Database query time: ${serverPerf.query_time * 1000}ms`);
-        console.log(`  Records/second: ${serverPerf.records_per_second}`);
-        console.log(`  Network vs Server ratio: ${(networkTime / (serverPerf.total_time * 1000)).toFixed(1)}x`);
-      }
-      
-      console.log(`✅ Successfully loaded ${filteredRecords.length} filtered records`);
-      console.log(`📊 Total matching records: ${total_filtered}`);
-      
     } catch (err) {
-      const totalTime = performance.now() - startTime;
-      console.error(`❌ Error after ${totalTime.toFixed(1)}ms:`, err);
+      console.error('Error fetching filtered records:', err);
       setError(`Failed to fetch filtered records: ${err.message}`);
     } finally {
       setLoadingRemaining(false);
@@ -284,7 +222,6 @@ function AppContent() {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching all records from API...');
       const response = await axios.get(import.meta.env.DEV ? '/api/records' : '/records');
       
       if (!Array.isArray(response.data)) {
@@ -302,10 +239,9 @@ function AppContent() {
       
       setUniqueValues({ fish, waterbody, bait });
       setLastRefresh(new Date());
-      console.log(`Successfully loaded all ${response.data.length} records`);
       
     } catch (err) {
-      console.error('Detailed error:', err);
+      console.error('Error fetching all records:', err);
       setError(`Failed to fetch records: ${err.message}`);
     } finally {
       setLoading(false);

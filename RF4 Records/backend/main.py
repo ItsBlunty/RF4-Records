@@ -17,7 +17,6 @@ import sys
 import time
 import threading
 import os
-import builtins
 
 # Set up logging to stdout (not stderr) to avoid red text in Railway
 logging.basicConfig(
