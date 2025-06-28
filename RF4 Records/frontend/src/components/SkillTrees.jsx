@@ -39,6 +39,58 @@ const SkillTrees = () => {
     setSkillData(parsedData);
   }, []);
 
+  // Tree ID mapping for compact URLs
+  const treeIdMap = {
+    'float-fishing': 'f',
+    'spin-fishing': 's', 
+    'bottom-fishing': 'b',
+    'marine-fishing': 'm',
+    'harvesting-baits': 'h',
+    'cooking': 'c',
+    'making-groundbait': 'g',
+    'making-lures': 'l'
+  };
+
+  const reverseTreeIdMap = Object.fromEntries(
+    Object.entries(treeIdMap).map(([key, value]) => [value, key])
+  );
+
+  // Encode skill points to compact format: f1p7_s2p3_c5p1
+  const encodeSkillPoints = (points) => {
+    const parts = [];
+    Object.entries(points).forEach(([treeId, skills]) => {
+      const shortTreeId = treeIdMap[treeId];
+      if (shortTreeId) {
+        Object.entries(skills).forEach(([skillId, pointCount]) => {
+          if (pointCount > 0) {
+            parts.push(`${shortTreeId}${skillId}p${pointCount}`);
+          }
+        });
+      }
+    });
+    return parts.join('_');
+  };
+
+  // Decode compact format back to skill points object
+  const decodeSkillPoints = (encoded) => {
+    const result = {};
+    if (!encoded) return result;
+    
+    const parts = encoded.split('_');
+    parts.forEach(part => {
+      const match = part.match(/^([fsbmhcgl])(\d+)p(\d+)$/);
+      if (match) {
+        const [, shortTreeId, skillId, pointCount] = match;
+        const treeId = reverseTreeIdMap[shortTreeId];
+        if (treeId) {
+          if (!result[treeId]) result[treeId] = {};
+          result[treeId][skillId] = parseInt(pointCount);
+        }
+      }
+    });
+    return result;
+  };
+
   // Load skill tree data from URL parameters
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -47,8 +99,15 @@ const SkillTrees = () => {
     
     if (pointsParam) {
       try {
-        const decodedPoints = JSON.parse(atob(pointsParam));
-        setInvestedPoints(decodedPoints);
+        // Try new compact format first
+        const decodedPoints = decodeSkillPoints(pointsParam);
+        if (Object.keys(decodedPoints).length > 0) {
+          setInvestedPoints(decodedPoints);
+        } else {
+          // Fallback to old base64 format for backward compatibility
+          const legacyDecoded = JSON.parse(atob(pointsParam));
+          setInvestedPoints(legacyDecoded);
+        }
       } catch (error) {
         console.warn('Invalid points parameter in URL:', error);
       }
@@ -66,10 +125,12 @@ const SkillTrees = () => {
   useEffect(() => {
     const params = new URLSearchParams();
     
-    // Encode invested points if any exist
+    // Encode invested points using compact format if any exist
     if (Object.keys(investedPoints).length > 0) {
-      const encodedPoints = btoa(JSON.stringify(investedPoints));
-      params.set('points', encodedPoints);
+      const encodedPoints = encodeSkillPoints(investedPoints);
+      if (encodedPoints) {
+        params.set('points', encodedPoints);
+      }
     }
     
     // Add collections if non-zero
