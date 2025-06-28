@@ -526,7 +526,7 @@ function AppContent() {
                   </h3>
                   <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
                     Enter a fish, location, or bait in the filters above, pick a time frame, then press Enter or click Search. 
-                    Results are grouped by bait to show which baits work best for each fish.
+                    Use the view modes to explore records by individual entries, grouped by bait, or grouped by fish.
                   </p>
                 </div>
               ) : viewMode === 'grouped' ? (
