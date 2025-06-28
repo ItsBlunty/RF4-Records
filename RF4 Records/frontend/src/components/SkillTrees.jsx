@@ -400,6 +400,100 @@ const SkillTrees = () => {
     setAvailablePoints(prev => prev - 1);
   };
 
+  const removePoint = (treeId, skillId) => {
+    const tree = skillData[treeId] || [];
+    const skill = tree.find(s => s.id === skillId);
+    if (!skill) return;
+
+    const currentPoints = investedPoints[treeId]?.[skillId] || 0;
+    if (currentPoints <= 0) return;
+
+    // Helper function to map tree names to IDs
+    const getTreeIdFromName = (treeName) => {
+      const nameMap = {
+        'Float': 'float-fishing',
+        'Spin': 'spin-fishing',
+        'Bottom': 'bottom-fishing',
+        'Marine': 'marine-fishing',
+        'Harvesting': 'harvesting-baits',
+        'Cooking': 'cooking',
+        'Making Groundbait': 'making-groundbait',
+        'Making Lures': 'making-lures'
+      };
+      return nameMap[treeName];
+    };
+
+    // Helper function to find skill by name in a tree
+    const findSkillByName = (targetTreeId, skillName) => {
+      const targetTree = skillData[targetTreeId] || [];
+      return targetTree.find(s => s.name === skillName);
+    };
+
+    // Prepare updates for shared skills
+    const updates = {};
+    
+    // Remove point from the current skill
+    updates[treeId] = {
+      ...investedPoints[treeId],
+      [skillId]: currentPoints - 1
+    };
+
+    // Remove points from shared skills
+    if (skill.sharedWith && skill.sharedWith.length > 0) {
+      skill.sharedWith.forEach(sharedEntry => {
+        // Handle special "All X shared" cases
+        if (sharedEntry === 'All Shovel Skill Points are shared' || 
+            sharedEntry === 'All Scoop Skill Points are shared' ||
+            sharedEntry === 'All Metal Lure skill points are shared' ||
+            sharedEntry === 'All Wooden Lure Skill Points are shared') {
+          
+          // Find all skills in the same tree with the same shared type
+          const sameTree = skillData[treeId] || [];
+          sameTree.forEach(otherSkill => {
+            if (otherSkill.id !== skillId && 
+                otherSkill.sharedWith && 
+                otherSkill.sharedWith.includes(sharedEntry) &&
+                otherSkill.maxPoints > 0) {
+              
+              const otherCurrentPoints = investedPoints[treeId]?.[otherSkill.id] || 0;
+              if (otherCurrentPoints > 0) {
+                if (!updates[treeId]) {
+                  updates[treeId] = { ...investedPoints[treeId] };
+                }
+                updates[treeId][otherSkill.id] = otherCurrentPoints - 1;
+              }
+            }
+          });
+        }
+        // Handle regular "TreeName - SkillName" shared skills
+        else if (sharedEntry.includes(' - ')) {
+          const [treeName, skillName] = sharedEntry.split(' - ');
+          const targetTreeId = getTreeIdFromName(treeName.trim());
+          
+          if (targetTreeId && skillData[targetTreeId]) {
+            const targetSkill = findSkillByName(targetTreeId, skillName.trim());
+            if (targetSkill) {
+              const targetCurrentPoints = investedPoints[targetTreeId]?.[targetSkill.id] || 0;
+              if (targetCurrentPoints > 0) {
+                if (!updates[targetTreeId]) {
+                  updates[targetTreeId] = { ...investedPoints[targetTreeId] };
+                }
+                updates[targetTreeId][targetSkill.id] = targetCurrentPoints - 1;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Apply all updates at once
+    setInvestedPoints(prev => ({
+      ...prev,
+      ...updates
+    }));
+    setAvailablePoints(prev => prev + 1);
+  };
+
   const SkillTreeGrid = ({ treeId }) => {
     const tree = skillData[treeId] || [];
     const treePoints = investedPoints[treeId] || {};
@@ -432,13 +526,16 @@ const SkillTrees = () => {
             </div>
           </div>
 
-          {/* Required Level Display */}
+          {/* Required Level Display and Instructions */}
           <div className="mb-6 text-center">
             <span className="text-lg">
               Required Level: <span className="text-yellow-400 font-bold">
                 {calculateRequiredLevel(getTotalInvestedPoints())}
               </span>
             </span>
+            <div className="mt-2 text-sm text-gray-400">
+              Left click to add points • Right click to remove points
+            </div>
           </div>
 
           {/* Skill Grid */}
@@ -447,12 +544,19 @@ const SkillTrees = () => {
               const invested = treePoints[skill.id] || 0;
               const isMaxed = invested >= skill.maxPoints;
               const canInvest = availablePoints > 0 && !isMaxed && skill.maxPoints > 0;
+              const canRemove = invested > 0;
               
               return (
                 <div key={skill.id} className="flex flex-col items-center">
                   <button
                     onClick={() => investPoint(treeId, skill.id)}
-                    disabled={!canInvest}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      if (canRemove) {
+                        removePoint(treeId, skill.id);
+                      }
+                    }}
+                    disabled={!canInvest && !canRemove}
                     className={`
                       w-20 h-20 rounded-full border-4 flex items-center justify-center text-lg font-bold
                       transition-all duration-200 relative
@@ -462,7 +566,7 @@ const SkillTrees = () => {
                           ? 'bg-gray-700 border-gray-500 text-gray-300 hover:border-gray-400'
                           : 'bg-gray-800 border-gray-600 text-gray-500'
                       }
-                      ${canInvest ? 'hover:scale-105 cursor-pointer' : ''}
+                      ${(canInvest || canRemove) ? 'hover:scale-105 cursor-pointer' : ''}
                     `}
                   >
                     {skill.maxPoints > 0 ? invested : ''}
