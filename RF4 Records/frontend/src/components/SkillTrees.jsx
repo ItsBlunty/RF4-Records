@@ -347,7 +347,7 @@ const SkillTrees = () => {
     // Apply points to shared skills
     if (skill.sharedWith && skill.sharedWith.length > 0) {
       skill.sharedWith.forEach(sharedEntry => {
-        // Handle special "All X shared" cases
+        // Handle special "All X shared" cases (these work within the same tree)
         if (sharedEntry === 'All Shovel Skill Points are shared' || 
             sharedEntry === 'All Scoop Skill Points are shared' ||
             sharedEntry === 'All Metal Lure skill points are shared' ||
@@ -371,7 +371,7 @@ const SkillTrees = () => {
             }
           });
         }
-        // Handle regular "TreeName - SkillName" shared skills
+        // Handle regular "TreeName - SkillName" shared skills (these work across trees)
         else if (sharedEntry.includes(' - ')) {
           const [treeName, skillName] = sharedEntry.split(' - ');
           const targetTreeId = getTreeIdFromName(treeName.trim());
@@ -391,6 +391,34 @@ const SkillTrees = () => {
         }
       });
     }
+
+    // Additionally, for skills with the exact same name, find all instances across trees
+    // This handles cases like "Using a spinning reel" that should be shared but might not have complete sharedWith data
+    const skillNameVariations = [
+      skill.name,
+      'Using a Spinning Reel', // Capitalize variation
+      'Using a spinning reel'   // lowercase variation
+    ];
+    
+    Object.keys(skillData).forEach(otherTreeId => {
+      if (otherTreeId !== treeId) {
+        const otherTree = skillData[otherTreeId] || [];
+        otherTree.forEach(otherSkill => {
+          if (skillNameVariations.some(variation => 
+              otherSkill.name.toLowerCase() === variation.toLowerCase()) &&
+              otherSkill.maxPoints > 0) {
+            
+            const otherCurrentPoints = investedPoints[otherTreeId]?.[otherSkill.id] || 0;
+            if (otherCurrentPoints < otherSkill.maxPoints) {
+              if (!updates[otherTreeId]) {
+                updates[otherTreeId] = { ...investedPoints[otherTreeId] };
+              }
+              updates[otherTreeId][otherSkill.id] = otherCurrentPoints + 1;
+            }
+          }
+        });
+      }
+    });
 
     // Apply all updates at once
     setInvestedPoints(prev => ({
@@ -441,7 +469,7 @@ const SkillTrees = () => {
     // Remove points from shared skills
     if (skill.sharedWith && skill.sharedWith.length > 0) {
       skill.sharedWith.forEach(sharedEntry => {
-        // Handle special "All X shared" cases
+        // Handle special "All X shared" cases (these work within the same tree)
         if (sharedEntry === 'All Shovel Skill Points are shared' || 
             sharedEntry === 'All Scoop Skill Points are shared' ||
             sharedEntry === 'All Metal Lure skill points are shared' ||
@@ -465,7 +493,7 @@ const SkillTrees = () => {
             }
           });
         }
-        // Handle regular "TreeName - SkillName" shared skills
+        // Handle regular "TreeName - SkillName" shared skills (these work across trees)
         else if (sharedEntry.includes(' - ')) {
           const [treeName, skillName] = sharedEntry.split(' - ');
           const targetTreeId = getTreeIdFromName(treeName.trim());
@@ -485,6 +513,34 @@ const SkillTrees = () => {
         }
       });
     }
+
+    // Additionally, for skills with the exact same name, find all instances across trees
+    // This handles cases like "Using a spinning reel" that should be shared but might not have complete sharedWith data
+    const skillNameVariations = [
+      skill.name,
+      'Using a Spinning Reel', // Capitalize variation
+      'Using a spinning reel'   // lowercase variation
+    ];
+    
+    Object.keys(skillData).forEach(otherTreeId => {
+      if (otherTreeId !== treeId) {
+        const otherTree = skillData[otherTreeId] || [];
+        otherTree.forEach(otherSkill => {
+          if (skillNameVariations.some(variation => 
+              otherSkill.name.toLowerCase() === variation.toLowerCase()) &&
+              otherSkill.maxPoints > 0) {
+            
+            const otherCurrentPoints = investedPoints[otherTreeId]?.[otherSkill.id] || 0;
+            if (otherCurrentPoints > 0) {
+              if (!updates[otherTreeId]) {
+                updates[otherTreeId] = { ...investedPoints[otherTreeId] };
+              }
+              updates[otherTreeId][otherSkill.id] = otherCurrentPoints - 1;
+            }
+          }
+        });
+      }
+    });
 
     // Apply all updates at once
     setInvestedPoints(prev => ({
