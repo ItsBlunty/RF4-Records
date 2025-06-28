@@ -5,6 +5,7 @@ const SkillTrees = () => {
   const [selectedTree, setSelectedTree] = useState(null);
   const [skillData, setSkillData] = useState({});
   const [investedPoints, setInvestedPoints] = useState({});
+  const [collections, setCollections] = useState(0);
   // No available points - just track total used points and required level
 
   // Skill tree definitions matching the game layout
@@ -406,10 +407,12 @@ const SkillTrees = () => {
   };
 
   const calculateRequiredLevel = (totalPoints) => {
-    if (totalPoints <= 19) return totalPoints + 1;
-    if (totalPoints <= 39) return 20 + Math.floor((totalPoints - 19) / 2);
-    if (totalPoints <= 69) return 30 + Math.floor((totalPoints - 39) / 3);
-    return 40 + Math.floor((totalPoints - 69) / 4);
+    // Subtract collection points from total points for level calculation
+    const effectivePoints = Math.max(0, totalPoints - collections);
+    if (effectivePoints <= 19) return effectivePoints + 1;
+    if (effectivePoints <= 39) return 20 + Math.floor((effectivePoints - 19) / 2);
+    if (effectivePoints <= 69) return 30 + Math.floor((effectivePoints - 39) / 3);
+    return 40 + Math.floor((effectivePoints - 69) / 4);
   };
 
   const getTotalInvestedPoints = () => {
@@ -743,15 +746,33 @@ const SkillTrees = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with Collections Input */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Skill Trees</h1>
+          <h1 className="text-3xl font-bold mb-4">Skill Trees</h1>
+          
+          {/* Collections Input */}
+          <div className="mb-4">
+            <label className="text-lg text-gray-300 mr-3">Collections:</label>
+            <input
+              type="number"
+              min="0"
+              max="999"
+              value={collections}
+              onChange={(e) => setCollections(Math.max(0, parseInt(e.target.value) || 0))}
+              className="bg-gray-700 text-white px-3 py-1 rounded border border-gray-600 w-20 text-center focus:outline-none focus:border-blue-500"
+            />
+            <span className="text-sm text-gray-400 ml-2">(Each collection provides +1 skill point)</span>
+          </div>
+          
           <div className="text-xl">
             Total Level: <span className="text-yellow-400 font-bold">
               {calculateRequiredLevel(getTotalInvestedPoints())}
             </span>
             <span className="ml-6">
               Total Points Used: <span className="text-green-400 font-bold">{getTotalInvestedPoints()}</span>
+            </span>
+            <span className="ml-6">
+              Collection Points: <span className="text-blue-400 font-bold">{collections}</span>
             </span>
           </div>
         </div>

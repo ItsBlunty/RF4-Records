@@ -95,7 +95,7 @@ const Links = () => {
         { name: "Midnight Gaming With Mystic Nightmare's Tutorials", url: "https://tinyurl.com/ycx4dkdx" },
         { name: "Lure Making Power Leveling", url: "https://rf4game.com/forum/index.php?/topic/26191-guide-lure-making-power-leveling/" },
         { name: "Potryasovgame Infographics", url: "https://imgur.com/a/RGyBHWv" },
-        { name: "Potryasovgame Info", url: "https://www.potryasovgame.online/" }
+        { name: "Potryasovgame Info", url: "https://potryas9.wixsite.com/mysite" }
       ]
     },
     {
