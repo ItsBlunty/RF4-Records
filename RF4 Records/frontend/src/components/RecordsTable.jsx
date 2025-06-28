@@ -1,8 +1,8 @@
 import React from 'react';
 import { formatWeight } from '../utils/formatWeight.js';
 import useWindowScroll from '../hooks/useWindowScroll.js';
-import trophyIcon from '../assets/trophy-icon.png';
-import superTrophyIcon from '../assets/super-trophy-icon.png';
+import trophyIcon from '../assets/trophy-clean.png';
+import superTrophyIcon from '../assets/super-trophy-clean.png';
 
 const RecordsTable = ({ records, sortConfig, onSort }) => {
   // Use window scroll for dynamic loading
