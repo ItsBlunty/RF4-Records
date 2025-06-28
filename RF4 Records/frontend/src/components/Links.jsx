@@ -134,11 +134,11 @@ const Links = () => {
           </p>
         </div>
 
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 items-start">
           {linkCategories.map((category, categoryIndex) => (
             <div
               key={categoryIndex}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
             >
               <div className="flex items-center mb-3">
                 <div className="text-blue-600 dark:text-blue-400 mr-3">
