@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Share2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 // Import skill tree icons
 import floatFishingIcon from '../assets/float-fishing-icon.png';
@@ -12,6 +13,8 @@ import makingGroundbaitIcon from '../assets/making-groundbait-icon.png';
 import makingLuresIcon from '../assets/making-lures-icon.png';
 
 const SkillTrees = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [selectedTree, setSelectedTree] = useState(null);
   const [skillData, setSkillData] = useState({});
   const [investedPoints, setInvestedPoints] = useState({});
@@ -35,6 +38,66 @@ const SkillTrees = () => {
     const parsedData = parseSkillTreeData();
     setSkillData(parsedData);
   }, []);
+
+  // Load skill tree data from URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const pointsParam = searchParams.get('points');
+    const collectionsParam = searchParams.get('collections');
+    
+    if (pointsParam) {
+      try {
+        const decodedPoints = JSON.parse(atob(pointsParam));
+        setInvestedPoints(decodedPoints);
+      } catch (error) {
+        console.warn('Invalid points parameter in URL:', error);
+      }
+    }
+    
+    if (collectionsParam) {
+      const collectionsValue = parseInt(collectionsParam);
+      if (!isNaN(collectionsValue) && collectionsValue >= 0 && collectionsValue <= 99) {
+        setCollections(collectionsValue);
+      }
+    }
+  }, [location.search]);
+
+  // Generate shareable URL
+  const generateShareableURL = () => {
+    const baseURL = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams();
+    
+    // Encode invested points
+    if (Object.keys(investedPoints).length > 0) {
+      const encodedPoints = btoa(JSON.stringify(investedPoints));
+      params.set('points', encodedPoints);
+    }
+    
+    // Add collections if non-zero
+    if (collections > 0) {
+      params.set('collections', collections.toString());
+    }
+    
+    return params.toString() ? `${baseURL}?${params.toString()}` : baseURL;
+  };
+
+  // Copy shareable URL to clipboard
+  const shareSkillBuild = async () => {
+    const url = generateShareableURL();
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('Skill tree URL copied to clipboard!');
+    } catch (error) {
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = url;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      alert('Skill tree URL copied to clipboard!');
+    }
+  };
 
   const parseSkillTreeData = () => {
     // Parse the actual CSV data structure
@@ -787,6 +850,17 @@ const SkillTrees = () => {
                 }}
               />
             </span>
+          </div>
+          
+          {/* Share Button */}
+          <div className="mt-4">
+            <button
+              onClick={shareSkillBuild}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center space-x-2 mx-auto"
+            >
+              <Share2 className="w-4 h-4" />
+              <span>Share Skill Build</span>
+            </button>
           </div>
         </div>
 
