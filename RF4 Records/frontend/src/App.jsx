@@ -12,6 +12,7 @@ import TrophyWeights from './components/TrophyWeights.jsx';
 import TopBaits from './components/TopBaits.jsx';
 import WearCalculator from './components/WearCalculator.jsx';
 import AlcoholGuide from './components/AlcoholGuide.jsx';
+import WaterbodyPrices from './components/WaterbodyPrices.jsx';
 import Links from './components/Links.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
@@ -46,6 +47,7 @@ function AppContent() {
     if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/wearcalc') return 'wearcalc';
+    if (location.pathname === '/waterbodyprices') return 'waterbodyprices';
     if (location.pathname === '/alcohol') return 'alcohol';
     return 'records';
   };
@@ -122,6 +124,8 @@ function AppContent() {
       navigate('/skillguides');
     } else if (page === 'wearcalc') {
       navigate('/wearcalc');
+    } else if (page === 'waterbodyprices') {
+      navigate('/waterbodyprices');
     } else if (page === 'alcohol') {
       navigate('/alcohol');
     }
@@ -616,6 +620,8 @@ function AppContent() {
         <SkillLevelingGuides />
       ) : getCurrentPage() === 'wearcalc' ? (
         <WearCalculator />
+      ) : getCurrentPage() === 'waterbodyprices' ? (
+        <WaterbodyPrices />
       ) : getCurrentPage() === 'alcohol' ? (
         <AlcoholGuide />
       ) : null}
@@ -638,6 +644,7 @@ function App() {
         <Route path="/topbaits" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
         <Route path="/wearcalc" element={<AppContent />} />
+        <Route path="/waterbodyprices" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />
       </Routes>
     </Router>
