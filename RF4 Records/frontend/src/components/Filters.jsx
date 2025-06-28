@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { X, Clock, Search } from 'lucide-react';
+import { X, Clock, Search, Target, Trophy } from 'lucide-react';
 
-const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
+const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageChange, currentPage }) => {
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
@@ -38,6 +38,28 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear }) => {
       <div className="max-w-7xl mx-auto">
         {/* Main Filter Row */}
         <div className="flex flex-wrap gap-4 items-center">
+          {/* Quick Access Buttons */}
+          {currentPage === 'records' && (
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onPageChange && onPageChange('topbaits')}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
+                title="Top Baits"
+              >
+                <Target className="w-3 h-3 mr-1" />
+                Top Baits
+              </button>
+              <button
+                onClick={() => onPageChange && onPageChange('trophyweights')}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
+                title="Trophy Weights"
+              >
+                <Trophy className="w-3 h-3 mr-1" />
+                Trophy
+              </button>
+            </div>
+          )}
+          
           {/* Fish Filter */}
           <div className="flex-1 min-w-[200px]">
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fish</label>
