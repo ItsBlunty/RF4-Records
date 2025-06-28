@@ -10,12 +10,12 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
 
   const getTrophyIcon = (trophyClass) => {
     if (trophyClass === 'record') {
-      return <img src={superTrophyIcon} alt="Record" className="w-4 h-4 mr-1 inline-block" />;
+      return <img src={superTrophyIcon} alt="Record" className="h-4 mr-1 inline-block" style={{ width: 'auto' }} />;
     } else if (trophyClass === 'trophy') {
-      return <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1 inline-block" />;
+      return <img src={trophyIcon} alt="Trophy" className="h-4 mr-1 inline-block" style={{ width: 'auto' }} />;
     }
-    // Return spacer element to maintain alignment
-    return <span className="w-4 h-4 mr-1 inline-block"></span>;
+    // Return spacer element to maintain alignment - match the width of actual trophies
+    return <span className="w-3 h-4 mr-1 inline-block"></span>;
   };
 
   const getSortIndicator = (columnKey) => {
