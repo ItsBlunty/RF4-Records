@@ -134,10 +134,10 @@ const Links = () => {
           </p>
         </div>
 
-        {/* All cards in a single masonry layout */}
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-6">
-          {/* First, render the 3 priority cards in specific order */}
-          <div className="md:order-1 lg:order-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+        {/* CSS Grid with explicit positioning for top 3, auto-placement for rest */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 grid-rows-[auto] auto-rows-min items-start">
+          {/* Top Links - explicitly positioned */}
+          <div className="lg:col-start-1 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center mb-3">
               <div className="text-blue-600 dark:text-blue-400 mr-3">
                 {linkCategories[0].icon}
@@ -165,7 +165,8 @@ const Links = () => {
             </div>
           </div>
 
-          <div className="md:order-2 lg:order-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+          {/* VK Links - explicitly positioned */}
+          <div className="lg:col-start-2 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center mb-3">
               <div className="text-blue-600 dark:text-blue-400 mr-3">
                 {linkCategories[1].icon}
@@ -193,7 +194,8 @@ const Links = () => {
             </div>
           </div>
 
-          <div className="md:order-1 lg:order-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid">
+          {/* Discord Communities - explicitly positioned */}
+          <div className="lg:col-start-3 lg:row-start-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center mb-3">
               <div className="text-blue-600 dark:text-blue-400 mr-3">
                 {linkCategories[2].icon}
@@ -221,11 +223,11 @@ const Links = () => {
             </div>
           </div>
 
-          {/* All remaining cards */}
+          {/* All remaining cards - auto-placed */}
           {linkCategories.slice(3).map((category, categoryIndex) => (
             <div
               key={categoryIndex + 3}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6 break-inside-avoid"
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
             >
               <div className="flex items-center mb-3">
                 <div className="text-blue-600 dark:text-blue-400 mr-3">
