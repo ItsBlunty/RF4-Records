@@ -42,7 +42,7 @@ const SkillTrees = () => {
       // Float Fishing
       { order: 1, skillTree: 'Float Fishing', skill: 'Fishing with a telescopic rod', unlockAt: '0%', points: '7/7', sharedWith: '' },
       { order: 2, skillTree: 'Float Fishing', skill: 'Using a rig with a fixed line', unlockAt: '0%', points: '3/3', sharedWith: '' },
-      { order: 3, skillTree: 'Float Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a Spinning Reel,Marine - Using a Spinning Reel,Bottom - Using a Spinning Reel' },
+      { order: 3, skillTree: 'Float Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a spinning reel,Marine - Using a spinning reel,Bottom - Using a spinning reel' },
       { order: 4, skillTree: 'Float Fishing', skill: 'Luminous float', unlockAt: '25%', points: '---', sharedWith: '' },
       { order: 5, skillTree: 'Float Fishing', skill: 'Fishing with a Bolognese rod', unlockAt: '30%', points: '7/7', sharedWith: '' },
       { order: 6, skillTree: 'Float Fishing', skill: 'Casting Power Control', unlockAt: '35%', points: '---', sharedWith: '' },
@@ -61,8 +61,8 @@ const SkillTrees = () => {
       { order: 19, skillTree: 'Float Fishing', skill: 'Sbirolino with a lure', unlockAt: '100%', points: '3/3', sharedWith: '' },
       
       // Spin Fishing
-      { order: 20, skillTree: 'Spin Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: '' },
-      { order: 21, skillTree: 'Spin Fishing', skill: 'Fishing with a spinning rod', unlockAt: '0%', points: '7/7', sharedWith: 'Bottom - Using a Spinning Reel,Marine - Using a Spinning Reel,Float - Using a Spinning Reel' },
+      { order: 20, skillTree: 'Spin Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Float - Using a spinning reel,Marine - Using a spinning reel,Bottom - Using a spinning reel' },
+      { order: 21, skillTree: 'Spin Fishing', skill: 'Fishing with a spinning rod', unlockAt: '0%', points: '7/7', sharedWith: '' },
       { order: 22, skillTree: 'Spin Fishing', skill: 'Fishing with spinnerbaits', unlockAt: '0%', points: '3/3', sharedWith: '' },
       { order: 23, skillTree: 'Spin Fishing', skill: 'Fishing with spoon', unlockAt: '15%', points: '3/3', sharedWith: '' },
       { order: 24, skillTree: 'Spin Fishing', skill: 'Jigging', unlockAt: '25%', points: '3/3', sharedWith: 'Marine - Using marine jigging rigs,Marine - Using filet rigs' },
@@ -85,7 +85,7 @@ const SkillTrees = () => {
       { order: 41, skillTree: 'Spin Fishing', skill: 'Sbirolino with a lure', unlockAt: '100%', points: '3/3', sharedWith: '' },
       
       // Bottom Fishing
-      { order: 42, skillTree: 'Bottom Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a Spinning Reel,Marine - Using a Spinning Reel,Float - Using a Spinning Reel' },
+      { order: 42, skillTree: 'Bottom Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a spinning reel,Marine - Using a spinning reel,Float - Using a spinning reel' },
       { order: 43, skillTree: 'Bottom Fishing', skill: 'Using a simple bottom rig', unlockAt: '0%', points: '3/3', sharedWith: '' },
       { order: 44, skillTree: 'Bottom Fishing', skill: 'Fishing with a feeder rod', unlockAt: '0%', points: '7/7', sharedWith: '' },
       { order: 45, skillTree: 'Bottom Fishing', skill: 'Using a paternoster rig', unlockAt: '25%', points: '3/3', sharedWith: '' },
@@ -112,7 +112,7 @@ const SkillTrees = () => {
       { order: 66, skillTree: 'Bottom Fishing', skill: 'Using PVA sticks', unlockAt: '100%', points: '---', sharedWith: '' },
       
       // Marine Fishing
-      { order: 67, skillTree: 'Marine Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a Spinning Reel,Bottom - Using a Spinning Reel,Float - Using a Spinning Reel' },
+      { order: 67, skillTree: 'Marine Fishing', skill: 'Using a spinning reel', unlockAt: '0%', points: '5/5', sharedWith: 'Spin - Using a spinning reel,Bottom - Using a spinning reel,Float - Using a spinning reel' },
       { order: 68, skillTree: 'Marine Fishing', skill: 'Use of pilker rods', unlockAt: '0%', points: '7/7', sharedWith: 'Marine - Using light boat rods,Marine - Fishing with medium boat rods,Marine - Using heavy marine boat rods' },
       { order: 69, skillTree: 'Marine Fishing', skill: 'Use of pilker rigs', unlockAt: '0%', points: '3/3', sharedWith: '' },
       { order: 70, skillTree: 'Marine Fishing', skill: 'Using marine jigging rigs', unlockAt: '25%', points: '3/3', sharedWith: 'Marine - Using filet rigs,Spin - Jigging' },
@@ -277,14 +277,27 @@ const SkillTrees = () => {
     const skillGroups = [];
     const processedSkills = new Set();
 
+    // First, handle cross-tree shared skills
     Object.keys(skillData).forEach(treeId => {
       const tree = skillData[treeId] || [];
       tree.forEach(skill => {
         const skillKey = `${treeId}-${skill.id}`;
         if (processedSkills.has(skillKey)) return;
 
+        // Skip same-tree shared skills for now
+        const specialSharedTypes = [
+          'All Shovel Skill Points are shared',
+          'All Scoop Skill Points are shared', 
+          'All Metal Lure skill points are shared',
+          'All Wooden Lure Skill Points are shared'
+        ];
+        
+        if (skill.sharedWith && skill.sharedWith.some(entry => specialSharedTypes.includes(entry))) {
+          return; // Handle these separately
+        }
+
         // Find all skills that should be in the same group
-        const group = [{ treeId, skillId: skill.id, name: skill.name }];
+        const group = [{ treeId, skillId: skill.id, name: skill.name, sharedWith: skill.sharedWith }];
         processedSkills.add(skillKey);
 
         // Add skills this one shares with
@@ -298,7 +311,7 @@ const SkillTrees = () => {
               if (targetSkill) {
                 const targetKey = `${targetTreeId}-${targetSkill.id}`;
                 if (!processedSkills.has(targetKey)) {
-                  group.push({ treeId: targetTreeId, skillId: targetSkill.id, name: targetSkill.name });
+                  group.push({ treeId: targetTreeId, skillId: targetSkill.id, name: targetSkill.name, sharedWith: targetSkill.sharedWith });
                   processedSkills.add(targetKey);
                 }
               }
@@ -313,7 +326,8 @@ const SkillTrees = () => {
             const otherKey = `${otherTreeId}-${otherSkill.id}`;
             if (processedSkills.has(otherKey)) return;
 
-            if (otherSkill.sharedWith && otherSkill.sharedWith.length > 0) {
+            if (otherSkill.sharedWith && otherSkill.sharedWith.length > 0 && 
+                !otherSkill.sharedWith.some(entry => specialSharedTypes.includes(entry))) {
               const hasReference = otherSkill.sharedWith.some(entry => {
                 if (entry.includes(' - ')) {
                   const [treeName, skillName] = entry.split(' - ');
@@ -324,7 +338,7 @@ const SkillTrees = () => {
               });
 
               if (hasReference) {
-                group.push({ treeId: otherTreeId, skillId: otherSkill.id, name: otherSkill.name });
+                group.push({ treeId: otherTreeId, skillId: otherSkill.id, name: otherSkill.name, sharedWith: otherSkill.sharedWith });
                 processedSkills.add(otherKey);
               }
             }
@@ -332,6 +346,38 @@ const SkillTrees = () => {
         });
 
         if (group.length > 1) {
+          skillGroups.push(group);
+        }
+      });
+    });
+
+    // Now handle same-tree shared skill groups
+    const specialSharedTypes = [
+      'All Shovel Skill Points are shared',
+      'All Scoop Skill Points are shared', 
+      'All Metal Lure skill points are shared',
+      'All Wooden Lure Skill Points are shared'
+    ];
+
+    Object.keys(skillData).forEach(treeId => {
+      const tree = skillData[treeId] || [];
+      const sameTreeGroups = {};
+
+      tree.forEach(skill => {
+        if (skill.sharedWith && skill.sharedWith.length > 0) {
+          const sharedType = skill.sharedWith.find(entry => specialSharedTypes.includes(entry));
+          if (sharedType) {
+            if (!sameTreeGroups[sharedType]) {
+              sameTreeGroups[sharedType] = [];
+            }
+            sameTreeGroups[sharedType].push({ treeId, skillId: skill.id, name: skill.name, sharedWith: skill.sharedWith });
+          }
+        }
+      });
+
+      // Add each same-tree group to skillGroups
+      Object.values(sameTreeGroups).forEach(group => {
+        if (group.length > 0) {
           skillGroups.push(group);
         }
       });
@@ -368,19 +414,39 @@ const SkillTrees = () => {
 
   const getTotalInvestedPoints = () => {
     const sharedGroups = createSharedSkillGroups();
-    const countedGroups = new Set();
+    const countedSkills = new Set();
     let totalPoints = 0;
 
-    // Count shared skill groups only once
+    // Count shared skill groups
     sharedGroups.forEach((group, groupIndex) => {
-      const firstSkill = group[0];
-      const points = investedPoints[firstSkill.treeId]?.[firstSkill.skillId] || 0;
-      if (points > 0) {
-        totalPoints += points;
-        // Mark all skills in this group as counted
-        group.forEach(skill => {
-          countedGroups.add(`${skill.treeId}-${skill.skillId}`);
-        });
+      let groupHasPoints = false;
+      let maxPointsInGroup = 0;
+      
+      // For same-tree shared skills (All X shared), count only once even if multiple skills have points
+      const isSpecialShared = group[0].sharedWith && group[0].sharedWith.some(entry => 
+        entry === 'All Shovel Skill Points are shared' ||
+        entry === 'All Scoop Skill Points are shared' ||
+        entry === 'All Metal Lure skill points are shared' ||
+        entry === 'All Wooden Lure Skill Points are shared'
+      );
+
+      group.forEach(skill => {
+        const points = investedPoints[skill.treeId]?.[skill.skillId] || 0;
+        if (points > 0) {
+          groupHasPoints = true;
+          maxPointsInGroup = Math.max(maxPointsInGroup, points);
+        }
+        countedSkills.add(`${skill.treeId}-${skill.skillId}`);
+      });
+
+      if (groupHasPoints) {
+        if (isSpecialShared) {
+          // For same-tree shared skills, count only the max points once
+          totalPoints += maxPointsInGroup;
+        } else {
+          // For cross-tree shared skills, they should all have the same points
+          totalPoints += maxPointsInGroup;
+        }
       }
     });
 
@@ -391,7 +457,7 @@ const SkillTrees = () => {
       
       tree.forEach(skill => {
         const skillKey = `${treeId}-${skill.id}`;
-        if (!countedGroups.has(skillKey)) {
+        if (!countedSkills.has(skillKey)) {
           const points = treePoints[skill.id] || 0;
           if (points > 0) {
             totalPoints += points;
