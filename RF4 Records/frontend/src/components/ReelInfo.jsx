@@ -7,8 +7,6 @@ const ReelInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSize, setFilterSize] = useState('');
-  const [filterType, setFilterType] = useState('');
 
   // Parse CSV data and extract reel information
   const parseCSVData = (text) => {
@@ -58,25 +56,6 @@ const ReelInfo = () => {
     return reelData;
   };
 
-  // Extract unique values for filters
-  const reelTypes = [...new Set(reels.map(reel => {
-    const name = reel.Name.toLowerCase();
-    if (name.includes('байткастинг') || name.includes('minister') || name.includes('phantom') || name.includes('rocket')) return 'Baitcasting';
-    if (name.includes('силов') || name.includes('electro') || name.includes('borealica')) return 'Power Multiplier';
-    return 'Spinning';
-  }))].filter(Boolean);
-  
-  const sizeClasses = [...new Set(reels.map(reel => {
-    const test = reel.Test_Weight;
-    if (!test || test === '-') return 'Unknown';
-    const num = parseFloat(test.replace(/[^0-9.,]/g, '').replace(',', '.'));
-    if (num >= 40) return 'XL (40+)';
-    if (num >= 20) return 'L (20-39)';
-    if (num >= 10) return 'M (10-19)';
-    if (num >= 5) return 'S (5-9)';
-    if (num >= 1) return 'XS (1-4)';
-    return 'Unknown';
-  }))].filter(type => type !== 'Unknown').sort();
 
   useEffect(() => {
     const loadReels = async () => {
@@ -110,43 +89,8 @@ const ReelInfo = () => {
       );
     }
 
-    // Apply size filter
-    if (filterSize) {
-      filtered = filtered.filter(reel => {
-        const test = reel.Test_Weight;
-        if (!test || test === '-') return false;
-        const num = parseFloat(test.replace(/[^0-9.,]/g, '').replace(',', '.'));
-        
-        switch (filterSize) {
-          case 'XL (40+)': return num >= 40;
-          case 'L (20-39)': return num >= 20 && num < 40;
-          case 'M (10-19)': return num >= 10 && num < 20;
-          case 'S (5-9)': return num >= 5 && num < 10;
-          case 'XS (1-4)': return num >= 1 && num < 5;
-          default: return true;
-        }
-      });
-    }
-
-    // Apply type filter
-    if (filterType) {
-      filtered = filtered.filter(reel => {
-        const name = reel.Name.toLowerCase();
-        switch (filterType) {
-          case 'Baitcasting': 
-            return name.includes('minister') || name.includes('phantom') || name.includes('rocket') || name.includes('imperial');
-          case 'Power Multiplier': 
-            return name.includes('electro') || name.includes('borealica') || name.includes('triumph') || name.includes('venga c');
-          case 'Spinning': 
-            return !name.includes('minister') && !name.includes('phantom') && !name.includes('rocket') && 
-                   !name.includes('electro') && !name.includes('borealica') && !name.includes('triumph');
-          default: return true;
-        }
-      });
-    }
-
     setFilteredReels(filtered);
-  }, [reels, searchTerm, filterSize, filterType]);
+  }, [reels, searchTerm]);
 
   const formatPrice = (price) => {
     if (!price || price === '-' || price === '') return '-';
@@ -215,8 +159,6 @@ const ReelInfo = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setFilterSize('');
-    setFilterType('');
   };
 
   if (loading) {
@@ -277,41 +219,15 @@ const ReelInfo = () => {
               </div>
             </div>
 
-            {/* Size Class Filter */}
-            <div className="w-full lg:w-48">
-              <select
-                value={filterSize}
-                onChange={(e) => setFilterSize(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="">All Sizes</option>
-                {sizeClasses.map(size => (
-                  <option key={size} value={size}>{size}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Type Filter */}
-            <div className="w-full lg:w-48">
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-              >
-                <option value="">All Types</option>
-                <option value="Spinning">Spinning</option>
-                <option value="Baitcasting">Baitcasting</option>
-                <option value="Power Multiplier">Power Multiplier</option>
-              </select>
-            </div>
-
             {/* Clear Filters */}
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              Clear
-            </button>
+            {searchTerm && (
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                Clear
+              </button>
+            )}
           </div>
 
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
