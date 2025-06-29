@@ -532,7 +532,7 @@ function AppContent() {
                       onClick={() => setTrophyFilter(trophyFilter === 'trophies' ? 'all' : 'trophies')}
                       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         trophyFilter === 'trophies'
-                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
@@ -543,7 +543,7 @@ function AppContent() {
                       onClick={() => setTrophyFilter(trophyFilter === 'records' ? 'all' : 'records')}
                       className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                         trophyFilter === 'records'
-                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
