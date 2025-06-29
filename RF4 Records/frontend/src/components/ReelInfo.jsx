@@ -171,6 +171,34 @@ const ReelInfo = () => {
     const speeds = [speed1, speed2, speed3, speed4].filter(s => s && s !== '-' && s !== '' && s !== '?');
     return speeds.length > 0 ? speeds.join(' / ') : '-';
   };
+  
+  const formatDrag = (dragReal, dragClaimed) => {
+    const real = dragReal && dragReal !== '-' ? dragReal : null;
+    const claimed = dragClaimed && dragClaimed !== '-' ? dragClaimed : null;
+    
+    if (real && claimed) {
+      return (
+        <div className="flex flex-col text-center">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Tested: {real}</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {claimed}</span>
+        </div>
+      );
+    } else if (claimed) {
+      return (
+        <div className="flex flex-col text-center">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {claimed}</span>
+        </div>
+      );
+    } else if (real) {
+      return (
+        <div className="flex flex-col text-center">
+          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {real}</span>
+        </div>
+      );
+    }
+    
+    return '-';
+  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -340,7 +368,7 @@ const ReelInfo = () => {
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                      {reel.Drag_Real && reel.Drag_Real !== '-' ? reel.Drag_Real : (reel.Drag_Claimed && reel.Drag_Claimed !== '-' ? reel.Drag_Claimed : '-')}
+                      {formatDrag(reel.Drag_Real, reel.Drag_Claimed)}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? formatWeight(reel.Mechanism_Weight) : '-'}
@@ -352,7 +380,7 @@ const ReelInfo = () => {
                         )}
                         {reel.Price_New && reel.Price_New !== '-' && reel.Price_New !== reel.Price && (
                           <span className="text-xs text-green-600 dark:text-green-400">
-                            New: {formatPrice(reel.Price_New)}
+                            {formatPrice(reel.Price_New)}
                           </span>
                         )}
                       </div>
