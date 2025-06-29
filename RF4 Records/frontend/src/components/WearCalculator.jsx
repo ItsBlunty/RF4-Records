@@ -1,9 +1,66 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const WearCalculator = () => {
   const [gearKg, setGearKg] = useState('');
   const [currentWear, setCurrentWear] = useState('');
   const [result, setResult] = useState(null);
+  const [selectedReel, setSelectedReel] = useState('');
+  const [reels, setReels] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Parse CSV data and extract reel information
+  const parseCSVData = (text) => {
+    const lines = text.trim().split('\n');
+    const reelData = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const values = line.split(',');
+      
+      // Skip header rows, empty rows, and category headers
+      if (i < 4 || values.length < 5 || !values[1] || values[1].includes('ОБНОВЛЕНИЕ') || 
+          values[1].includes('НАЗВАНИЕ') || values[1].includes('Reel') || values[1].includes('БЕЗЫНЕРЦИОННЫЕ') ||
+          values[1].includes('БАЙТКАСТИНГОВЫЕ') || values[1].includes('СИЛОВЫЕ') ||
+          values[1] === '' || values[1].includes('НГ IMPERIAL R600')) {
+        continue;
+      }
+      
+      // Extract reel data - only Name and Mechanism_Weight for our purposes
+      const reel = {
+        Name: values[1] || '',
+        Mechanism_Weight: values[19] || '' // Column 20 (0-indexed = 19)
+      };
+      
+      // Only add if it has a valid name and mechanism weight
+      if (reel.Name && reel.Name.trim() !== '' && reel.Mechanism_Weight && reel.Mechanism_Weight !== '-') {
+        reelData.push(reel);
+      }
+    }
+    
+    return reelData;
+  };
+
+  // Load reels data
+  useEffect(() => {
+    const loadReels = async () => {
+      try {
+        const response = await fetch('/data/reels.csv?v=' + Date.now());
+        if (!response.ok) {
+          throw new Error('Failed to load reel data');
+        }
+        const text = await response.text();
+        const reelData = parseCSVData(text);
+        setReels(reelData);
+      } catch (err) {
+        console.error('Error loading reels:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReels();
+  }, []);
 
   // Calculate the current KG strength whenever inputs change
   useEffect(() => {
@@ -31,9 +88,27 @@ const WearCalculator = () => {
     setCurrentWear(e.target.value);
   };
 
+  const handleReelChange = (e) => {
+    const reelName = e.target.value;
+    setSelectedReel(reelName);
+    
+    // Find the selected reel and autofill Gear KG with Mechanism Weight
+    const selectedReelData = reels.find(reel => reel.Name === reelName);
+    if (selectedReelData && selectedReelData.Mechanism_Weight) {
+      // Clean up the mechanism weight value (remove 'kg' suffix if present)
+      const cleanWeight = selectedReelData.Mechanism_Weight.toString().replace(/[^\d.-]/g, '');
+      setGearKg(cleanWeight);
+    }
+  };
+
+  const clearReelFilter = () => {
+    setSelectedReel('');
+  };
+
   const clearFields = () => {
     setGearKg('');
     setCurrentWear('');
+    setSelectedReel('');
     setResult(null);
   };
 
@@ -56,6 +131,39 @@ const WearCalculator = () => {
               Enter Gear Information
             </h2>
             
+            {/* Reel Filter */}
+            <div>
+              <label htmlFor="reelFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Reel (Optional - Auto-fills Gear KG)
+              </label>
+              <div className="relative">
+                <input
+                  type="search"
+                  id="reelFilter"
+                  list="reel-list"
+                  placeholder="Search and select a reel..."
+                  value={selectedReel}
+                  onChange={handleReelChange}
+                  autoComplete="off"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                <datalist id="reel-list">
+                  {reels.map((reel, idx) => (
+                    <option key={idx} value={reel.Name} />
+                  ))}
+                </datalist>
+                {selectedReel && (
+                  <button
+                    type="button"
+                    onClick={clearReelFilter}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Gear KG Field */}
             <div>
               <label htmlFor="gearKg" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
