@@ -20,10 +20,10 @@ const ReelInfo = () => {
       const values = line.split(',');
       
       // Skip header rows, empty rows, and category headers
-      if (values.length < 5 || !values[1] || values[1].includes('ОБНОВЛЕНИЕ') || 
-          values[1].includes('НАЗВАНИЕ') || values[1].includes('БЕЗЫНЕРЦИОННЫЕ') ||
+      if (i < 4 || values.length < 5 || !values[1] || values[1].includes('ОБНОВЛЕНИЕ') || 
+          values[1].includes('НАЗВАНИЕ') || values[1].includes('Reel') || values[1].includes('БЕЗЫНЕРЦИОННЫЕ') ||
           values[1].includes('БАЙТКАСТИНГОВЫЕ') || values[1].includes('СИЛОВЫЕ') ||
-          values[1] === '' || values[1] === 'НГ IMPERIAL R600') {
+          values[1] === '' || values[1].includes('НГ IMPERIAL R600')) {
         continue;
       }
       
@@ -31,7 +31,7 @@ const ReelInfo = () => {
       const reel = {
         Name: values[1] || '',
         Test_Weight: values[2] || '',
-        Water_Resistant: values[3] || '',
+        Saltwater_Resistance: values[3] || '',
         Gear_Ratio_1: values[6] || '',
         Gear_Ratio_2: values[7] || '',
         Line_Capacity: values[9] || '',
@@ -319,9 +319,9 @@ const ReelInfo = () => {
                           <div className="text-sm font-medium text-gray-900 dark:text-white">
                             {reel.Name}
                           </div>
-                          {reel.Water_Resistant === '💧' && (
+                          {reel.Saltwater_Resistance === '💧' && (
                             <div className="text-xs text-blue-600 dark:text-blue-400">
-                              Water Resistant 💧
+                              Saltwater Resistance 💧
                             </div>
                           )}
                         </div>
@@ -386,7 +386,7 @@ const ReelInfo = () => {
             <p><strong>Retrieve Speed:</strong> Line retrieval speed in meters per second</p>
             <p><strong>Drag:</strong> Maximum drag force in kilograms</p>
             <p><strong>Weight:</strong> Reel mechanism weight in kilograms</p>
-            <p><strong>💧:</strong> Water resistant reel</p>
+            <p><strong>💧:</strong> Saltwater resistant reel</p>
             <p><strong>Note:</strong> Prices are in game currency. Data updated May 22, 2025</p>
           </div>
         </div>
