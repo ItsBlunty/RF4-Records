@@ -594,8 +594,8 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
                             days_diff = (today - record_date).days
                             
                             max_days = {
-                                '1-day': 0, '2-days': 2, '3-days': 3, '7-days': 7, 
-                                '30-days': 30, '90-days': 90
+                                '1-day': 0, '2-days': 1, '3-days': 2, '7-days': 6, 
+                                '30-days': 29, '90-days': 89
                             }.get(data_age)
                             
                             if max_days and days_diff > max_days:
