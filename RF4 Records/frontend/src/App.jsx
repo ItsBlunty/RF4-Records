@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Header from './components/Header.jsx';
@@ -18,6 +18,8 @@ import SkillTrees from './components/SkillTrees.jsx';
 import ReelInfo from './components/ReelInfo.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
+import trophyIcon from './assets/trophy-clean.png';
+import superTrophyIcon from './assets/super-trophy-clean.png';
 
 // Configure API base URL - in production, frontend and backend are served from same domain
 // In development, use proxy configuration in vite.config.js
@@ -72,6 +74,21 @@ function AppContent() {
     bait: '',
     dataAge: '1-day'
   });
+
+  // Trophy filter state
+  const [trophyFilter, setTrophyFilter] = useState('all'); // 'all', 'trophies', 'records'
+
+  // Apply trophy filter to records
+  const displayRecords = useMemo(() => {
+    if (trophyFilter === 'all') {
+      return filteredRecords;
+    } else if (trophyFilter === 'trophies') {
+      return filteredRecords.filter(record => record.trophy_class === 'trophy' || record.trophy_class === 'record');
+    } else if (trophyFilter === 'records') {
+      return filteredRecords.filter(record => record.trophy_class === 'record');
+    }
+    return filteredRecords;
+  }, [filteredRecords, trophyFilter]);
   
   // Unique values for dropdowns
   const [uniqueValues, setUniqueValues] = useState({
@@ -440,7 +457,7 @@ function AppContent() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <Header 
         total={records.length} 
-        filtered={filteredRecords.length} 
+        filtered={displayRecords.length} 
         onRefresh={handleRefresh} 
         lastRefresh={lastRefresh}
         darkMode={darkMode}
@@ -498,16 +515,44 @@ function AppContent() {
                   </button>
                 </div>
                 
-                {/* Record Count */}
+                {/* Record Count and Trophy Filters */}
                 <div className="flex items-center space-x-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-                    {filteredRecords.length} of {cachedRecordCount || records.length} records
+                    {displayRecords.length} of {cachedRecordCount || records.length} records
                     {!allRecordsLoaded && typeof totalRecords === 'number' && totalRecords > 0 && (
                       <span className="ml-1 text-xs">
                         (~{totalRecords} total)
                       </span>
                     )}
                   </span>
+                  
+                  {/* Trophy Filter Buttons */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setTrophyFilter(trophyFilter === 'trophies' ? 'all' : 'trophies')}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        trophyFilter === 'trophies'
+                          ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1" />
+                      <img src={superTrophyIcon} alt="Super Trophy" className="w-4 h-4 mr-1" />
+                      Only Trophies
+                    </button>
+                    
+                    <button
+                      onClick={() => setTrophyFilter(trophyFilter === 'records' ? 'all' : 'records')}
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                        trophyFilter === 'records'
+                          ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <img src={superTrophyIcon} alt="Super Trophy" className="w-4 h-4 mr-1" />
+                      Only Records
+                    </button>
+                  </div>
                   
                   {loadingRemaining && (
                     <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
@@ -524,7 +569,7 @@ function AppContent() {
             </div>
             
             <LoadingOverlay isLoading={loadingRemaining}>
-              {filteredRecords.length === 0 ? (
+              {displayRecords.length === 0 ? (
                 <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
                   <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎣</div>
                   <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -537,19 +582,19 @@ function AppContent() {
                 </div>
               ) : viewMode === 'grouped' ? (
                 <GroupedRecordsTable 
-                  records={filteredRecords} 
+                  records={displayRecords} 
                   sortConfig={sortConfig}
                   onSort={handleSort}
                 />
               ) : viewMode === 'fish-grouped' ? (
                 <FishGroupedRecordsTable 
-                  records={filteredRecords} 
+                  records={displayRecords} 
                   sortConfig={sortConfig}
                   onSort={handleSort}
                 />
               ) : (
                 <RecordsTable 
-                  records={filteredRecords} 
+                  records={displayRecords} 
                   sortConfig={sortConfig}
                   onSort={handleSort}
                 />
