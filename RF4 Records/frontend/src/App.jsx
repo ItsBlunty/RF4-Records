@@ -536,7 +536,7 @@ function AppContent() {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      Only show <img src={trophyIcon} alt="Trophy" className="ml-1 mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} /> and <img src={superTrophyIcon} alt="Super Trophy" className="mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} />
+                      Only show <img src={trophyIcon} alt="Trophy" className="ml-1 mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} /> and <img src={superTrophyIcon} alt="Super Trophy" className="ml-1 mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} />
                     </button>
                     
                     <button
