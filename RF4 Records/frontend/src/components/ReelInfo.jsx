@@ -177,18 +177,39 @@ const ReelInfo = () => {
       return { tested: '-', listed: '-' };
     }
     
-    // Split by space to get individual numbers
-    const parts = dragString.trim().split(/\s+/);
+    const trimmed = dragString.trim();
     
-    if (parts.length >= 2) {
-      // Two or more numbers - first is tested, second is listed
-      return { tested: parts[0], listed: parts[1] };
-    } else if (parts.length === 1) {
+    // Look for pattern like "14.4 - 15.43 15.4" where we need to group ranges
+    // We'll find the last standalone number and treat everything before it as the first value
+    const parts = trimmed.split(/\s+/);
+    
+    if (parts.length === 1) {
       // One number - goes to listed
       return { tested: '-', listed: parts[0] };
     }
     
-    return { tested: '-', listed: '-' };
+    // Find the last part that looks like a standalone number (not part of a range)
+    let lastStandaloneIndex = -1;
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const part = parts[i];
+      // Check if this part is a number and the previous part isn't a dash
+      if (/^\d+(\.\d+)?$/.test(part) && (i === 0 || parts[i-1] !== '-')) {
+        lastStandaloneIndex = i;
+        break;
+      }
+    }
+    
+    if (lastStandaloneIndex > 0) {
+      // Split at the last standalone number
+      const tested = parts.slice(0, lastStandaloneIndex).join(' ');
+      const listed = parts[lastStandaloneIndex];
+      return { tested, listed };
+    } else if (parts.length >= 2) {
+      // Fallback: treat first part as tested, last as listed
+      return { tested: parts[0], listed: parts[parts.length - 1] };
+    }
+    
+    return { tested: '-', listed: parts[0] };
   };
   
 
