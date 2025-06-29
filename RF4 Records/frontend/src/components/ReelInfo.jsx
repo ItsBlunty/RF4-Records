@@ -172,6 +172,25 @@ const ReelInfo = () => {
     return speeds.length > 0 ? speeds.join(' / ') : '-';
   };
   
+  const parseDragValues = (dragString) => {
+    if (!dragString || dragString === '-' || dragString === '') {
+      return { tested: '-', listed: '-' };
+    }
+    
+    // Split by space to get individual numbers
+    const parts = dragString.trim().split(/\s+/);
+    
+    if (parts.length >= 2) {
+      // Two or more numbers - first is tested, second is listed
+      return { tested: parts[0], listed: parts[1] };
+    } else if (parts.length === 1) {
+      // One number - goes to listed
+      return { tested: '-', listed: parts[0] };
+    }
+    
+    return { tested: '-', listed: '-' };
+  };
+  
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -344,10 +363,10 @@ const ReelInfo = () => {
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                      {reel.Drag_Real && reel.Drag_Real !== '-' ? reel.Drag_Real : '-'}
+                      {parseDragValues(reel.Drag_Real).tested}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                      {reel.Drag_Claimed && reel.Drag_Claimed !== '-' ? reel.Drag_Claimed : '-'}
+                      {parseDragValues(reel.Drag_Real).listed}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? formatWeight(reel.Mechanism_Weight) : '-'}
