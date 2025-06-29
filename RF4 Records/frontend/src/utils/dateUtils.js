@@ -121,11 +121,11 @@ export function isWithinAgeRange(record, ageRange) {
       const recordDay = new Date(recordDate.getFullYear(), recordDate.getMonth(), recordDate.getDate());
       const daysDiff = Math.floor((today.getTime() - recordDay.getTime()) / (24 * 60 * 60 * 1000));
       
-      const maxDays = ageRange === '1-day' ? 1 : 
-                     ageRange === '2-days' ? 2 :
-                     ageRange === '3-days' ? 3 :
-                     ageRange === '7-days' ? 7 :
-                     ageRange === '30-days' ? 30 : 90;
+      const maxDays = ageRange === '1-day' ? 0 : 
+                     ageRange === '2-days' ? 1 :
+                     ageRange === '3-days' ? 2 :
+                     ageRange === '7-days' ? 6 :
+                     ageRange === '30-days' ? 29 : 89;
       
       return daysDiff <= maxDays;
     
