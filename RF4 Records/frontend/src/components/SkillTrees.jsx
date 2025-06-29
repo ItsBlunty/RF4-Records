@@ -850,10 +850,15 @@ const SkillTrees = () => {
                         ? 'bg-green-600 border-green-400 text-white' 
                         : skill.maxPoints > 0
                           ? 'bg-gray-700 border-gray-500 text-gray-300 hover:border-gray-400'
-                          : 'bg-blue-800 border-blue-600 text-blue-300'
+                          : ''
                       }
                       ${(canInvest || canRemove) ? 'hover:scale-105 cursor-pointer' : ''}
                     `}
+                    style={skill.maxPoints === 0 ? {
+                      backgroundColor: 'rgb(80, 200, 120)',
+                      borderColor: 'rgb(100, 220, 140)',
+                      color: 'white'
+                    } : {}}
                   >
                     {skill.maxPoints > 0 ? (
                       <>
@@ -861,7 +866,7 @@ const SkillTrees = () => {
                         <span className="text-xs text-gray-300">({skill.unlockAt})</span>
                       </>
                     ) : (
-                      <span className="text-xs text-blue-300">{skill.unlockAt}</span>
+                      <span className="text-xs">{skill.unlockAt}</span>
                     )}
                   </button>
                   <div className="mt-2 text-center max-w-24">
