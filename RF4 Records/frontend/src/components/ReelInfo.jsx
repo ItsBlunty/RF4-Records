@@ -64,7 +64,7 @@ const ReelInfo = () => {
   useEffect(() => {
     const loadReels = async () => {
       try {
-        const response = await fetch('/data/reels.csv');
+        const response = await fetch('/data/reels.csv?v=' + Date.now());
         if (!response.ok) {
           throw new Error('Failed to load reel data');
         }
