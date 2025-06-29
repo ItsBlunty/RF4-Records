@@ -536,9 +536,7 @@ function AppContent() {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      <img src={trophyIcon} alt="Trophy" className="w-4 h-4 mr-1" />
-                      <img src={superTrophyIcon} alt="Super Trophy" className="w-4 h-4 mr-1" />
-                      Only Trophies
+                      Only show <img src={trophyIcon} alt="Trophy" className="mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} /> and <img src={superTrophyIcon} alt="Super Trophy" className="mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} />
                     </button>
                     
                     <button
@@ -549,8 +547,7 @@ function AppContent() {
                           : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                       }`}
                     >
-                      <img src={superTrophyIcon} alt="Super Trophy" className="w-4 h-4 mr-1" />
-                      Only Records
+                      Only show <img src={superTrophyIcon} alt="Super Trophy" className="mr-1 inline-block" style={{ height: '20px', objectFit: 'contain' }} />
                     </button>
                   </div>
                   
