@@ -13,6 +13,8 @@ const ReelInfo = () => {
     const lines = text.trim().split('\n');
     const reelData = [];
     
+    console.log(`Total lines in CSV: ${lines.length}`);
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const values = line.split(',');
@@ -53,6 +55,7 @@ const ReelInfo = () => {
       }
     }
     
+    console.log(`Parsed ${reelData.length} reels`);
     return reelData;
   };
 
