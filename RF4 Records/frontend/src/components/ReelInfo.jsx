@@ -172,33 +172,6 @@ const ReelInfo = () => {
     return speeds.length > 0 ? speeds.join(' / ') : '-';
   };
   
-  const formatDrag = (dragReal, dragClaimed) => {
-    const real = dragReal && dragReal !== '-' ? dragReal : null;
-    const claimed = dragClaimed && dragClaimed !== '-' ? dragClaimed : null;
-    
-    if (real && claimed) {
-      return (
-        <div className="flex flex-col text-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Tested: {real}</span>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {claimed}</span>
-        </div>
-      );
-    } else if (claimed) {
-      return (
-        <div className="flex flex-col text-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {claimed}</span>
-        </div>
-      );
-    } else if (real) {
-      return (
-        <div className="flex flex-col text-center">
-          <span className="text-xs text-gray-500 dark:text-gray-400">Listed: {real}</span>
-        </div>
-      );
-    }
-    
-    return '-';
-  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -328,7 +301,10 @@ const ReelInfo = () => {
                     Retrieve Speed
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Drag (kg)
+                    Tested Drag (kg)
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Listed Drag (kg)
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Weight (kg)
@@ -368,22 +344,16 @@ const ReelInfo = () => {
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                      {formatDrag(reel.Drag_Real, reel.Drag_Claimed)}
+                      {reel.Drag_Real && reel.Drag_Real !== '-' ? reel.Drag_Real : '-'}
+                    </td>
+                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                      {reel.Drag_Claimed && reel.Drag_Claimed !== '-' ? reel.Drag_Claimed : '-'}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? formatWeight(reel.Mechanism_Weight) : '-'}
                     </td>
                     <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
-                      <div className="flex flex-col">
-                        {reel.Price && reel.Price !== '-' && (
-                          <span className="font-medium">{formatPrice(reel.Price)}</span>
-                        )}
-                        {reel.Price_New && reel.Price_New !== '-' && reel.Price_New !== reel.Price && (
-                          <span className="text-xs text-green-600 dark:text-green-400">
-                            {formatPrice(reel.Price_New)}
-                          </span>
-                        )}
-                      </div>
+                      {reel.Price && reel.Price !== '-' ? formatPrice(reel.Price) : '-'}
                     </td>
                   </tr>
                 ))}
@@ -412,7 +382,8 @@ const ReelInfo = () => {
             <p><strong>Gear Ratio:</strong> Number of spool rotations per handle turn</p>
             <p><strong>Line Capacity:</strong> Line capacity in meters at specified thickness</p>
             <p><strong>Retrieve Speed:</strong> Line retrieval speed in meters per second</p>
-            <p><strong>Drag:</strong> Maximum drag force in kilograms</p>
+            <p><strong>Tested Drag:</strong> Real-world tested maximum drag force in kilograms</p>
+            <p><strong>Listed Drag:</strong> Manufacturer claimed maximum drag force in kilograms</p>
             <p><strong>Weight:</strong> Reel mechanism weight in kilograms</p>
             <p><strong>💧:</strong> Saltwater resistant reel</p>
             <p><strong>Note:</strong> Prices are in game currency. Data updated May 22, 2025</p>
