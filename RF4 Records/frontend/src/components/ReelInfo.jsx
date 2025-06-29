@@ -307,7 +307,7 @@ const ReelInfo = () => {
                     Listed Drag (kg)
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Weight (kg)
+                    Mech Weight (kg)
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Price
@@ -384,7 +384,7 @@ const ReelInfo = () => {
             <p><strong>Retrieve Speed:</strong> Line retrieval speed in meters per second</p>
             <p><strong>Tested Drag:</strong> Real-world tested maximum drag force in kilograms</p>
             <p><strong>Listed Drag:</strong> Manufacturer claimed maximum drag force in kilograms</p>
-            <p><strong>Weight:</strong> Reel mechanism weight in kilograms</p>
+            <p><strong>Mech Weight:</strong> Reel mechanism weight in kilograms</p>
             <p><strong>💧:</strong> Saltwater resistant reel</p>
             <p><strong>Note:</strong> Prices are in game currency. Data updated May 22, 2025</p>
           </div>
