@@ -15,6 +15,7 @@ import AlcoholGuide from './components/AlcoholGuide.jsx';
 import WaterbodyPrices from './components/WaterbodyPrices.jsx';
 import Links from './components/Links.jsx';
 import SkillTrees from './components/SkillTrees.jsx';
+import ReelInfo from './components/ReelInfo.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 
@@ -51,6 +52,7 @@ function AppContent() {
     if (location.pathname === '/wearcalc') return 'wearcalc';
     if (location.pathname === '/waterbodyprices') return 'waterbodyprices';
     if (location.pathname === '/alcohol') return 'alcohol';
+    if (location.pathname === '/reelinfo') return 'reelinfo';
     return 'records';
   };
   
@@ -128,6 +130,8 @@ function AppContent() {
       navigate('/waterbodyprices');
     } else if (page === 'alcohol') {
       navigate('/alcohol');
+    } else if (page === 'reelinfo') {
+      navigate('/reelinfo');
     }
   };
 
@@ -569,6 +573,8 @@ function AppContent() {
         <WaterbodyPrices />
       ) : getCurrentPage() === 'alcohol' ? (
         <AlcoholGuide />
+      ) : getCurrentPage() === 'reelinfo' ? (
+        <ReelInfo />
       ) : null}
       
       {/* About Modal */}
@@ -592,6 +598,7 @@ function App() {
         <Route path="/wearcalc" element={<AppContent />} />
         <Route path="/waterbodyprices" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />
+        <Route path="/reelinfo" element={<AppContent />} />
       </Routes>
     </Router>
   );

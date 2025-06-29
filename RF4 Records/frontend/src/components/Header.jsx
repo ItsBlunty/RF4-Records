@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
@@ -145,6 +145,18 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             >
               <Wine className="w-4 h-4 mr-2" />
               Alcohol
+            </button>
+
+            <button
+              onClick={() => onPageChange && onPageChange('reelinfo')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'reelinfo' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Reel Info
             </button>
 
             {onAboutClick && (
