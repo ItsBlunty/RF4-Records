@@ -306,7 +306,7 @@ const ReelInfo = () => {
                       {parseDragValues(reel.Drag_Real).listed}
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
-                      {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? formatWeight(reel.Mechanism_Weight) : '-'}
+                      {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? reel.Mechanism_Weight : '-'}
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Price && reel.Price !== '-' ? formatPrice(reel.Price) : '-'}
