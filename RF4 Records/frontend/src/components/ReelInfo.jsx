@@ -14,6 +14,7 @@ const ReelInfo = () => {
     const reelData = [];
     
     console.log(`Total lines in CSV: ${lines.length}`);
+    console.log(`First few lines:`, lines.slice(0, 10));
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
