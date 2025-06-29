@@ -855,8 +855,8 @@ const SkillTrees = () => {
                       ${(canInvest || canRemove) ? 'hover:scale-105 cursor-pointer' : ''}
                     `}
                     style={skill.maxPoints === 0 ? {
-                      backgroundColor: '#006400',
-                      borderColor: '#228B22',
+                      backgroundColor: '#004526',
+                      borderColor: '#006400',
                       color: 'white'
                     } : {}}
                   >
