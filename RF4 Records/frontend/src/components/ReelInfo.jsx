@@ -325,31 +325,31 @@ const ReelInfo = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Reel Name
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Test Weight
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Gear Ratio
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Line Capacity (m)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Retrieve Speed
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Tested Drag (kg)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Listed Drag (kg)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Mech Weight (kg)
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Price
                   </th>
                 </tr>
@@ -357,42 +357,38 @@ const ReelInfo = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredReels.map((reel, index) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {reel.Name}
-                          </div>
-                          {reel.Saltwater_Resistance === '💧' && (
-                            <div className="text-xs text-blue-600 dark:text-blue-400">
-                              Saltwater Resistance 💧
-                            </div>
-                          )}
+                    <td className="px-4 py-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {reel.Name}
                         </div>
+                        {reel.Saltwater_Resistance === '💧' && (
+                          <span className="text-blue-500" title="Saltwater Resistant">💧</span>
+                        )}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Test_Weight || '-'}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {formatGearRatio(reel.Gear_Ratio_1, reel.Gear_Ratio_2)}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Line_Capacity && reel.Line_Capacity !== '-' ? reel.Line_Capacity : '-'}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {parseDragValues(reel.Drag_Real).tested}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {parseDragValues(reel.Drag_Real).listed}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? formatWeight(reel.Mechanism_Weight) : '-'}
                     </td>
-                    <td className="px-4 py-3 text-center text-sm text-gray-900 dark:text-white">
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Price && reel.Price !== '-' ? formatPrice(reel.Price) : '-'}
                     </td>
                   </tr>
