@@ -612,11 +612,11 @@ const SkillTrees = () => {
   const getTreeProgress = (treeId) => {
     const tree = skillData[treeId] || [];
     const treePoints = investedPoints[treeId] || {};
-    const totalSkills = tree.filter(skill => skill.maxPoints > 0).length;
+    const totalInvestableSkills = tree.filter(skill => skill.maxPoints > 0).length;
     const completedSkills = tree.filter(skill => 
       skill.maxPoints > 0 && (treePoints[skill.id] || 0) >= skill.maxPoints
     ).length;
-    return totalSkills > 0 ? (completedSkills / totalSkills) * 100 : 0;
+    return totalInvestableSkills > 0 ? (completedSkills / totalInvestableSkills) * 100 : 0;
   };
 
   const getUnlockedAbilities = (treeId) => {
@@ -850,7 +850,7 @@ const SkillTrees = () => {
                         ? 'bg-green-600 border-green-400 text-white' 
                         : skill.maxPoints > 0
                           ? 'bg-gray-700 border-gray-500 text-gray-300 hover:border-gray-400'
-                          : 'bg-gray-800 border-gray-600 text-gray-500'
+                          : 'bg-blue-800 border-blue-600 text-blue-300'
                       }
                       ${(canInvest || canRemove) ? 'hover:scale-105 cursor-pointer' : ''}
                     `}
@@ -860,7 +860,9 @@ const SkillTrees = () => {
                         <span className="text-sm">{invested}</span>
                         <span className="text-xs text-gray-300">({skill.unlockAt})</span>
                       </>
-                    ) : ('')}
+                    ) : (
+                      <span className="text-xs text-blue-300">{skill.unlockAt}</span>
+                    )}
                   </button>
                   <div className="mt-2 text-center max-w-24">
                     <div className="text-xs text-gray-300 break-words leading-tight">
@@ -930,7 +932,8 @@ const SkillTrees = () => {
               </div>
               <h3 className="text-sm font-bold mb-2">{tree.name}</h3>
               <div className="text-xs text-gray-400 space-y-1">
-                <div>Unlocked abilities: <span className="text-blue-400">{getUnlockedAbilities(tree.id)} / {(skillData[tree.id] || []).filter(s => s.maxPoints > 0).length}</span></div>
+                <div>Total skills: <span className="text-blue-400">{(skillData[tree.id] || []).length}</span></div>
+                <div>Investable skills: <span className="text-green-400">{getUnlockedAbilities(tree.id)} / {(skillData[tree.id] || []).filter(s => s.maxPoints > 0).length}</span></div>
                 <div>Invested points: <span className="text-yellow-400">{getTotalTreePoints(tree.id)}</span></div>
               </div>
             </button>
