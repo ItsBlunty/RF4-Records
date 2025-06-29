@@ -937,9 +937,9 @@ const SkillTrees = () => {
               </div>
               <h3 className="text-sm font-bold mb-2">{tree.name}</h3>
               <div className="text-xs text-gray-400 space-y-1">
-                <div>Total skills: <span className="text-blue-400">{(skillData[tree.id] || []).length}</span></div>
-                <div>Investable skills: <span className="text-green-400">{getUnlockedAbilities(tree.id)} / {(skillData[tree.id] || []).filter(s => s.maxPoints > 0).length}</span></div>
-                <div>Invested points: <span className="text-yellow-400">{getTotalTreePoints(tree.id)}</span></div>
+                <div className="py-4">
+                  <div>Invested points: <span className="text-yellow-400">{getTotalTreePoints(tree.id)}</span></div>
+                </div>
               </div>
             </button>
           ))}
