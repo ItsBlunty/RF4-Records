@@ -575,33 +575,71 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
                 # Parse date string (DD.MM.YY format)
                 if record.date:
                     try:
-                        parts = record.date.split('.')
-                        if len(parts) == 3:
+                        # Validate date format before parsing
+                        if not isinstance(record.date, str) or not record.date.strip():
+                            logger.warning(f"Invalid date format for record {record.player}/{record.fish}: empty or non-string date")
+                            continue  # Skip records with invalid date format for day-based filters
+                        
+                        parts = record.date.strip().split('.')
+                        if len(parts) != 3:
+                            logger.warning(f"Invalid date format for record {record.player}/{record.fish}: '{record.date}' - expected DD.MM.YY format")
+                            continue  # Skip records with invalid date format for day-based filters
+                        
+                        try:
                             day = int(parts[0])
                             month = int(parts[1])
                             year = int(parts[2])
-                            
-                            # Convert 2-digit year to 4-digit
-                            if year <= 50:
-                                year += 2000
-                            elif year < 100:
-                                year += 1900
-                            
+                        except ValueError as e:
+                            logger.warning(f"Date parsing error for record {record.player}/{record.fish}: '{record.date}' - non-numeric components: {e}")
+                            continue  # Skip records with non-numeric date components
+                        
+                        # Validate date component ranges
+                        if not (1 <= day <= 31):
+                            logger.warning(f"Invalid day for record {record.player}/{record.fish}: '{record.date}' - day {day} out of range")
+                            continue
+                        if not (1 <= month <= 12):
+                            logger.warning(f"Invalid month for record {record.player}/{record.fish}: '{record.date}' - month {month} out of range")
+                            continue
+                        if not (0 <= year <= 99):
+                            logger.warning(f"Invalid year for record {record.player}/{record.fish}: '{record.date}' - year {year} out of range for 2-digit format")
+                            continue
+                        
+                        # Convert 2-digit year to 4-digit
+                        if year <= 50:
+                            year += 2000
+                        elif year < 100:
+                            year += 1900
+                        
+                        try:
                             record_date = datetime(year, month, day, 12, 0, 0, tzinfo=timezone.utc)
+                        except ValueError as e:
+                            logger.warning(f"Invalid date for record {record.player}/{record.fish}: '{record.date}' - {year}-{month}-{day} is not a valid date: {e}")
+                            continue  # Skip records with invalid calendar dates
+                        
+                        # Calculate days difference
+                        today = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+                        days_diff = (today - record_date).days
+                        
+                        max_days = {
+                            '1-day': 0, '2-days': 1, '3-days': 2, '7-days': 6, 
+                            '30-days': 29, '90-days': 89
+                        }.get(data_age)
+                        
+                        # Debug logging for problematic cases
+                        if data_age == '1-day' and days_diff > 0:
+                            logger.debug(f"Filtering out record from {record.date} ({days_diff} days ago) for 1-day filter: {record.player}/{record.fish}")
+                        
+                        if max_days is not None and days_diff > max_days:
+                            continue
                             
-                            # Calculate days difference
-                            today = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
-                            days_diff = (today - record_date).days
-                            
-                            max_days = {
-                                '1-day': 0, '2-days': 1, '3-days': 2, '7-days': 6, 
-                                '30-days': 29, '90-days': 89
-                            }.get(data_age)
-                            
-                            if max_days and days_diff > max_days:
-                                continue
-                    except:
-                        pass  # Keep record if date parsing fails
+                    except Exception as e:
+                        # Log any unexpected errors and skip the record for day-based filters
+                        logger.warning(f"Unexpected error parsing date for record {record.player}/{record.fish}: '{record.date}' - {type(e).__name__}: {e}")
+                        continue  # Skip records with any parsing errors for day-based filters
+                else:
+                    # No date field - skip for day-based filters
+                    logger.debug(f"No date field for record {record.player}/{record.fish} - skipping for day-based filter")
+                    continue
             
             # Add to filtered results
             filtered_records.append({
