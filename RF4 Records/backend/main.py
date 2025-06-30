@@ -2156,6 +2156,26 @@ def serve_frontend(path: str):
         # Fallback if frontend is not built
         return {"message": "Frontend not available - API only mode", "path": path}
 
+@app.post("/test-trophy-classification")
+def test_trophy_classification(fish_name: str, weight: int):
+    """Test the trophy classification system"""
+    try:
+        from trophy_classifier import classify_trophy
+        result = classify_trophy(fish_name, weight)
+        return {
+            "fish_name": fish_name,
+            "weight": weight,
+            "classification": result,
+            "case_test": {
+                "original": classify_trophy(fish_name, weight),
+                "lowercase": classify_trophy(fish_name.lower(), weight),
+                "uppercase": classify_trophy(fish_name.upper(), weight),
+                "title_case": classify_trophy(fish_name.title(), weight)
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
 if __name__ == "__main__":
     import uvicorn
     
