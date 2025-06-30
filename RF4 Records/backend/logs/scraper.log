@@ -19543,3 +19543,14 @@ FROM records) AS anon_1]
 2025-06-25 17:48:17,660 - INFO - Retrieved 1000 initial records (from 41567 total)
 2025-06-25 19:46:12,208 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
 2025-06-25 19:51:06,139 - INFO - Serving static assets from G:\RF4 Records\RF4 Records\backend\..\frontend\dist\assets
+2025-06-30 10:27:21,470 - INFO - === STARTING SCHEDULED SCRAPE at 2025-06-30 10:27:21.470921 ===
+2025-06-30 10:27:21,495 - INFO - Pre-scrape memory check passed: 59.4MB
+2025-06-30 10:27:21,497 - INFO - Memory usage before scrape: 59.4 MB
+2025-06-30 10:27:21,525 - INFO - Using local ChromeDriver
+2025-06-30 10:27:21,525 - INFO - ====== WebDriver manager ======
+2025-06-30 10:27:22,749 - INFO - Get LATEST chromedriver version for google-chrome
+2025-06-30 10:27:22,749 - ERROR - Critical error during scraping: 'NoneType' object has no attribute 'split'
+2025-06-30 10:27:22,750 - INFO - 🔒 Scraping session finished - killing ALL Chrome processes
+2025-06-30 10:27:22,761 - INFO - [AGGRESSIVE CLEANUP] No Chrome processes to kill (checked 0 Chrome processes)
+2025-06-30 10:27:24,763 - INFO - Final memory cleanup...
+2025-06-30 10:27:25,690 - INFO - Memory after cleanup: 60.4MB (freed 0.0MB)

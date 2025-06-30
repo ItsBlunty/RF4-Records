@@ -262,8 +262,12 @@ def classify_trophy(fish_name: str, weight_grams: int) -> str:
     Returns:
         str: Classification - 'record', 'trophy', or 'normal'
     """
-    # Get trophy requirements for this fish
-    requirements = TROPHY_WEIGHTS.get(fish_name)
+    # Get trophy requirements for this fish - use case-insensitive matching
+    requirements = None
+    for trophy_fish_name, trophy_data in TROPHY_WEIGHTS.items():
+        if fish_name.lower() == trophy_fish_name.lower():
+            requirements = trophy_data
+            break
     
     if not requirements:
         # Fish not in trophy requirements - classify as normal
