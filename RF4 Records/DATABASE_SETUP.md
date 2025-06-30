@@ -1,6 +1,6 @@
-# Database Setup for Railway
+# Database Setup for RF4 Records
 
-This project supports both SQLite with persistent storage and PostgreSQL for production use.
+This project supports SQLite for local development, PostgreSQL for production on Railway, and includes tools for syncing production data locally.
 
 ## Option 1: SQLite with Persistent Volume (Recommended)
 
@@ -43,4 +43,88 @@ Check the deployment logs for:
 🗄️  Using database: sqlite:///app/data/rf4_records.db
 ```
 
-This confirms the database is using persistent storage. 
+This confirms the database is using persistent storage.
+
+## Local Development with Production Data
+
+### Quick Start
+
+1. **Start local PostgreSQL** (using Docker):
+   ```bash
+   cd "RF4 Records"
+   docker-compose up -d db
+   ```
+
+2. **Pull production database**:
+   ```bash
+   cd "RF4 Records"
+   ./bin/database_pull.sh
+   ```
+
+3. **Run backend with local data**:
+   ```bash
+   cd "RF4 Records/backend"
+   source .env.development
+   python main.py
+   ```
+
+### Environment Files
+
+The setup includes two environment files:
+
+- `backend/.env.production` - Railway PostgreSQL credentials
+- `backend/.env.development` - Local PostgreSQL settings
+
+### Database Pull Process
+
+The `database_pull.sh` script:
+1. Connects to Railway PostgreSQL using production credentials
+2. Creates a compressed dump (~50-100MB for 174k+ records)  
+3. Drops and recreates local database
+4. Restores production data locally
+5. Verifies record count and cleans up
+
+### Manual Database Operations
+
+#### Connect to local database:
+```bash
+source "./RF4 Records/backend/.env.development"
+psql -U $PGUSER -h $PGHOST -p $PGPORT -d $PGDATABASE
+```
+
+#### Connect to production database:
+```bash
+source "./RF4 Records/backend/.env.production"  
+psql -U $PGUSER -h $PGHOST -p $PGPORT -d $PGDATABASE
+```
+
+#### Check record counts:
+```sql
+SELECT COUNT(*) FROM records;
+SELECT COUNT(*) FROM records WHERE trophy_class = 'trophy';
+SELECT COUNT(*) FROM records WHERE trophy_class = 'record';
+```
+
+### Troubleshooting
+
+#### PostgreSQL not found
+Install PostgreSQL client tools:
+```bash
+# Ubuntu/Debian
+sudo apt-get install postgresql-client
+
+# macOS  
+brew install postgresql
+```
+
+#### Permission denied on scripts
+Make scripts executable:
+```bash
+chmod +x "./RF4 Records/bin/"*.sh
+```
+
+### Security Notes
+
+- `.env.production` contains production credentials
+- Add `*.env*` to `.gitignore` to avoid committing secrets
+- Use environment-specific passwords for local development 
