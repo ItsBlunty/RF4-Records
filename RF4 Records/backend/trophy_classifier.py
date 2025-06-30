@@ -242,7 +242,7 @@ TROPHY_WEIGHTS = {
     "Walleye": {"trophy": 7000, "record": 9000},
     "Redear Sunfish": {"trophy": 1700, "record": 2300},
     "Hybrid Striped Bass (Whiterock Bass)": {"trophy": 8000, "record": 10000},
-    "Striped Bass (Striper)": {"trophy": 8000, "record": 12000},
+    "Striped Bass (Striper)": {"trophy": 30000, "record": None},
     "Channel Catfish": {"trophy": 14000, "record": 20000},
     "Gizzard Shad": {"trophy": 1100, "record": 1600},
     "Flathead Catfish": {"trophy": 30000, "record": 45000},
