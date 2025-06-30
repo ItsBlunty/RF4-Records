@@ -8,13 +8,7 @@ from database import SessionLocal, Record
 from trophy_classifier import TROPHY_WEIGHTS
 
 # Set environment variables for production
-os.environ.update({
-    'PGDATABASE': 'railway',
-    'PGUSER': 'postgres', 
-    'PGPASSWORD': 'FAUBKdJaFyecBvLueekeXhSjPBwMUurC',
-    'PGHOST': 'yamanote.proxy.rlwy.net',
-    'PGPORT': '29646'
-})
+os.environ['DATABASE_URL'] = 'postgresql://postgres:FAUBKdJaFyecBvLueekeXhSjPBwMUurC@yamanote.proxy.rlwy.net:29646/railway'
 
 def check_fish_name_matches():
     print('🔍 Checking fish name matches between database and trophy weights...')
