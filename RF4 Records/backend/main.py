@@ -2234,6 +2234,100 @@ def force_reclassify_trophies():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+@app.get("/check-fish-name-matches")
+def check_fish_name_matches():
+    """Check for mismatches between database fish names and trophy weights"""
+    try:
+        from database import SessionLocal, Record
+        from trophy_classifier import TROPHY_WEIGHTS
+        
+        db = SessionLocal()
+        
+        # Get all unique fish names from database
+        db_fish_names = set()
+        raw_db_names = db.query(Record.fish).filter(Record.fish.isnot(None)).distinct().all()
+        for (fish_name,) in raw_db_names:
+            if fish_name and fish_name.strip():
+                db_fish_names.add(fish_name.strip())
+        
+        # Get all fish names from trophy weights dictionary
+        trophy_fish_names = set(TROPHY_WEIGHTS.keys())
+        
+        # Find database fish names that don't have trophy weights (case-insensitive)
+        db_without_trophies = set()
+        for db_fish in db_fish_names:
+            has_match = False
+            for trophy_fish in trophy_fish_names:
+                if db_fish.lower() == trophy_fish.lower():
+                    has_match = True
+                    break
+            if not has_match:
+                db_without_trophies.add(db_fish)
+        
+        # Find trophy weights that don't have database records (case-insensitive)
+        trophies_without_db = set()
+        for trophy_fish in trophy_fish_names:
+            has_match = False
+            for db_fish in db_fish_names:
+                if trophy_fish.lower() == db_fish.lower():
+                    has_match = True
+                    break
+            if not has_match:
+                trophies_without_db.add(trophy_fish)
+        
+        # Check for case mismatches
+        case_mismatches = []
+        for db_fish in db_fish_names:
+            for trophy_fish in trophy_fish_names:
+                if db_fish.lower() == trophy_fish.lower() and db_fish != trophy_fish:
+                    case_mismatches.append({"db_name": db_fish, "trophy_name": trophy_fish})
+        
+        # Get sample records for fish without trophy weights
+        sample_records = []
+        if db_without_trophies:
+            for fish_name in sorted(list(db_without_trophies))[:10]:
+                sample_record = db.query(Record).filter(Record.fish == fish_name).first()
+                if sample_record:
+                    sample_records.append({
+                        "fish": fish_name,
+                        "weight": sample_record.weight,
+                        "waterbody": sample_record.waterbody
+                    })
+        
+        db.close()
+        
+        total_mismatches = len(db_without_trophies) + len(trophies_without_db)
+        
+        return {
+            "summary": {
+                "database_fish_count": len(db_fish_names),
+                "trophy_weights_count": len(trophy_fish_names),
+                "total_mismatches": total_mismatches,
+                "perfect_match": total_mismatches == 0
+            },
+            "db_without_trophies": {
+                "count": len(db_without_trophies),
+                "fish_names": sorted(list(db_without_trophies))[:50]  # First 50
+            },
+            "trophies_without_db": {
+                "count": len(trophies_without_db),
+                "fish_names": sorted(list(trophies_without_db))[:50]  # First 50
+            },
+            "case_mismatches": {
+                "count": len(case_mismatches),
+                "examples": case_mismatches[:10]  # First 10
+            },
+            "sample_records_without_trophies": sample_records,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        return {
+            "error": "Fish name match check failed", 
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 if __name__ == "__main__":
     import uvicorn
     
