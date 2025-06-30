@@ -41,6 +41,15 @@ def get_database_url():
     if 'POSTGRES_URL' in os.environ:
         return os.environ['POSTGRES_URL']
     
+    # Check for individual PostgreSQL environment variables (for local development)
+    if all(var in os.environ for var in ['PGHOST', 'PGPORT', 'PGDATABASE', 'PGUSER', 'PGPASSWORD']):
+        host = os.environ['PGHOST']
+        port = os.environ['PGPORT']
+        database = os.environ['PGDATABASE']
+        user = os.environ['PGUSER']
+        password = os.environ['PGPASSWORD']
+        return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+    
     # Use persistent volume on Railway if available, otherwise local SQLite
     if 'RAILWAY_VOLUME_MOUNT_PATH' in os.environ:
         # Railway persistent volume - store database in mounted volume
