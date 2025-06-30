@@ -2176,6 +2176,64 @@ def test_trophy_classification(fish_name: str, weight: int):
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/force-reclassify-trophies")
+def force_reclassify_trophies():
+    """Force reclassification of all trophy records (ignores current classification)"""
+    try:
+        import time
+        from database import SessionLocal, Record
+        from trophy_classifier import classify_trophy
+        
+        start_time = time.time()
+        db = SessionLocal()
+        
+        # Get all records with weights
+        all_records = db.query(Record).filter(
+            Record.weight.isnot(None),
+            Record.weight > 0
+        ).all()
+        
+        total_records = len(all_records)
+        updated_count = 0
+        
+        logger.info(f"🔄 Force reclassifying {total_records} records...")
+        
+        for i, record in enumerate(all_records):
+            if i % 1000 == 0:
+                logger.info(f"  Processed {i}/{total_records} records...")
+            
+            old_class = record.trophy_class
+            new_class = classify_trophy(record.fish, record.weight)
+            
+            if old_class != new_class:
+                record.trophy_class = new_class
+                updated_count += 1
+        
+        # Commit all changes
+        db.commit()
+        db.close()
+        
+        elapsed_time = time.time() - start_time
+        
+        logger.info(f"✅ Force reclassification completed: {updated_count} records updated")
+        
+        return {
+            "message": "Force reclassification completed successfully",
+            "success": True,
+            "total_records": total_records,
+            "updated_records": updated_count,
+            "elapsed_time": f"{elapsed_time:.2f}s",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Force reclassification failed: {e}")
+        return {
+            "error": "Force reclassification failed",
+            "details": str(e),
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 if __name__ == "__main__":
     import uvicorn
     
