@@ -313,7 +313,7 @@ const RodInfo = () => {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {typeRods.map((rod, index) => (
                         <tr key={`${rod.name}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-2.5 whitespace-nowrap">
                             <div className="group relative">
                               <span className={`text-sm font-medium ${rod.bonuses.length > 0 ? 'text-blue-600 dark:text-blue-400 cursor-help' : 'text-gray-900 dark:text-white'}`}>
                                 {rod.name}
@@ -330,31 +330,31 @@ const RodInfo = () => {
                               )}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.level}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {formatTestRange(rod.lowTest, rod.highTest)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.action}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.stiffness}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.power}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.length}m
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.maxLoad}kg
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.cost.toFixed(2)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-6 py-2.5 whitespace-nowrap">
                             {renderStars(rod.stars)}
                           </td>
                         </tr>
