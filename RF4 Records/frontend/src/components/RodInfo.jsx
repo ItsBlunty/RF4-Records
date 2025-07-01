@@ -77,15 +77,42 @@ const RodInfo = () => {
   };
 
   const renderStars = (stars) => {
+    const fullStars = Math.floor(stars);
+    const hasHalfStar = stars % 1 !== 0;
+    
     return (
       <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((starNum) => (
-          <Star 
-            key={starNum}
-            className={`w-4 h-4 ${starNum <= stars ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} 
-            fill="currentColor" 
-          />
-        ))}
+        {[1, 2, 3, 4, 5].map((starNum) => {
+          if (starNum <= fullStars) {
+            // Full star
+            return (
+              <Star 
+                key={starNum}
+                className="w-4 h-4 text-yellow-500" 
+                fill="currentColor" 
+              />
+            );
+          } else if (starNum === fullStars + 1 && hasHalfStar) {
+            // Half star - use a different approach that's more visible
+            return (
+              <div key={starNum} className="relative w-4 h-4">
+                <Star className="w-4 h-4 text-gray-300 dark:text-gray-600" fill="currentColor" />
+                <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+                  <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+                </div>
+              </div>
+            );
+          } else {
+            // Empty star
+            return (
+              <Star 
+                key={starNum}
+                className="w-4 h-4 text-gray-300 dark:text-gray-600" 
+                fill="currentColor" 
+              />
+            );
+          }
+        })}
       </div>
     );
   };
