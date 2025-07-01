@@ -6,11 +6,13 @@ const WearCalculator = () => {
   const [currentWear, setCurrentWear] = useState('');
   const [result, setResult] = useState(null);
   const [selectedReel, setSelectedReel] = useState('');
+  const [selectedRod, setSelectedRod] = useState('');
   const [reels, setReels] = useState([]);
+  const [rods, setRods] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Parse CSV data and extract reel information
-  const parseCSVData = (text) => {
+  const parseReelCSVData = (text) => {
     const lines = text.trim().split('\n');
     const reelData = [];
     
@@ -41,25 +43,63 @@ const WearCalculator = () => {
     return reelData;
   };
 
-  // Load reels data
+  // Parse rod CSV data and extract rod information
+  const parseRodCSVData = (text) => {
+    const lines = text.trim().split('\n');
+    const rodData = [];
+    
+    // Skip header line
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i];
+      const values = line.split(',');
+      
+      // Skip empty rows
+      if (values.length < 10 || !values[0]) {
+        continue;
+      }
+      
+      // Extract rod data - Rod name and Max Load
+      const rod = {
+        Name: values[0] || '', // Rod column
+        Max_Load: values[9] || '' // Max Load column (0-indexed = 9)
+      };
+      
+      // Only add if it has a valid name and max load
+      if (rod.Name && rod.Name.trim() !== '' && rod.Max_Load && rod.Max_Load !== '-') {
+        rodData.push(rod);
+      }
+    }
+    
+    return rodData;
+  };
+
+  // Load reels and rods data
   useEffect(() => {
-    const loadReels = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch('/data/reels.csv?v=' + Date.now());
-        if (!response.ok) {
-          throw new Error('Failed to load reel data');
+        // Load reels
+        const reelResponse = await fetch('/data/reels.csv?v=' + Date.now());
+        if (reelResponse.ok) {
+          const reelText = await reelResponse.text();
+          const reelData = parseReelCSVData(reelText);
+          setReels(reelData);
         }
-        const text = await response.text();
-        const reelData = parseCSVData(text);
-        setReels(reelData);
+
+        // Load rods
+        const rodResponse = await fetch('/RodList.csv?v=' + Date.now());
+        if (rodResponse.ok) {
+          const rodText = await rodResponse.text();
+          const rodData = parseRodCSVData(rodText);
+          setRods(rodData);
+        }
       } catch (err) {
-        console.error('Error loading reels:', err);
+        console.error('Error loading data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    loadReels();
+    loadData();
   }, []);
 
   // Calculate the current KG strength whenever inputs change
@@ -91,6 +131,7 @@ const WearCalculator = () => {
   const handleReelChange = (e) => {
     const reelName = e.target.value;
     setSelectedReel(reelName);
+    setSelectedRod(''); // Clear rod selection when reel is selected
     
     // Find the selected reel and autofill Gear KG with Mechanism Weight
     const selectedReelData = reels.find(reel => reel.Name === reelName);
@@ -101,14 +142,33 @@ const WearCalculator = () => {
     }
   };
 
+  const handleRodChange = (e) => {
+    const rodName = e.target.value;
+    setSelectedRod(rodName);
+    setSelectedReel(''); // Clear reel selection when rod is selected
+    
+    // Find the selected rod and autofill Gear KG with Max Load
+    const selectedRodData = rods.find(rod => rod.Name === rodName);
+    if (selectedRodData && selectedRodData.Max_Load) {
+      // Clean up the max load value (remove any non-numeric characters except decimal point)
+      const cleanWeight = selectedRodData.Max_Load.toString().replace(/[^\d.-]/g, '');
+      setGearKg(cleanWeight);
+    }
+  };
+
   const clearReelFilter = () => {
     setSelectedReel('');
+  };
+
+  const clearRodFilter = () => {
+    setSelectedRod('');
   };
 
   const clearFields = () => {
     setGearKg('');
     setCurrentWear('');
     setSelectedReel('');
+    setSelectedRod('');
     setResult(null);
   };
 
@@ -156,6 +216,39 @@ const WearCalculator = () => {
                   <button
                     type="button"
                     onClick={clearReelFilter}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Rod Filter */}
+            <div>
+              <label htmlFor="rodFilter" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Select Rod (Optional - Auto-fills Gear KG)
+              </label>
+              <div className="relative">
+                <input
+                  type="search"
+                  id="rodFilter"
+                  list="rod-list"
+                  placeholder="Search and select a rod..."
+                  value={selectedRod}
+                  onChange={handleRodChange}
+                  autoComplete="off"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                />
+                <datalist id="rod-list">
+                  {rods.map((rod, idx) => (
+                    <option key={idx} value={rod.Name} />
+                  ))}
+                </datalist>
+                {selectedRod && (
+                  <button
+                    type="button"
+                    onClick={clearRodFilter}
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     <X className="h-4 w-4" />
