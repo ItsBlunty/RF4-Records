@@ -77,29 +77,15 @@ const RodInfo = () => {
   };
 
   const renderStars = (stars) => {
-    const fullStars = Math.floor(stars);
-    const hasHalfStar = stars % 1 !== 0;
-    
     return (
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((starNum) => (
           <Star 
             key={starNum}
-            className={`w-4 h-4 ${starNum <= fullStars ? 'text-yellow-500' : 
-              starNum === fullStars + 1 && hasHalfStar ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} 
-            fill={starNum <= fullStars ? 'currentColor' : starNum === fullStars + 1 && hasHalfStar ? 'url(#half)' : 'none'} 
+            className={`w-4 h-4 ${starNum <= stars ? 'text-yellow-500' : 'text-gray-300 dark:text-gray-600'}`} 
+            fill="currentColor" 
           />
         ))}
-        {hasHalfStar && (
-          <svg width="0" height="0">
-            <defs>
-              <linearGradient id="half">
-                <stop offset="50%" stopColor="currentColor" />
-                <stop offset="50%" stopColor="transparent" />
-              </linearGradient>
-            </defs>
-          </svg>
-        )}
       </div>
     );
   };
@@ -339,7 +325,7 @@ const RodInfo = () => {
                             {rod.maxLoad}kg
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            ${rod.cost.toFixed(2)}
+                            {rod.cost.toFixed(2)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             {renderStars(rod.stars)}
