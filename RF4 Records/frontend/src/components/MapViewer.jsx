@@ -86,19 +86,20 @@ const MapViewer = () => {
   }, [pixelToMapCoords, isDragging, dragStart, dragStartTransform]);
 
   // Handle mouse events
-  const handleMouseDown = (e) => {
+  const handleMouseDown = useCallback((e) => {
     if (e.button !== 0) return; // Only left mouse button
+    e.preventDefault();
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
     setDragStartTransform({
       translateX: transform.translateX,
       translateY: transform.translateY
     });
-  };
+  }, [transform.translateX, transform.translateY]);
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-  };
+  }, []);
 
   const handleMouseEnter = () => {
     setIsMouseOverMap(true);
@@ -106,7 +107,7 @@ const MapViewer = () => {
 
   const handleMouseLeave = () => {
     setIsMouseOverMap(false);
-    setIsDragging(false);
+    // Don't stop dragging on mouse leave - let the global mouseup handle it
   };
 
   // Zoom functions
@@ -172,17 +173,25 @@ const MapViewer = () => {
   // Global mouse event listeners
   useEffect(() => {
     if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
+      const handleGlobalMouseMove = (e) => {
+        handleMouseMove(e);
+      };
+      
+      const handleGlobalMouseUp = (e) => {
+        handleMouseUp();
+      };
+      
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
       document.body.style.cursor = 'grabbing';
       
       return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
         document.body.style.cursor = 'default';
       };
     }
-  }, [isDragging, handleMouseMove]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Add wheel event listener to map container
   useEffect(() => {
@@ -309,6 +318,9 @@ const MapViewer = () => {
         <div 
           ref={mapContainerRef}
           className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing"
+          onMouseDown={handleMouseDown}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <div 
             style={{
@@ -328,10 +340,7 @@ const MapViewer = () => {
                 maxWidth: 'none',
                 maxHeight: 'none'
               }}
-              onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
               onLoad={() => {
                 // Auto-fit to screen when image loads
                 setTimeout(fitToScreen, 100);
@@ -339,6 +348,7 @@ const MapViewer = () => {
               onError={(e) => {
                 console.error('Failed to load map image:', e);
               }}
+              onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
           </div>
         </div>
