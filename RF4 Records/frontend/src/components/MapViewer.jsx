@@ -165,12 +165,13 @@ const MapViewer = () => {
       // No longer need to store screen coordinates - we'll calculate them dynamically
       
       if (!currentMeasurement) {
-        // Start new measurement
+        // Start new measurement - clear previous markers and measurements
         const newMarker = { 
           id: Date.now(), 
           mapCoords: mapCoords
         };
-        setMarkers(prev => [...prev, newMarker]);
+        setMarkers([newMarker]); // Replace all markers with just the new one
+        setMeasurements([]); // Clear previous measurements
         setCurrentMeasurement({ start: { mapCoords } });
       } else {
         // Complete measurement
@@ -182,7 +183,12 @@ const MapViewer = () => {
           distance: distance
         };
         
-        // Clear previous measurements but keep current markers, then add the new measurement
+        // Add second marker and complete the measurement
+        const endMarker = {
+          id: Date.now() + 1,
+          mapCoords: mapCoords
+        };
+        setMarkers(prev => [...prev, endMarker]);
         setMeasurements([newMeasurement]);
         setCurrentMeasurement(null);
       }
