@@ -83,6 +83,24 @@ const MapViewer = () => {
     };
   }, [mapBounds]);
 
+  // Alternative: Convert screen coordinates directly to SVG coordinates
+  const screenToSvgCoords = useCallback((screenX, screenY) => {
+    if (!mapImageRef.current) return { x: 0, y: 0 };
+    
+    const img = mapImageRef.current;
+    const imgRect = img.getBoundingClientRect();
+    
+    // Get relative position within the displayed image
+    const relativeX = (screenX - imgRect.left) / imgRect.width;
+    const relativeY = (screenY - imgRect.top) / imgRect.height;
+    
+    // Convert to SVG coordinates (natural image dimensions)
+    return {
+      x: relativeX * img.naturalWidth,
+      y: relativeY * img.naturalHeight
+    };
+  }, []);
+
   // Convert pixel coordinates to map coordinates (accounting for transforms)
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
     if (!mapBounds || !mapImageRef.current || !mapContainerRef.current) return { x: 0, y: 0 };
@@ -123,9 +141,16 @@ const MapViewer = () => {
       });
     }
     
+    // Store the screen coordinates for direct SVG conversion
+    setMousePosition(prev => ({
+      ...prev,
+      screenX: e.clientX,
+      screenY: e.clientY
+    }));
+    
     // Debug: log coordinate conversion
     if (coords.x && coords.y) {
-      console.log('Mouse coords:', coords, 'Client:', e.clientX, e.clientY);
+      console.log('Mouse coords:', coords, 'Screen to SVG:', screenToSvgCoords(e.clientX, e.clientY));
     }
     
     // Handle dragging
@@ -543,10 +568,10 @@ const MapViewer = () => {
                 )}
                 
                 {/* Debug: Show mouse position as a small circle */}
-                {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
+                {isMouseOverMap && mousePosition.screenX && mousePosition.screenY && (
                   <circle
-                    cx={mapToSvgCoords(mouseCoords).x}
-                    cy={mapToSvgCoords(mouseCoords).y}
+                    cx={screenToSvgCoords(mousePosition.screenX, mousePosition.screenY).x}
+                    cy={screenToSvgCoords(mousePosition.screenX, mousePosition.screenY).y}
                     r="3"
                     fill="#00ff00"
                     stroke="#fff"
