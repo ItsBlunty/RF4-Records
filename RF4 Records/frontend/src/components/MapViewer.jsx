@@ -181,7 +181,10 @@ const MapViewer = () => {
           end: { mapCoords },
           distance: distance
         };
-        setMeasurements(prev => [...prev, newMeasurement]);
+        
+        // Clear previous measurements and markers, then add the new measurement
+        setMeasurements([newMeasurement]);
+        setMarkers([]);
         setCurrentMeasurement(null);
       }
     } else if (e.button === 2) {
@@ -509,7 +512,7 @@ const MapViewer = () => {
             <div key={`measurement-${measurement.id}`}>
               {/* Line */}
               <div
-                className="absolute bg-yellow-400 pointer-events-none z-15"
+                className="absolute bg-blue-500 pointer-events-none z-15"
                 style={{
                   left: startPos.x,
                   top: startPos.y - 1,
@@ -520,9 +523,25 @@ const MapViewer = () => {
                 }}
               />
               
+              {/* Arrow at end point */}
+              <div
+                className="absolute pointer-events-none z-15"
+                style={{
+                  left: endPos.x - 6,
+                  top: endPos.y - 6,
+                  width: 0,
+                  height: 0,
+                  borderLeft: '6px solid #3b82f6',
+                  borderTop: '4px solid transparent',
+                  borderBottom: '4px solid transparent',
+                  transform: `rotate(${angle}deg)`,
+                  transformOrigin: 'left center',
+                }}
+              />
+              
               {/* Distance label */}
               <div
-                className="absolute pointer-events-none z-20 bg-yellow-400 text-black px-2 py-1 rounded text-xs font-mono font-bold"
+                className="absolute pointer-events-none z-20 bg-blue-500 text-white px-2 py-1 rounded text-xs font-mono font-bold"
                 style={{
                   left: midX,
                   top: midY - 20,
@@ -548,7 +567,7 @@ const MapViewer = () => {
             
             return (
               <div
-                className="absolute bg-yellow-300 pointer-events-none z-15 opacity-70"
+                className="absolute bg-blue-400 pointer-events-none z-15 opacity-70"
                 style={{
                   left: startPos.x,
                   top: startPos.y - 1,
@@ -576,7 +595,7 @@ const MapViewer = () => {
           >
             <div>{mouseCoords.x}:{mouseCoords.y}</div>
             {currentMeasurement && (
-              <div className="text-yellow-300">
+              <div className="text-blue-300">
                 {formatDistance(calculateDistance(currentMeasurement.start.mapCoords, mouseCoords))}
               </div>
             )}
