@@ -27,6 +27,7 @@ const MapViewer = () => {
   const [currentMap, setCurrentMap] = useState(availableMaps[0]);
   const [mapBounds, setMapBounds] = useState(() => parseMapBounds(availableMaps[0]));
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   
   // Pan and zoom state
@@ -71,6 +72,15 @@ const MapViewer = () => {
     
     const coords = pixelToMapCoords(e.clientX, e.clientY);
     setMouseCoords(coords);
+    
+    // Update mouse position for floating coordinate box
+    if (mapContainerRef.current) {
+      const rect = mapContainerRef.current.getBoundingClientRect();
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      });
+    }
     
     // Handle dragging
     if (isDragging) {
@@ -253,20 +263,9 @@ const MapViewer = () => {
             </select>
           </div>
           
-          {/* Coordinate Display */}
-          <div className="flex items-center space-x-4">
-            {isMouseOverMap && (
-              <div className="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-md text-sm font-mono">
-                <span className="text-gray-600 dark:text-gray-400">Coordinates: </span>
-                <span className="text-gray-800 dark:text-gray-200 font-medium">
-                  {mouseCoords.x}:{mouseCoords.y}
-                </span>
-              </div>
-            )}
-            
-            <div className="text-sm text-gray-500 dark:text-gray-400">
-              Bounds: {mapBounds.minX}:{mapBounds.minY} to {mapBounds.maxX}:{mapBounds.maxY}
-            </div>
+          {/* Map Info */}
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Bounds: {mapBounds.minX}:{mapBounds.minY} to {mapBounds.maxX}:{mapBounds.maxY}
           </div>
         </div>
       </div>
@@ -352,6 +351,22 @@ const MapViewer = () => {
             />
           </div>
         </div>
+
+        {/* Floating Coordinate Box */}
+        {isMouseOverMap && (
+          <div 
+            className="absolute pointer-events-none z-20 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm font-mono"
+            style={{
+              left: mousePosition.x + 15, // Offset from cursor
+              top: mousePosition.y - 30,
+              transform: mousePosition.x > (mapContainerRef.current?.offsetWidth || 0) - 100 
+                ? 'translateX(-100%)' 
+                : 'none' // Flip to left side if near right edge
+            }}
+          >
+            {mouseCoords.x}:{mouseCoords.y}
+          </div>
+        )}
 
         {/* Instructions */}
         <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 max-w-xs">
