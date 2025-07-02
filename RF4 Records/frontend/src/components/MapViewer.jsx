@@ -153,8 +153,13 @@ const MapViewer = () => {
   };
 
   // Handle wheel zoom
-  const handleWheel = (e) => {
+  const handleWheel = useCallback((e) => {
+    // Only handle wheel events when mouse is over the map
+    if (!isMouseOverMap) return;
+    
     e.preventDefault();
+    e.stopPropagation();
+    
     const delta = e.deltaY;
     const zoomFactor = delta > 0 ? 0.9 : 1.1;
     
@@ -162,7 +167,7 @@ const MapViewer = () => {
       ...prev,
       scale: Math.max(0.1, Math.min(5, prev.scale * zoomFactor))
     }));
-  };
+  }, [isMouseOverMap]);
 
   // Global mouse event listeners
   useEffect(() => {
@@ -178,6 +183,22 @@ const MapViewer = () => {
       };
     }
   }, [isDragging, handleMouseMove]);
+
+  // Add wheel event listener to map container
+  useEffect(() => {
+    const mapContainer = mapContainerRef.current;
+    if (!mapContainer) return;
+
+    const wheelHandler = (e) => {
+      handleWheel(e);
+    };
+
+    mapContainer.addEventListener('wheel', wheelHandler, { passive: false });
+    
+    return () => {
+      mapContainer.removeEventListener('wheel', wheelHandler);
+    };
+  }, [handleWheel]);
 
   // Update map bounds when map changes
   useEffect(() => {
@@ -288,7 +309,6 @@ const MapViewer = () => {
         <div 
           ref={mapContainerRef}
           className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing"
-          onWheel={handleWheel}
         >
           <div 
             style={{
