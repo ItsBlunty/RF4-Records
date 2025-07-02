@@ -515,9 +515,9 @@ const MapViewer = () => {
                 className="absolute bg-blue-500 pointer-events-none z-15"
                 style={{
                   left: startPos.x,
-                  top: startPos.y - 1,
+                  top: startPos.y - 2,
                   width: length,
-                  height: 2,
+                  height: 4,
                   transformOrigin: 'left center',
                   transform: `rotate(${angle}deg)`,
                 }}
@@ -527,13 +527,13 @@ const MapViewer = () => {
               <div
                 className="absolute pointer-events-none z-15"
                 style={{
-                  left: endPos.x - 6,
-                  top: endPos.y - 6,
+                  left: endPos.x - 8,
+                  top: endPos.y - 8,
                   width: 0,
                   height: 0,
-                  borderLeft: '6px solid #3b82f6',
-                  borderTop: '4px solid transparent',
-                  borderBottom: '4px solid transparent',
+                  borderLeft: '12px solid #3b82f6',
+                  borderTop: '8px solid transparent',
+                  borderBottom: '8px solid transparent',
                   transform: `rotate(${angle}deg)`,
                   transformOrigin: 'left center',
                 }}
@@ -570,9 +570,9 @@ const MapViewer = () => {
                 className="absolute bg-blue-400 pointer-events-none z-15 opacity-70"
                 style={{
                   left: startPos.x,
-                  top: startPos.y - 1,
+                  top: startPos.y - 2,
                   width: length,
-                  height: 2,
+                  height: 4,
                   transformOrigin: 'left center',
                   transform: `rotate(${angle}deg)`,
                 }}
