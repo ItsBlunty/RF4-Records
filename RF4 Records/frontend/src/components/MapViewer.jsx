@@ -534,13 +534,16 @@ const MapViewer = () => {
           
           return (
             <div key={marker.id}>
-              <div
-                className="absolute w-3 h-3 bg-blue-800 rounded-full border border-black pointer-events-none z-20"
-                style={{
-                  left: screenPos.x - 6,
-                  top: screenPos.y - 6,
-                }}
-              />
+              {/* Only show dot for first marker */}
+              {isFirstMarker && (
+                <div
+                  className="absolute w-3 h-3 bg-blue-800 rounded-full border border-black pointer-events-none z-20"
+                  style={{
+                    left: screenPos.x - 6,
+                    top: screenPos.y - 6,
+                  }}
+                />
+              )}
               {/* Marker coordinate popup - only show for first marker */}
               {isFirstMarker && (
                 <div
