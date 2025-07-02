@@ -30,10 +30,10 @@ const MapViewer = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   
-  // Measurement state - store both map coords and screen positions
-  const [markers, setMarkers] = useState([]); // { id, mapCoords: {x,y}, screenPos: {x,y} }
+  // Measurement state - store map coordinates only
+  const [markers, setMarkers] = useState([]); // { id, mapCoords: {x,y} }
   const [measurements, setMeasurements] = useState([]);
-  const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {mapCoords, screenPos} }
+  const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {mapCoords} }
   
   // Pan and zoom state
   const [transform, setTransform] = useState({
@@ -162,28 +162,23 @@ const MapViewer = () => {
       
       const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
       
-      // Store EXACT screen coordinates where clicked
-      const exactScreenPos = {
-        x: e.clientX,
-        y: e.clientY
-      };
+      // No longer need to store screen coordinates - we'll calculate them dynamically
       
       if (!currentMeasurement) {
         // Start new measurement
         const newMarker = { 
           id: Date.now(), 
-          mapCoords: mapCoords,
-          exactScreenPos: exactScreenPos
+          mapCoords: mapCoords
         };
         setMarkers(prev => [...prev, newMarker]);
-        setCurrentMeasurement({ start: { mapCoords, exactScreenPos } });
+        setCurrentMeasurement({ start: { mapCoords } });
       } else {
         // Complete measurement
         const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
         const newMeasurement = {
           id: Date.now(),
           start: currentMeasurement.start,
-          end: { mapCoords, exactScreenPos },
+          end: { mapCoords },
           distance: distance
         };
         setMeasurements(prev => [...prev, newMeasurement]);
@@ -465,33 +460,35 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* Test: Put a green dot at the EXACT mouse cursor position */}
-            {isMouseOverMap && mousePosition.absoluteX && (
-              <div
-                className="fixed w-4 h-4 bg-green-500 rounded-full border-2 border-white pointer-events-none"
-                style={{
-                  left: mousePosition.absoluteX - 8,
-                  top: mousePosition.absoluteY - 8,
-                  zIndex: 1000
-                }}
-              />
-            )}
-            
-            {/* Click markers */}
-            {markers.map(marker => (
-              <div
-                key={marker.id}
-                className="fixed w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none"
-                style={{
-                  left: marker.exactScreenPos.x - 12,
-                  top: marker.exactScreenPos.y - 12,
-                  zIndex: 1000
-                }}
-              />
-            ))}
             
           </div>
         </div>
+
+        {/* Test: Put a green dot at the EXACT mouse cursor position */}
+        {isMouseOverMap && mousePosition.x && (
+          <div
+            className="absolute w-4 h-4 bg-green-500 rounded-full border-2 border-white pointer-events-none z-20"
+            style={{
+              left: mousePosition.x - 8,
+              top: mousePosition.y - 8,
+            }}
+          />
+        )}
+        
+        {/* Click markers - positioned relative to map container */}
+        {markers.map(marker => {
+          const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
+          return (
+            <div
+              key={marker.id}
+              className="absolute w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none z-20"
+              style={{
+                left: screenPos.x - 12,
+                top: screenPos.y - 12,
+              }}
+            />
+          );
+        })}
 
         {/* Floating Coordinate Box */}
         {isMouseOverMap && (
@@ -508,7 +505,7 @@ const MapViewer = () => {
             <div>{mouseCoords.x}:{mouseCoords.y}</div>
             {currentMeasurement && (
               <div className="text-yellow-300">
-                {formatDistance(calculateDistance(currentMeasurement.start, mouseCoords))}
+                {formatDistance(calculateDistance(currentMeasurement.start.mapCoords, mouseCoords))}
               </div>
             )}
           </div>
