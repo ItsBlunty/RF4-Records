@@ -30,7 +30,7 @@ const MapViewer = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   
-  // Measurement state
+  // Measurement state - store in map coordinates for consistency
   const [markers, setMarkers] = useState([]);
   const [measurements, setMeasurements] = useState([]);
   const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {x, y} }
@@ -66,8 +66,9 @@ const MapViewer = () => {
     }
   }, []);
 
-  // Convert map coordinates to SVG coordinates
-  const mapToSvgCoords = useCallback((mapCoord) => {
+
+  // Convert map coordinates to SVG coordinates (using image natural dimensions)
+  const mapCoordsToSvg = useCallback((mapCoord) => {
     if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
     
     const img = mapImageRef.current;
@@ -76,27 +77,12 @@ const MapViewer = () => {
     const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
     const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
     
-    // Convert to pixel coordinates within the SVG viewBox (same as image natural dimensions)
+    // Convert to SVG coordinates using image natural dimensions
     return {
       x: relativeX * img.naturalWidth,
       y: relativeY * img.naturalHeight
     };
   }, [mapBounds]);
-
-  // Alternative: Convert screen coordinates directly to SVG coordinates
-  const screenToSvgCoords = useCallback((screenX, screenY) => {
-    if (!mapImageRef.current) return { x: 0, y: 0 };
-    
-    const img = mapImageRef.current;
-    const imgRect = img.getBoundingClientRect();
-    
-    // Get position relative to the image's displayed position
-    const x = screenX - imgRect.left;
-    const y = screenY - imgRect.top;
-    
-    // For SVG that matches displayed image size, use direct pixel coordinates
-    return { x, y };
-  }, []);
 
   // Convert pixel coordinates to map coordinates (accounting for transforms)
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
@@ -138,16 +124,9 @@ const MapViewer = () => {
       });
     }
     
-    // Store the screen coordinates for direct SVG conversion
-    setMousePosition(prev => ({
-      ...prev,
-      screenX: e.clientX,
-      screenY: e.clientY
-    }));
-    
-    // Debug: log coordinate conversion
+    // Debug: log coordinate conversion for testing
     if (coords.x && coords.y) {
-      console.log('Mouse coords:', coords, 'Screen to SVG:', screenToSvgCoords(e.clientX, e.clientY));
+      console.log('Mouse coords:', coords, 'SVG coords:', mapCoordsToSvg(coords));
     }
     
     // Handle dragging
@@ -466,22 +445,22 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* SVG Overlay for measurements - positioned as overlay on the image */}
+            {/* SVG Overlay for measurements - matches image exactly */}
             {mapImageRef.current && (
               <svg
                 className="absolute pointer-events-none"
                 style={{
                   top: 0,
                   left: 0,
-                  width: '100%',
-                  height: '100%',
+                  width: mapImageRef.current.naturalWidth,
+                  height: mapImageRef.current.naturalHeight,
                   imageRendering: 'pixelated'
                 }}
-                viewBox={`0 0 ${mapImageRef.current.getBoundingClientRect().width} ${mapImageRef.current.getBoundingClientRect().height}`}
+                viewBox={`0 0 ${mapImageRef.current.naturalWidth} ${mapImageRef.current.naturalHeight}`}
               >
                 {/* Markers */}
                 {markers.map(marker => {
-                  const svgCoord = mapToSvgCoords(marker);
+                  const svgCoord = mapCoordsToSvg(marker);
                   return (
                     <circle
                       key={marker.id}
@@ -497,8 +476,8 @@ const MapViewer = () => {
                 
                 {/* Completed measurements */}
                 {measurements.map(measurement => {
-                  const startSvg = mapToSvgCoords(measurement.start);
-                  const endSvg = mapToSvgCoords(measurement.end);
+                  const startSvg = mapCoordsToSvg(measurement.start);
+                  const endSvg = mapCoordsToSvg(measurement.end);
                   const midX = (startSvg.x + endSvg.x) / 2;
                   const midY = (startSvg.y + endSvg.y) / 2;
                   
@@ -554,10 +533,10 @@ const MapViewer = () => {
                 {/* Active measurement line */}
                 {currentMeasurement && (
                   <line
-                    x1={mapToSvgCoords(currentMeasurement.start).x}
-                    y1={mapToSvgCoords(currentMeasurement.start).y}
-                    x2={mapToSvgCoords(mouseCoords).x}
-                    y2={mapToSvgCoords(mouseCoords).y}
+                    x1={mapCoordsToSvg(currentMeasurement.start).x}
+                    y1={mapCoordsToSvg(currentMeasurement.start).y}
+                    x2={mapCoordsToSvg(mouseCoords).x}
+                    y2={mapCoordsToSvg(mouseCoords).y}
                     stroke="#fbbf24"
                     strokeWidth="2"
                     strokeDasharray="3,3"
@@ -565,10 +544,10 @@ const MapViewer = () => {
                 )}
                 
                 {/* Debug: Show mouse position as a small circle */}
-                {isMouseOverMap && mousePosition.screenX && mousePosition.screenY && (
+                {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
                   <circle
-                    cx={screenToSvgCoords(mousePosition.screenX, mousePosition.screenY).x}
-                    cy={screenToSvgCoords(mousePosition.screenX, mousePosition.screenY).y}
+                    cx={mapCoordsToSvg(mouseCoords).x}
+                    cy={mapCoordsToSvg(mouseCoords).y}
                     r="3"
                     fill="#00ff00"
                     stroke="#fff"
