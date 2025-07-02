@@ -433,7 +433,7 @@ const MapViewer = () => {
         {/* Map Display */}
         <div 
           ref={mapContainerRef}
-          className="w-full h-full overflow-hidden cursor-grab active:cursor-grabbing"
+          className={`w-full h-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -472,16 +472,6 @@ const MapViewer = () => {
           </div>
         </div>
 
-        {/* Test: Put a green dot at the EXACT mouse cursor position */}
-        {isMouseOverMap && mousePosition.x && (
-          <div
-            className="absolute w-4 h-4 bg-green-500 rounded-full border-2 border-white pointer-events-none z-20"
-            style={{
-              left: mousePosition.x - 8,
-              top: mousePosition.y - 8,
-            }}
-          />
-        )}
         
         {/* Click markers - positioned relative to map container */}
         {markers.map((marker, index) => {
