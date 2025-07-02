@@ -71,13 +71,12 @@ const MapViewer = () => {
     if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
     
     const img = mapImageRef.current;
-    const rect = img.getBoundingClientRect();
     
     // Convert map coordinates to relative position (0-1)
     const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
     const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
     
-    // Convert to pixel coordinates within the image
+    // Convert to pixel coordinates within the image's natural dimensions
     return {
       x: relativeX * img.naturalWidth,
       y: relativeY * img.naturalHeight
@@ -442,6 +441,7 @@ const MapViewer = () => {
                 style={{
                   imageRendering: 'pixelated'
                 }}
+                viewBox={`0 0 ${mapImageRef.current.naturalWidth} ${mapImageRef.current.naturalHeight}`}
               >
                 {/* Markers */}
                 {markers.map(marker => {
@@ -451,10 +451,10 @@ const MapViewer = () => {
                       key={marker.id}
                       cx={svgCoord.x}
                       cy={svgCoord.y}
-                      r="6"
+                      r="8"
                       fill="#ef4444"
                       stroke="#fff"
-                      strokeWidth="2"
+                      strokeWidth="3"
                     />
                   );
                 })}
@@ -491,10 +491,10 @@ const MapViewer = () => {
                       
                       {/* Distance label */}
                       <rect
-                        x={midX - 25}
-                        y={midY - 12}
-                        width="50"
-                        height="24"
+                        x={midX - 30}
+                        y={midY - 15}
+                        width="60"
+                        height="30"
                         fill="white"
                         stroke="#3b82f6"
                         strokeWidth="1"
@@ -502,11 +502,12 @@ const MapViewer = () => {
                       />
                       <text
                         x={midX}
-                        y={midY + 4}
+                        y={midY + 5}
                         textAnchor="middle"
-                        fontSize="10"
+                        fontSize="14"
                         fill="#1f2937"
                         fontFamily="monospace"
+                        fontWeight="bold"
                       >
                         {formatDistance(measurement.distance)}
                       </text>
