@@ -135,7 +135,8 @@ const MapViewer = () => {
     
     // Debug: log coordinate conversion for testing
     if (coords.x && coords.y) {
-      console.log('Mouse coords:', coords, 'Absolute:', e.clientX, e.clientY);
+      const containerRect = mapContainerRef.current?.getBoundingClientRect();
+      console.log('Mouse coords:', coords, 'Raw clientX/Y:', e.clientX, e.clientY, 'Container offset:', containerRect?.left, containerRect?.top);
     }
     
     // Handle dragging
@@ -434,6 +435,7 @@ const MapViewer = () => {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onContextMenu={handleContextMenu}
+          onMouseMove={handleMouseMove}
         >
           <div 
             style={{
@@ -453,7 +455,6 @@ const MapViewer = () => {
                 maxWidth: 'none',
                 maxHeight: 'none'
               }}
-              onMouseMove={handleMouseMove}
               onLoad={() => {
                 // Auto-fit to screen when image loads
                 setTimeout(fitToScreen, 100);
