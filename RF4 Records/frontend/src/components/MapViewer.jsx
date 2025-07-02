@@ -527,15 +527,15 @@ const MapViewer = () => {
               <div
                 className="absolute pointer-events-none z-15"
                 style={{
-                  left: endPos.x - 8,
-                  top: endPos.y - 8,
+                  left: endPos.x,
+                  top: endPos.y,
                   width: 0,
                   height: 0,
                   borderLeft: '12px solid #3b82f6',
                   borderTop: '8px solid transparent',
                   borderBottom: '8px solid transparent',
-                  transform: `rotate(${angle}deg)`,
-                  transformOrigin: 'left center',
+                  transform: `rotate(${angle}deg) translate(-12px, -8px)`,
+                  transformOrigin: '0 0',
                 }}
               />
               
