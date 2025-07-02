@@ -90,15 +90,12 @@ const MapViewer = () => {
     const img = mapImageRef.current;
     const imgRect = img.getBoundingClientRect();
     
-    // Get relative position within the displayed image
-    const relativeX = (screenX - imgRect.left) / imgRect.width;
-    const relativeY = (screenY - imgRect.top) / imgRect.height;
+    // Get position relative to the image's displayed position
+    const x = screenX - imgRect.left;
+    const y = screenY - imgRect.top;
     
-    // Convert to SVG coordinates (natural image dimensions)
-    return {
-      x: relativeX * img.naturalWidth,
-      y: relativeY * img.naturalHeight
-    };
+    // For SVG that matches displayed image size, use direct pixel coordinates
+    return { x, y };
   }, []);
 
   // Convert pixel coordinates to map coordinates (accounting for transforms)
@@ -476,11 +473,11 @@ const MapViewer = () => {
                 style={{
                   top: 0,
                   left: 0,
-                  width: mapImageRef.current.naturalWidth,
-                  height: mapImageRef.current.naturalHeight,
+                  width: '100%',
+                  height: '100%',
                   imageRendering: 'pixelated'
                 }}
-                viewBox={`0 0 ${mapImageRef.current.naturalWidth} ${mapImageRef.current.naturalHeight}`}
+                viewBox={`0 0 ${mapImageRef.current.getBoundingClientRect().width} ${mapImageRef.current.getBoundingClientRect().height}`}
               >
                 {/* Markers */}
                 {markers.map(marker => {
