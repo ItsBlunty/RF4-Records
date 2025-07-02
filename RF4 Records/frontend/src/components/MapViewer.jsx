@@ -76,23 +76,25 @@ const MapViewer = () => {
     const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
     const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
     
-    // Convert to pixel coordinates within the image's natural dimensions
+    // Convert to pixel coordinates within the SVG viewBox (same as image natural dimensions)
     return {
       x: relativeX * img.naturalWidth,
       y: relativeY * img.naturalHeight
     };
   }, [mapBounds]);
 
-  // Convert pixel coordinates to map coordinates
+  // Convert pixel coordinates to map coordinates (accounting for transforms)
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
-    if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
+    if (!mapBounds || !mapImageRef.current || !mapContainerRef.current) return { x: 0, y: 0 };
     
     const img = mapImageRef.current;
-    const rect = img.getBoundingClientRect();
+    const container = mapContainerRef.current;
+    const containerRect = container.getBoundingClientRect();
+    const imgRect = img.getBoundingClientRect();
     
-    // Get relative position within the image (0-1)
-    const relativeX = (pixelX - rect.left) / rect.width;
-    const relativeY = (pixelY - rect.top) / rect.height;
+    // Get relative position within the image's actual displayed bounds
+    const relativeX = (pixelX - imgRect.left) / imgRect.width;
+    const relativeY = (pixelY - imgRect.top) / imgRect.height;
     
     // Convert to map coordinates
     // Note: Image Y coordinates go top-to-bottom, but map coordinates go bottom-to-top
@@ -136,46 +138,51 @@ const MapViewer = () => {
 
   // Handle mouse events
   const handleMouseDown = useCallback((e) => {
-    if (e.button !== 0) return; // Only left mouse button
-    e.preventDefault();
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    setDragStartTransform({
-      translateX: transform.translateX,
-      translateY: transform.translateY
-    });
-  }, [transform.translateX, transform.translateY]);
+    if (e.button === 0) {
+      // Left click - handle measurements
+      e.preventDefault();
+      
+      if (!mapImageRef.current) return;
+      
+      const coords = pixelToMapCoords(e.clientX, e.clientY);
+      
+      if (!currentMeasurement) {
+        // Start new measurement
+        const newMarker = { id: Date.now(), x: coords.x, y: coords.y };
+        setMarkers(prev => [...prev, newMarker]);
+        setCurrentMeasurement({ start: coords });
+      } else {
+        // Complete measurement
+        const distance = calculateDistance(currentMeasurement.start, coords);
+        const newMeasurement = {
+          id: Date.now(),
+          start: currentMeasurement.start,
+          end: coords,
+          distance: distance
+        };
+        setMeasurements(prev => [...prev, newMeasurement]);
+        setCurrentMeasurement(null);
+      }
+    } else if (e.button === 2) {
+      // Right click - handle panning
+      e.preventDefault();
+      setIsDragging(true);
+      setDragStart({ x: e.clientX, y: e.clientY });
+      setDragStartTransform({
+        translateX: transform.translateX,
+        translateY: transform.translateY
+      });
+    }
+  }, [transform.translateX, transform.translateY, currentMeasurement, pixelToMapCoords, calculateDistance]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
-  // Handle right-click for measurements
+  // Handle context menu to prevent right-click menu
   const handleContextMenu = useCallback((e) => {
     e.preventDefault(); // Prevent browser context menu
-    
-    if (!mapImageRef.current) return;
-    
-    const coords = pixelToMapCoords(e.clientX, e.clientY);
-    
-    if (!currentMeasurement) {
-      // Start new measurement
-      const newMarker = { id: Date.now(), x: coords.x, y: coords.y };
-      setMarkers(prev => [...prev, newMarker]);
-      setCurrentMeasurement({ start: coords });
-    } else {
-      // Complete measurement
-      const distance = calculateDistance(currentMeasurement.start, coords);
-      const newMeasurement = {
-        id: Date.now(),
-        start: currentMeasurement.start,
-        end: coords,
-        distance: distance
-      };
-      setMeasurements(prev => [...prev, newMeasurement]);
-      setCurrentMeasurement(null);
-    }
-  }, [currentMeasurement, pixelToMapCoords, calculateDistance]);
+  }, []);
 
   const handleMouseEnter = () => {
     setIsMouseOverMap(true);
@@ -559,10 +566,10 @@ const MapViewer = () => {
             Controls
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <div>• Click and drag to pan</div>
+            <div>• Right-click and drag to pan</div>
             <div>• Mouse wheel to zoom</div>
             <div>• Hover to see coordinates</div>
-            <div>• Right-click to measure distances</div>
+            <div>• Left-click to measure distances</div>
             <div>• Use buttons to reset view</div>
           </div>
         </div>
