@@ -444,13 +444,15 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* SVG Overlay for measurements */}
+            {/* SVG Overlay for measurements - positioned as overlay on the image */}
             {mapImageRef.current && (
               <svg
-                className="absolute top-0 left-0 pointer-events-none"
-                width={mapImageRef.current.naturalWidth}
-                height={mapImageRef.current.naturalHeight}
+                className="absolute pointer-events-none"
                 style={{
+                  top: 0,
+                  left: 0,
+                  width: mapImageRef.current.naturalWidth,
+                  height: mapImageRef.current.naturalHeight,
                   imageRendering: 'pixelated'
                 }}
                 viewBox={`0 0 ${mapImageRef.current.naturalWidth} ${mapImageRef.current.naturalHeight}`}
