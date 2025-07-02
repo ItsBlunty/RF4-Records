@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { formatWeight } from '../utils/formatWeight';
 import { Search, Trophy, Star } from 'lucide-react';
 
 const TrophyWeights = () => {
@@ -261,16 +262,6 @@ const TrophyWeights = () => {
     { name: "Black Crappie", trophy: 1600, superTrophy: 2200, rarity: "Not Rare", cardValue: null, stars: null }
   ];
 
-  const formatWeight = (weight) => {
-    if (!weight) return 'N/A';
-    if (weight >= 1000000) {
-      return `${(weight / 1000000).toFixed(1)}M g`;
-    } else if (weight >= 1000) {
-      return `${(weight / 1000).toFixed(weight % 1000 === 0 ? 0 : 1)} kg`;
-    } else {
-      return `${weight} g`;
-    }
-  };
 
   const getRarityColor = (rarity) => {
     switch (rarity) {
