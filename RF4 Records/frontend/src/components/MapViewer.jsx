@@ -67,20 +67,21 @@ const MapViewer = () => {
   }, []);
 
 
-  // Convert map coordinates to SVG coordinates (using image natural dimensions)
+  // Convert map coordinates to SVG coordinates (using displayed image dimensions)
   const mapCoordsToSvg = useCallback((mapCoord) => {
     if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
     
     const img = mapImageRef.current;
+    const imgRect = img.getBoundingClientRect();
     
     // Convert map coordinates to relative position (0-1)
     const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
     const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
     
-    // Convert to SVG coordinates using image natural dimensions
+    // Convert to SVG coordinates using displayed image dimensions
     return {
-      x: relativeX * img.naturalWidth,
-      y: relativeY * img.naturalHeight
+      x: relativeX * imgRect.width,
+      y: relativeY * imgRect.height
     };
   }, [mapBounds]);
 
@@ -445,19 +446,21 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* SVG Overlay for measurements - matches image exactly */}
-            {mapImageRef.current && (
-              <svg
-                className="absolute pointer-events-none"
-                style={{
-                  top: 0,
-                  left: 0,
-                  width: mapImageRef.current.naturalWidth,
-                  height: mapImageRef.current.naturalHeight,
-                  imageRendering: 'pixelated'
-                }}
-                viewBox={`0 0 ${mapImageRef.current.naturalWidth} ${mapImageRef.current.naturalHeight}`}
-              >
+            {/* SVG Overlay for measurements - matches displayed image exactly */}
+            {mapImageRef.current && (() => {
+              const imgRect = mapImageRef.current.getBoundingClientRect();
+              return (
+                <svg
+                  className="absolute pointer-events-none"
+                  style={{
+                    top: 0,
+                    left: 0,
+                    width: imgRect.width,
+                    height: imgRect.height,
+                    imageRendering: 'pixelated'
+                  }}
+                  viewBox={`0 0 ${imgRect.width} ${imgRect.height}`}
+                >
                 {/* Markers */}
                 {markers.map(marker => {
                   const svgCoord = mapCoordsToSvg(marker);
@@ -554,8 +557,9 @@ const MapViewer = () => {
                     strokeWidth="1"
                   />
                 )}
-              </svg>
-            )}
+                </svg>
+              );
+            })()}
           </div>
         </div>
 
