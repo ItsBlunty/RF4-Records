@@ -679,7 +679,7 @@ const MapViewer = () => {
         {/* Floating Coordinate Box */}
         {isMouseOverMap && (
           <div 
-            className="absolute pointer-events-none z-20 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm font-mono"
+            className="absolute pointer-events-none z-20 bg-blue-800 text-white px-2 py-1 rounded text-sm font-mono font-bold border border-black"
             style={{
               left: mousePosition.x + 15, // Offset from cursor
               top: mousePosition.y - 30,
