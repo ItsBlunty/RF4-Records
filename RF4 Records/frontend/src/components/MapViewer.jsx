@@ -30,10 +30,10 @@ const MapViewer = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   
-  // Measurement state - store in map coordinates for consistency
-  const [markers, setMarkers] = useState([]);
+  // Measurement state - store both map coords and screen positions
+  const [markers, setMarkers] = useState([]); // { id, mapCoords: {x,y}, screenPos: {x,y} }
   const [measurements, setMeasurements] = useState([]);
-  const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {x, y} }
+  const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {mapCoords, screenPos} }
   
   // Pan and zoom state
   const [transform, setTransform] = useState({
@@ -48,6 +48,29 @@ const MapViewer = () => {
   
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
+
+  // Function to convert map coordinates to current screen position
+  const mapCoordsToCurrentScreenPos = useCallback((mapCoords) => {
+    if (!mapImageRef.current || !mapContainerRef.current || !mapBounds) {
+      return { x: 0, y: 0 };
+    }
+
+    // This uses the same conversion as the working popup, just in reverse
+    const containerRect = mapContainerRef.current.getBoundingClientRect();
+    
+    // Convert map coords to relative position (0-1)
+    const relativeX = (mapCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
+    const relativeY = (mapBounds.maxY - mapCoords.y) / (mapBounds.maxY - mapBounds.minY);
+    
+    // Get current image bounds
+    const imgRect = mapImageRef.current.getBoundingClientRect();
+    
+    // Convert to screen coordinates relative to container
+    const screenX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
+    const screenY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
+    
+    return { x: screenX, y: screenY };
+  }, [mapBounds]);
 
   // Calculate distance between two map coordinates (in meters)
   const calculateDistance = useCallback((coord1, coord2) => {
@@ -134,20 +157,29 @@ const MapViewer = () => {
       
       if (!mapImageRef.current) return;
       
-      const coords = pixelToMapCoords(e.clientX, e.clientY);
+      const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
+      const containerRect = mapContainerRef.current.getBoundingClientRect();
+      const screenPos = {
+        x: e.clientX - containerRect.left,
+        y: e.clientY - containerRect.top
+      };
       
       if (!currentMeasurement) {
         // Start new measurement
-        const newMarker = { id: Date.now(), x: coords.x, y: coords.y };
+        const newMarker = { 
+          id: Date.now(), 
+          mapCoords: mapCoords,
+          screenPos: screenPos
+        };
         setMarkers(prev => [...prev, newMarker]);
-        setCurrentMeasurement({ start: coords });
+        setCurrentMeasurement({ start: { mapCoords, screenPos } });
       } else {
         // Complete measurement
-        const distance = calculateDistance(currentMeasurement.start, coords);
+        const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
         const newMeasurement = {
           id: Date.now(),
           start: currentMeasurement.start,
-          end: coords,
+          end: { mapCoords, screenPos },
           distance: distance
         };
         setMeasurements(prev => [...prev, newMeasurement]);
@@ -430,153 +462,118 @@ const MapViewer = () => {
             />
             
             {/* HTML-based markers and measurements */}
-            {mapImageRef.current && (() => {
-              const img = mapImageRef.current;
-              const imgRect = img.getBoundingClientRect();
-              const containerRect = mapContainerRef.current.getBoundingClientRect();
+            <>
+              {/* Debug: Mouse position circle */}
+              {isMouseOverMap && mouseCoords.x && mouseCoords.y && (() => {
+                const pos = mapCoordsToCurrentScreenPos(mouseCoords);
+                return (
+                  <div
+                    className="absolute pointer-events-none w-2 h-2 bg-green-500 rounded-full border border-white"
+                    style={{
+                      left: pos.x - 4,
+                      top: pos.y - 4,
+                      zIndex: 30
+                    }}
+                  />
+                );
+              })()}
               
-              // Helper function to convert map coordinates to container pixels
-              const mapToContainerPixels = (mapCoord) => {
-                const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-                const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY);
-                
-                // Calculate the center of the container
-                const containerCenterX = containerRect.width / 2;
-                const containerCenterY = containerRect.height / 2;
-                
-                // Get the image's natural size and apply transforms
-                const naturalWidth = img.naturalWidth;
-                const naturalHeight = img.naturalHeight;
-                
-                // Calculate position on the natural (unscaled) image
-                const naturalX = relativeX * naturalWidth;
-                const naturalY = relativeY * naturalHeight;
-                
-                // Apply the current transform (scale and translate)
-                const scaledX = naturalX * transform.scale;
-                const scaledY = naturalY * transform.scale;
-                
-                // Position relative to container center, then add translations
-                const pixelX = containerCenterX + (scaledX - (naturalWidth * transform.scale) / 2) + transform.translateX;
-                const pixelY = containerCenterY + (scaledY - (naturalHeight * transform.scale) / 2) + transform.translateY;
-                
-                return { x: pixelX, y: pixelY };
-              };
+              {/* Markers */}
+              {markers.map(marker => {
+                const pos = mapCoordsToCurrentScreenPos(marker.mapCoords);
+                return (
+                  <div
+                    key={marker.id}
+                    className="absolute pointer-events-none w-4 h-4 bg-red-500 rounded-full border-2 border-white"
+                    style={{
+                      left: pos.x - 8,
+                      top: pos.y - 8,
+                      zIndex: 25
+                    }}
+                  />
+                );
+              })}
               
-              return (
-                <>
-                  {/* Debug: Mouse position circle */}
-                  {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
+              {/* Active measurement line */}
+              {currentMeasurement && mouseCoords.x && mouseCoords.y && (() => {
+                const startPos = mapCoordsToCurrentScreenPos(currentMeasurement.start.mapCoords);
+                const endPos = mapCoordsToCurrentScreenPos(mouseCoords);
+                const length = Math.sqrt(
+                  Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
+                );
+                const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
+                
+                return (
+                  <div
+                    className="absolute pointer-events-none border-t-2 border-dashed border-yellow-400"
+                    style={{
+                      left: startPos.x,
+                      top: startPos.y,
+                      width: length,
+                      transformOrigin: '0 0',
+                      transform: `rotate(${angle}deg)`,
+                      zIndex: 20
+                    }}
+                  />
+                );
+              })()}
+              
+              {/* Completed measurements */}
+              {measurements.map(measurement => {
+                const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
+                const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
+                const length = Math.sqrt(
+                  Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
+                );
+                const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
+                const midX = (startPos.x + endPos.x) / 2;
+                const midY = (startPos.y + endPos.y) / 2;
+                
+                return (
+                  <div key={measurement.id}>
+                    {/* Line */}
                     <div
-                      className="absolute pointer-events-none w-2 h-2 bg-green-500 rounded-full border border-white"
+                      className="absolute pointer-events-none border-t-2 border-dashed border-blue-500"
                       style={{
-                        left: mapToContainerPixels(mouseCoords).x - 4,
-                        top: mapToContainerPixels(mouseCoords).y - 4,
-                        zIndex: 30
+                        left: startPos.x,
+                        top: startPos.y,
+                        width: length,
+                        transformOrigin: '0 0',
+                        transform: `rotate(${angle}deg)`,
+                        zIndex: 20
                       }}
                     />
-                  )}
-                  
-                  {/* Markers */}
-                  {markers.map(marker => {
-                    const pos = mapToContainerPixels(marker);
-                    return (
-                      <div
-                        key={marker.id}
-                        className="absolute pointer-events-none w-4 h-4 bg-red-500 rounded-full border-2 border-white"
-                        style={{
-                          left: pos.x - 8,
-                          top: pos.y - 8,
-                          zIndex: 25
-                        }}
-                      />
-                    );
-                  })}
-                  
-                  {/* Active measurement line */}
-                  {currentMeasurement && mouseCoords.x && mouseCoords.y && (
-                    (() => {
-                      const startPos = mapToContainerPixels(currentMeasurement.start);
-                      const endPos = mapToContainerPixels(mouseCoords);
-                      const length = Math.sqrt(
-                        Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
-                      );
-                      const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
-                      
-                      return (
-                        <div
-                          className="absolute pointer-events-none border-t-2 border-dashed border-yellow-400"
-                          style={{
-                            left: startPos.x,
-                            top: startPos.y,
-                            width: length,
-                            transformOrigin: '0 0',
-                            transform: `rotate(${angle}deg)`,
-                            zIndex: 20
-                          }}
-                        />
-                      );
-                    })()
-                  )}
-                  
-                  {/* Completed measurements */}
-                  {measurements.map(measurement => {
-                    const startPos = mapToContainerPixels(measurement.start);
-                    const endPos = mapToContainerPixels(measurement.end);
-                    const length = Math.sqrt(
-                      Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
-                    );
-                    const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
-                    const midX = (startPos.x + endPos.x) / 2;
-                    const midY = (startPos.y + endPos.y) / 2;
                     
-                    return (
-                      <div key={measurement.id}>
-                        {/* Line */}
-                        <div
-                          className="absolute pointer-events-none border-t-2 border-dashed border-blue-500"
-                          style={{
-                            left: startPos.x,
-                            top: startPos.y,
-                            width: length,
-                            transformOrigin: '0 0',
-                            transform: `rotate(${angle}deg)`,
-                            zIndex: 20
-                          }}
-                        />
-                        
-                        {/* Arrow */}
-                        <div
-                          className="absolute pointer-events-none w-0 h-0"
-                          style={{
-                            left: endPos.x,
-                            top: endPos.y,
-                            borderLeft: '8px solid #3b82f6',
-                            borderTop: '4px solid transparent',
-                            borderBottom: '4px solid transparent',
-                            transform: `rotate(${angle}deg)`,
-                            transformOrigin: '0 50%',
-                            zIndex: 21
-                          }}
-                        />
-                        
-                        {/* Distance label */}
-                        <div
-                          className="absolute pointer-events-none bg-white border border-blue-500 rounded px-2 py-1 text-xs font-mono font-bold text-gray-800"
-                          style={{
-                            left: midX - 30,
-                            top: midY - 12,
-                            zIndex: 22
-                          }}
-                        >
-                          {formatDistance(measurement.distance)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </>
-              );
-            })()}
+                    {/* Arrow */}
+                    <div
+                      className="absolute pointer-events-none w-0 h-0"
+                      style={{
+                        left: endPos.x,
+                        top: endPos.y,
+                        borderLeft: '8px solid #3b82f6',
+                        borderTop: '4px solid transparent',
+                        borderBottom: '4px solid transparent',
+                        transform: `rotate(${angle}deg)`,
+                        transformOrigin: '0 50%',
+                        zIndex: 21
+                      }}
+                    />
+                    
+                    {/* Distance label */}
+                    <div
+                      className="absolute pointer-events-none bg-white border border-blue-500 rounded px-2 py-1 text-xs font-mono font-bold text-gray-800"
+                      style={{
+                        left: midX - 30,
+                        top: midY - 12,
+                        zIndex: 22
+                      }}
+                    >
+                      {formatDistance(measurement.distance)}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
           </div>
         </div>
 
