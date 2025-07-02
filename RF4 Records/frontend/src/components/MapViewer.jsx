@@ -123,6 +123,11 @@ const MapViewer = () => {
       });
     }
     
+    // Debug: log coordinate conversion
+    if (coords.x && coords.y) {
+      console.log('Mouse coords:', coords, 'Client:', e.clientX, e.clientY);
+    }
+    
     // Handle dragging
     if (isDragging) {
       const deltaX = e.clientX - dragStart.x;
@@ -532,6 +537,18 @@ const MapViewer = () => {
                     stroke="#fbbf24"
                     strokeWidth="2"
                     strokeDasharray="3,3"
+                  />
+                )}
+                
+                {/* Debug: Show mouse position as a small circle */}
+                {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
+                  <circle
+                    cx={mapToSvgCoords(mouseCoords).x}
+                    cy={mapToSvgCoords(mouseCoords).y}
+                    r="3"
+                    fill="#00ff00"
+                    stroke="#fff"
+                    strokeWidth="1"
                   />
                 )}
               </svg>
