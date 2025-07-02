@@ -446,118 +446,28 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* SVG Overlay for measurements - matches displayed image exactly */}
-            {mapImageRef.current && (() => {
-              const imgRect = mapImageRef.current.getBoundingClientRect();
+            {/* Debug: Test with simple HTML element */}
+            {isMouseOverMap && mouseCoords.x && mouseCoords.y && mapImageRef.current && (() => {
+              const img = mapImageRef.current;
+              const imgRect = img.getBoundingClientRect();
+              const containerRect = mapContainerRef.current.getBoundingClientRect();
+              
+              // Convert map coords back to container-relative pixel position
+              const relativeX = (mouseCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
+              const relativeY = (mapBounds.maxY - mouseCoords.y) / (mapBounds.maxY - mapBounds.minY);
+              
+              const pixelX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
+              const pixelY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
+              
               return (
-                <svg
-                  className="absolute pointer-events-none"
+                <div
+                  className="absolute pointer-events-none w-2 h-2 bg-green-500 rounded-full border border-white"
                   style={{
-                    top: 0,
-                    left: 0,
-                    width: imgRect.width,
-                    height: imgRect.height,
-                    imageRendering: 'pixelated'
+                    left: pixelX - 4,
+                    top: pixelY - 4,
+                    zIndex: 30
                   }}
-                  viewBox={`0 0 ${imgRect.width} ${imgRect.height}`}
-                >
-                {/* Markers */}
-                {markers.map(marker => {
-                  const svgCoord = mapCoordsToSvg(marker);
-                  return (
-                    <circle
-                      key={marker.id}
-                      cx={svgCoord.x}
-                      cy={svgCoord.y}
-                      r="8"
-                      fill="#ef4444"
-                      stroke="#fff"
-                      strokeWidth="3"
-                    />
-                  );
-                })}
-                
-                {/* Completed measurements */}
-                {measurements.map(measurement => {
-                  const startSvg = mapCoordsToSvg(measurement.start);
-                  const endSvg = mapCoordsToSvg(measurement.end);
-                  const midX = (startSvg.x + endSvg.x) / 2;
-                  const midY = (startSvg.y + endSvg.y) / 2;
-                  
-                  // Calculate arrow rotation
-                  const angle = Math.atan2(endSvg.y - startSvg.y, endSvg.x - startSvg.x) * 180 / Math.PI;
-                  
-                  return (
-                    <g key={measurement.id}>
-                      {/* Line */}
-                      <line
-                        x1={startSvg.x}
-                        y1={startSvg.y}
-                        x2={endSvg.x}
-                        y2={endSvg.y}
-                        stroke="#3b82f6"
-                        strokeWidth="3"
-                        strokeDasharray="5,5"
-                      />
-                      
-                      {/* Arrow */}
-                      <polygon
-                        points="0,-5 10,0 0,5"
-                        fill="#3b82f6"
-                        transform={`translate(${endSvg.x}, ${endSvg.y}) rotate(${angle})`}
-                      />
-                      
-                      {/* Distance label */}
-                      <rect
-                        x={midX - 30}
-                        y={midY - 15}
-                        width="60"
-                        height="30"
-                        fill="white"
-                        stroke="#3b82f6"
-                        strokeWidth="1"
-                        rx="3"
-                      />
-                      <text
-                        x={midX}
-                        y={midY + 5}
-                        textAnchor="middle"
-                        fontSize="14"
-                        fill="#1f2937"
-                        fontFamily="monospace"
-                        fontWeight="bold"
-                      >
-                        {formatDistance(measurement.distance)}
-                      </text>
-                    </g>
-                  );
-                })}
-                
-                {/* Active measurement line */}
-                {currentMeasurement && (
-                  <line
-                    x1={mapCoordsToSvg(currentMeasurement.start).x}
-                    y1={mapCoordsToSvg(currentMeasurement.start).y}
-                    x2={mapCoordsToSvg(mouseCoords).x}
-                    y2={mapCoordsToSvg(mouseCoords).y}
-                    stroke="#fbbf24"
-                    strokeWidth="2"
-                    strokeDasharray="3,3"
-                  />
-                )}
-                
-                {/* Debug: Show mouse position as a small circle */}
-                {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
-                  <circle
-                    cx={mapCoordsToSvg(mouseCoords).x}
-                    cy={mapCoordsToSvg(mouseCoords).y}
-                    r="3"
-                    fill="#00ff00"
-                    stroke="#fff"
-                    strokeWidth="1"
-                  />
-                )}
-                </svg>
+                />
               );
             })()}
           </div>
