@@ -17,17 +17,22 @@ export const formatWeight = (weightInGrams) => {
   // Convert to kg
   const weightInKg = weightInGrams / 1000;
 
+  // Helper function to remove trailing zeros from decimal
+  const formatKgValue = (kg) => {
+    return kg % 1 === 0 ? kg.toString() : parseFloat(kg.toFixed(3)).toString();
+  };
+
   // If less than 1000 kg, display normally
   if (weightInKg < 1000) {
-    return `${weightInKg.toFixed(3)} kg`;
+    return `${formatKgValue(weightInKg)} kg`;
   }
 
   // For 1000+ kg, use space as thousand separator
-  const kgString = weightInKg.toFixed(3);
-  const [integerPart, decimalPart] = kgString.split('.');
+  const formattedKg = formatKgValue(weightInKg);
+  const [integerPart, decimalPart] = formattedKg.split('.');
   
   // Add space every 3 digits from the right
   const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   
-  return `${formattedInteger}.${decimalPart} kg`;
+  return decimalPart ? `${formattedInteger}.${decimalPart} kg` : `${formattedInteger} kg`;
 }; 
