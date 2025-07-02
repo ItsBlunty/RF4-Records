@@ -494,15 +494,35 @@ const MapViewer = () => {
             const midX = (startPos.x + endPos.x) / 2;
             const midY = (startPos.y + endPos.y) / 2;
             
-            // Check if default position would overlap with distance box
-            const defaultPopupX = screenPos.x + 8;
-            const defaultPopupY = screenPos.y - 20;
-            const distanceBoxX = midX;
-            const distanceBoxY = midY - 20;
+            // Calculate actual popup and distance box boundaries
+            const popupX = screenPos.x + 8;
+            const popupY = screenPos.y - 20;
+            const popupWidth = 60; // Approximate width of coordinate text
+            const popupHeight = 20;
             
-            // If too close to distance box, move popup to the left
-            if (Math.abs(defaultPopupX - distanceBoxX) < 80 && Math.abs(defaultPopupY - distanceBoxY) < 30) {
-              popupOffset = { x: -60, y: -20 }; // Move to left side
+            const distanceBoxX = midX - 40; // Distance box is centered, so subtract half width
+            const distanceBoxY = midY - 20;
+            const distanceBoxWidth = 80; // Approximate width of distance text
+            const distanceBoxHeight = 20;
+            
+            // Check for actual rectangle overlap
+            const horizontalOverlap = (popupX < distanceBoxX + distanceBoxWidth) && 
+                                    (popupX + popupWidth > distanceBoxX);
+            const verticalOverlap = (popupY < distanceBoxY + distanceBoxHeight) && 
+                                  (popupY + popupHeight > distanceBoxY);
+            
+            if (horizontalOverlap && verticalOverlap) {
+              // Try left side first
+              popupOffset = { x: -70, y: -20 };
+              
+              // If left side would also overlap, try below
+              const leftPopupX = screenPos.x - 70;
+              const leftHorizontalOverlap = (leftPopupX < distanceBoxX + distanceBoxWidth) && 
+                                          (leftPopupX + popupWidth > distanceBoxX);
+              
+              if (leftHorizontalOverlap && verticalOverlap) {
+                popupOffset = { x: 8, y: 10 }; // Move below marker
+              }
             }
           }
           
