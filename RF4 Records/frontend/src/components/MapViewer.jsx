@@ -67,23 +67,6 @@ const MapViewer = () => {
   }, []);
 
 
-  // Convert map coordinates to SVG coordinates (using displayed image dimensions)
-  const mapCoordsToSvg = useCallback((mapCoord) => {
-    if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
-    
-    const img = mapImageRef.current;
-    const imgRect = img.getBoundingClientRect();
-    
-    // Convert map coordinates to relative position (0-1)
-    const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-    const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
-    
-    // Convert to SVG coordinates using displayed image dimensions
-    return {
-      x: relativeX * imgRect.width,
-      y: relativeY * imgRect.height
-    };
-  }, [mapBounds]);
 
   // Convert pixel coordinates to map coordinates (accounting for transforms)
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
@@ -127,7 +110,7 @@ const MapViewer = () => {
     
     // Debug: log coordinate conversion for testing
     if (coords.x && coords.y) {
-      console.log('Mouse coords:', coords, 'SVG coords:', mapCoordsToSvg(coords));
+      console.log('Mouse coords:', coords);
     }
     
     // Handle dragging
@@ -446,28 +429,135 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* Debug: Test with simple HTML element */}
-            {isMouseOverMap && mouseCoords.x && mouseCoords.y && mapImageRef.current && (() => {
+            {/* HTML-based markers and measurements */}
+            {mapImageRef.current && (() => {
               const img = mapImageRef.current;
               const imgRect = img.getBoundingClientRect();
               const containerRect = mapContainerRef.current.getBoundingClientRect();
               
-              // Convert map coords back to container-relative pixel position
-              const relativeX = (mouseCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-              const relativeY = (mapBounds.maxY - mouseCoords.y) / (mapBounds.maxY - mapBounds.minY);
-              
-              const pixelX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
-              const pixelY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
+              // Helper function to convert map coordinates to container pixels
+              const mapToContainerPixels = (mapCoord) => {
+                const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
+                const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY);
+                
+                const pixelX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
+                const pixelY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
+                
+                return { x: pixelX, y: pixelY };
+              };
               
               return (
-                <div
-                  className="absolute pointer-events-none w-2 h-2 bg-green-500 rounded-full border border-white"
-                  style={{
-                    left: pixelX - 4,
-                    top: pixelY - 4,
-                    zIndex: 30
-                  }}
-                />
+                <>
+                  {/* Debug: Mouse position circle */}
+                  {isMouseOverMap && mouseCoords.x && mouseCoords.y && (
+                    <div
+                      className="absolute pointer-events-none w-2 h-2 bg-green-500 rounded-full border border-white"
+                      style={{
+                        left: mapToContainerPixels(mouseCoords).x - 4,
+                        top: mapToContainerPixels(mouseCoords).y - 4,
+                        zIndex: 30
+                      }}
+                    />
+                  )}
+                  
+                  {/* Markers */}
+                  {markers.map(marker => {
+                    const pos = mapToContainerPixels(marker);
+                    return (
+                      <div
+                        key={marker.id}
+                        className="absolute pointer-events-none w-4 h-4 bg-red-500 rounded-full border-2 border-white"
+                        style={{
+                          left: pos.x - 8,
+                          top: pos.y - 8,
+                          zIndex: 25
+                        }}
+                      />
+                    );
+                  })}
+                  
+                  {/* Active measurement line */}
+                  {currentMeasurement && mouseCoords.x && mouseCoords.y && (
+                    (() => {
+                      const startPos = mapToContainerPixels(currentMeasurement.start);
+                      const endPos = mapToContainerPixels(mouseCoords);
+                      const length = Math.sqrt(
+                        Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
+                      );
+                      const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
+                      
+                      return (
+                        <div
+                          className="absolute pointer-events-none border-t-2 border-dashed border-yellow-400"
+                          style={{
+                            left: startPos.x,
+                            top: startPos.y,
+                            width: length,
+                            transformOrigin: '0 0',
+                            transform: `rotate(${angle}deg)`,
+                            zIndex: 20
+                          }}
+                        />
+                      );
+                    })()
+                  )}
+                  
+                  {/* Completed measurements */}
+                  {measurements.map(measurement => {
+                    const startPos = mapToContainerPixels(measurement.start);
+                    const endPos = mapToContainerPixels(measurement.end);
+                    const length = Math.sqrt(
+                      Math.pow(endPos.x - startPos.x, 2) + Math.pow(endPos.y - startPos.y, 2)
+                    );
+                    const angle = Math.atan2(endPos.y - startPos.y, endPos.x - startPos.x) * 180 / Math.PI;
+                    const midX = (startPos.x + endPos.x) / 2;
+                    const midY = (startPos.y + endPos.y) / 2;
+                    
+                    return (
+                      <div key={measurement.id}>
+                        {/* Line */}
+                        <div
+                          className="absolute pointer-events-none border-t-2 border-dashed border-blue-500"
+                          style={{
+                            left: startPos.x,
+                            top: startPos.y,
+                            width: length,
+                            transformOrigin: '0 0',
+                            transform: `rotate(${angle}deg)`,
+                            zIndex: 20
+                          }}
+                        />
+                        
+                        {/* Arrow */}
+                        <div
+                          className="absolute pointer-events-none w-0 h-0"
+                          style={{
+                            left: endPos.x,
+                            top: endPos.y,
+                            borderLeft: '8px solid #3b82f6',
+                            borderTop: '4px solid transparent',
+                            borderBottom: '4px solid transparent',
+                            transform: `rotate(${angle}deg)`,
+                            transformOrigin: '0 50%',
+                            zIndex: 21
+                          }}
+                        />
+                        
+                        {/* Distance label */}
+                        <div
+                          className="absolute pointer-events-none bg-white border border-blue-500 rounded px-2 py-1 text-xs font-mono font-bold text-gray-800"
+                          style={{
+                            left: midX - 30,
+                            top: midY - 12,
+                            zIndex: 22
+                          }}
+                        >
+                          {formatDistance(measurement.distance)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </>
               );
             })()}
           </div>
