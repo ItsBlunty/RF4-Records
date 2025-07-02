@@ -127,13 +127,15 @@ const MapViewer = () => {
       const rect = mapContainerRef.current.getBoundingClientRect();
       setMousePosition({
         x: e.clientX - rect.left,
-        y: e.clientY - rect.top
+        y: e.clientY - rect.top,
+        absoluteX: e.clientX,
+        absoluteY: e.clientY
       });
     }
     
     // Debug: log coordinate conversion for testing
     if (coords.x && coords.y) {
-      console.log('Mouse coords:', coords);
+      console.log('Mouse coords:', coords, 'Absolute:', e.clientX, e.clientY);
     }
     
     // Handle dragging
@@ -462,14 +464,26 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* Simple test: markers at exact click coordinates */}
+            {/* Test: Put a green dot at the EXACT mouse cursor position */}
+            {isMouseOverMap && mousePosition.absoluteX && (
+              <div
+                className="fixed w-4 h-4 bg-green-500 rounded-full border-2 border-white pointer-events-none"
+                style={{
+                  left: mousePosition.absoluteX - 8,
+                  top: mousePosition.absoluteY - 8,
+                  zIndex: 1000
+                }}
+              />
+            )}
+            
+            {/* Click markers */}
             {markers.map(marker => (
               <div
                 key={marker.id}
-                className="fixed w-4 h-4 bg-red-500 rounded-full border-2 border-white pointer-events-none"
+                className="fixed w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none"
                 style={{
-                  left: marker.exactScreenPos.x - 8,
-                  top: marker.exactScreenPos.y - 8,
+                  left: marker.exactScreenPos.x - 12,
+                  top: marker.exactScreenPos.y - 12,
                   zIndex: 1000
                 }}
               />
