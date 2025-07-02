@@ -158,10 +158,11 @@ const MapViewer = () => {
       if (!mapImageRef.current) return;
       
       const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
-      const containerRect = mapContainerRef.current.getBoundingClientRect();
-      const screenPos = {
-        x: e.clientX - containerRect.left,
-        y: e.clientY - containerRect.top
+      
+      // Store EXACT screen coordinates where clicked
+      const exactScreenPos = {
+        x: e.clientX,
+        y: e.clientY
       };
       
       if (!currentMeasurement) {
@@ -169,17 +170,17 @@ const MapViewer = () => {
         const newMarker = { 
           id: Date.now(), 
           mapCoords: mapCoords,
-          screenPos: screenPos
+          exactScreenPos: exactScreenPos
         };
         setMarkers(prev => [...prev, newMarker]);
-        setCurrentMeasurement({ start: { mapCoords, screenPos } });
+        setCurrentMeasurement({ start: { mapCoords, exactScreenPos } });
       } else {
         // Complete measurement
         const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
         const newMeasurement = {
           id: Date.now(),
           start: currentMeasurement.start,
-          end: { mapCoords, screenPos },
+          end: { mapCoords, exactScreenPos },
           distance: distance
         };
         setMeasurements(prev => [...prev, newMeasurement]);
@@ -461,60 +462,18 @@ const MapViewer = () => {
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
             
-            {/* Markers positioned inside the transformed image space */}
-            {mapImageRef.current && (
-              <div 
-                className="absolute pointer-events-none"
+            {/* Simple test: markers at exact click coordinates */}
+            {markers.map(marker => (
+              <div
+                key={marker.id}
+                className="fixed w-4 h-4 bg-red-500 rounded-full border-2 border-white pointer-events-none"
                 style={{
-                  top: 0,
-                  left: 0,
-                  width: mapImageRef.current.naturalWidth,
-                  height: mapImageRef.current.naturalHeight,
+                  left: marker.exactScreenPos.x - 8,
+                  top: marker.exactScreenPos.y - 8,
+                  zIndex: 1000
                 }}
-              >
-                {/* Debug: Mouse position circle */}
-                {isMouseOverMap && mouseCoords.x && mouseCoords.y && (() => {
-                  // Convert map coordinates to natural image pixel coordinates
-                  const relativeX = (mouseCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-                  const relativeY = (mapBounds.maxY - mouseCoords.y) / (mapBounds.maxY - mapBounds.minY);
-                  
-                  const pixelX = relativeX * mapImageRef.current.naturalWidth;
-                  const pixelY = relativeY * mapImageRef.current.naturalHeight;
-                  
-                  return (
-                    <div
-                      className="absolute w-2 h-2 bg-green-500 rounded-full border border-white"
-                      style={{
-                        left: pixelX - 4,
-                        top: pixelY - 4,
-                        zIndex: 30
-                      }}
-                    />
-                  );
-                })()}
-                
-                {/* Markers */}
-                {markers.map(marker => {
-                  const relativeX = (marker.mapCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-                  const relativeY = (mapBounds.maxY - marker.mapCoords.y) / (mapBounds.maxY - mapBounds.minY);
-                  
-                  const pixelX = relativeX * mapImageRef.current.naturalWidth;
-                  const pixelY = relativeY * mapImageRef.current.naturalHeight;
-                  
-                  return (
-                    <div
-                      key={marker.id}
-                      className="absolute w-4 h-4 bg-red-500 rounded-full border-2 border-white"
-                      style={{
-                        left: pixelX - 8,
-                        top: pixelY - 8,
-                        zIndex: 25
-                      }}
-                    />
-                  );
-                })}
-              </div>
-            )}
+              />
+            ))}
             
           </div>
         </div>
