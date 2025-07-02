@@ -1,9 +1,12 @@
-import React from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map } from 'lucide-react';
+import React, { useState } from 'react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
   const isDevelopment = window.location.hostname !== 'rf4records.com';
+  
+  // Dropdown state for gear info
+  const [gearDropdownOpen, setGearDropdownOpen] = useState(false);
 
   const formatLastRefresh = (date) => {
     if (!date) return '';
@@ -123,17 +126,62 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               Skill Trees
             </button>
 
-            <button
-              onClick={() => onPageChange && onPageChange('wearcalc')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'wearcalc' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Calculator className="w-4 h-4 mr-2" />
-              Wear Calculator
-            </button>
+            {/* Gear Info Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setGearDropdownOpen(!gearDropdownOpen)}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  ['wearcalc', 'reelinfo', 'rodinfo'].includes(currentPage)
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                    : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Settings className="w-4 h-4 mr-2" />
+                Gear Info
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${gearDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {gearDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('wearcalc');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg ${
+                      currentPage === 'wearcalc' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Calculator className="w-4 h-4 inline mr-2" />
+                    Wear Calculator
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('reelinfo');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      currentPage === 'reelinfo' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Reel Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('rodinfo');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'rodinfo' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Zap className="w-4 h-4 inline mr-2" />
+                    Rod Info
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button
               onClick={() => onPageChange && onPageChange('alcohol')}
@@ -145,30 +193,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             >
               <Wine className="w-4 h-4 mr-2" />
               Alcohol
-            </button>
-
-            <button
-              onClick={() => onPageChange && onPageChange('reelinfo')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'reelinfo' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Reel Info
-            </button>
-
-            <button
-              onClick={() => onPageChange && onPageChange('rodinfo')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'rodinfo' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Zap className="w-4 h-4 mr-2" />
-              Rod Info
             </button>
 
             <button
