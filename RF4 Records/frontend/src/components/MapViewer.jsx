@@ -182,9 +182,8 @@ const MapViewer = () => {
           distance: distance
         };
         
-        // Clear previous measurements and markers, then add the new measurement
+        // Clear previous measurements but keep current markers, then add the new measurement
         setMeasurements([newMeasurement]);
-        setMarkers([]);
         setCurrentMeasurement(null);
       }
     } else if (e.button === 2) {
@@ -482,14 +481,25 @@ const MapViewer = () => {
         {markers.map(marker => {
           const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
           return (
-            <div
-              key={marker.id}
-              className="absolute w-3 h-3 bg-red-500 rounded-full border border-white pointer-events-none z-20"
-              style={{
-                left: screenPos.x - 6,
-                top: screenPos.y - 6,
-              }}
-            />
+            <div key={marker.id}>
+              <div
+                className="absolute w-3 h-3 bg-blue-800 rounded-full border border-black pointer-events-none z-20"
+                style={{
+                  left: screenPos.x - 6,
+                  top: screenPos.y - 6,
+                }}
+              />
+              {/* Marker coordinate popup */}
+              <div
+                className="absolute pointer-events-none z-20 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs font-mono"
+                style={{
+                  left: screenPos.x + 8,
+                  top: screenPos.y - 20,
+                }}
+              >
+                {marker.mapCoords.x}:{marker.mapCoords.y}
+              </div>
+            </div>
           );
         })}
 
@@ -510,9 +520,20 @@ const MapViewer = () => {
           
           return (
             <div key={`measurement-${measurement.id}`}>
-              {/* Line */}
+              {/* Line with black outline */}
               <div
-                className="absolute bg-blue-500 pointer-events-none z-15"
+                className="absolute bg-black pointer-events-none z-14"
+                style={{
+                  left: startPos.x,
+                  top: startPos.y - 3,
+                  width: length,
+                  height: 6,
+                  transformOrigin: 'left center',
+                  transform: `rotate(${angle}deg)`,
+                }}
+              />
+              <div
+                className="absolute bg-blue-800 pointer-events-none z-15"
                 style={{
                   left: startPos.x,
                   top: startPos.y - 2,
@@ -523,7 +544,21 @@ const MapViewer = () => {
                 }}
               />
               
-              {/* Arrow at end point */}
+              {/* Arrow at end point with black outline */}
+              <div
+                className="absolute pointer-events-none z-14"
+                style={{
+                  left: endPos.x,
+                  top: endPos.y,
+                  width: 0,
+                  height: 0,
+                  borderLeft: '14px solid black',
+                  borderTop: '9px solid transparent',
+                  borderBottom: '9px solid transparent',
+                  transform: `rotate(${angle}deg) translate(-14px, -9px)`,
+                  transformOrigin: '0 0',
+                }}
+              />
               <div
                 className="absolute pointer-events-none z-15"
                 style={{
@@ -531,7 +566,7 @@ const MapViewer = () => {
                   top: endPos.y,
                   width: 0,
                   height: 0,
-                  borderLeft: '12px solid #3b82f6',
+                  borderLeft: '12px solid #1e40af',
                   borderTop: '8px solid transparent',
                   borderBottom: '8px solid transparent',
                   transform: `rotate(${angle}deg) translate(-12px, -8px)`,
@@ -541,7 +576,7 @@ const MapViewer = () => {
               
               {/* Distance label */}
               <div
-                className="absolute pointer-events-none z-20 bg-blue-500 text-white px-2 py-1 rounded text-xs font-mono font-bold"
+                className="absolute pointer-events-none z-20 bg-blue-800 text-white px-2 py-1 rounded text-xs font-mono font-bold border border-black"
                 style={{
                   left: midX,
                   top: midY - 20,
@@ -566,17 +601,30 @@ const MapViewer = () => {
             const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
             
             return (
-              <div
-                className="absolute bg-blue-400 pointer-events-none z-15 opacity-70"
-                style={{
-                  left: startPos.x,
-                  top: startPos.y - 2,
-                  width: length,
-                  height: 4,
-                  transformOrigin: 'left center',
-                  transform: `rotate(${angle}deg)`,
-                }}
-              />
+              <>
+                <div
+                  className="absolute bg-black pointer-events-none z-14 opacity-50"
+                  style={{
+                    left: startPos.x,
+                    top: startPos.y - 3,
+                    width: length,
+                    height: 6,
+                    transformOrigin: 'left center',
+                    transform: `rotate(${angle}deg)`,
+                  }}
+                />
+                <div
+                  className="absolute bg-blue-700 pointer-events-none z-15 opacity-70"
+                  style={{
+                    left: startPos.x,
+                    top: startPos.y - 2,
+                    width: length,
+                    height: 4,
+                    transformOrigin: 'left center',
+                    transform: `rotate(${angle}deg)`,
+                  }}
+                />
+              </>
             );
           })()
         )}
