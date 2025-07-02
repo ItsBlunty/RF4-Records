@@ -440,8 +440,25 @@ const MapViewer = () => {
                 const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
                 const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY);
                 
-                const pixelX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
-                const pixelY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
+                // Calculate the center of the container
+                const containerCenterX = containerRect.width / 2;
+                const containerCenterY = containerRect.height / 2;
+                
+                // Get the image's natural size and apply transforms
+                const naturalWidth = img.naturalWidth;
+                const naturalHeight = img.naturalHeight;
+                
+                // Calculate position on the natural (unscaled) image
+                const naturalX = relativeX * naturalWidth;
+                const naturalY = relativeY * naturalHeight;
+                
+                // Apply the current transform (scale and translate)
+                const scaledX = naturalX * transform.scale;
+                const scaledY = naturalY * transform.scale;
+                
+                // Position relative to container center, then add translations
+                const pixelX = containerCenterX + (scaledX - (naturalWidth * transform.scale) / 2) + transform.translateX;
+                const pixelY = containerCenterY + (scaledY - (naturalHeight * transform.scale) / 2) + transform.translateY;
                 
                 return { x: pixelX, y: pixelY };
               };
