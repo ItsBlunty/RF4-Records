@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ZoomIn, ZoomOut, RotateCcw, Home } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Home, X } from 'lucide-react';
 
 const MapViewer = () => {
   // Parse filename to extract coordinate bounds
@@ -30,6 +30,11 @@ const MapViewer = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   
+  // Measurement state
+  const [markers, setMarkers] = useState([]);
+  const [measurements, setMeasurements] = useState([]);
+  const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {x, y} }
+  
   // Pan and zoom state
   const [transform, setTransform] = useState({
     scale: 1,
@@ -43,6 +48,41 @@ const MapViewer = () => {
   
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
+
+  // Calculate distance between two map coordinates (in meters)
+  const calculateDistance = useCallback((coord1, coord2) => {
+    const dx = coord2.x - coord1.x;
+    const dy = coord2.y - coord1.y;
+    const coordDistance = Math.sqrt(dx * dx + dy * dy);
+    return coordDistance * 5; // 1 coordinate = 5 meters
+  }, []);
+
+  // Format distance for display
+  const formatDistance = useCallback((meters) => {
+    if (meters < 1000) {
+      return `${meters.toFixed(1)}m`;
+    } else {
+      return `${(meters / 1000).toFixed(2)}km`;
+    }
+  }, []);
+
+  // Convert map coordinates to SVG coordinates
+  const mapToSvgCoords = useCallback((mapCoord) => {
+    if (!mapBounds || !mapImageRef.current) return { x: 0, y: 0 };
+    
+    const img = mapImageRef.current;
+    const rect = img.getBoundingClientRect();
+    
+    // Convert map coordinates to relative position (0-1)
+    const relativeX = (mapCoord.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
+    const relativeY = (mapBounds.maxY - mapCoord.y) / (mapBounds.maxY - mapBounds.minY); // Flip Y
+    
+    // Convert to pixel coordinates within the image
+    return {
+      x: relativeX * img.naturalWidth,
+      y: relativeY * img.naturalHeight
+    };
+  }, [mapBounds]);
 
   // Convert pixel coordinates to map coordinates
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
@@ -111,6 +151,33 @@ const MapViewer = () => {
     setIsDragging(false);
   }, []);
 
+  // Handle right-click for measurements
+  const handleContextMenu = useCallback((e) => {
+    e.preventDefault(); // Prevent browser context menu
+    
+    if (!mapImageRef.current) return;
+    
+    const coords = pixelToMapCoords(e.clientX, e.clientY);
+    
+    if (!currentMeasurement) {
+      // Start new measurement
+      const newMarker = { id: Date.now(), x: coords.x, y: coords.y };
+      setMarkers(prev => [...prev, newMarker]);
+      setCurrentMeasurement({ start: coords });
+    } else {
+      // Complete measurement
+      const distance = calculateDistance(currentMeasurement.start, coords);
+      const newMeasurement = {
+        id: Date.now(),
+        start: currentMeasurement.start,
+        end: coords,
+        distance: distance
+      };
+      setMeasurements(prev => [...prev, newMeasurement]);
+      setCurrentMeasurement(null);
+    }
+  }, [currentMeasurement, pixelToMapCoords, calculateDistance]);
+
   const handleMouseEnter = () => {
     setIsMouseOverMap(true);
   };
@@ -161,6 +228,12 @@ const MapViewer = () => {
       translateX: 0,
       translateY: 0
     });
+  };
+
+  const clearMeasurements = () => {
+    setMarkers([]);
+    setMeasurements([]);
+    setCurrentMeasurement(null);
   };
 
   // Handle wheel zoom
@@ -224,6 +297,7 @@ const MapViewer = () => {
     const bounds = parseMapBounds(currentMap);
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
+    clearMeasurements(); // Clear measurements when switching maps
   }, [currentMap]);
 
   if (!mapBounds) {
@@ -303,6 +377,14 @@ const MapViewer = () => {
             >
               <Home className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
+            <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+            <button
+              onClick={clearMeasurements}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+              title="Clear Measurements"
+            >
+              <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
           </div>
           
           {/* Zoom Level Indicator */}
@@ -320,6 +402,7 @@ const MapViewer = () => {
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
+          onContextMenu={handleContextMenu}
         >
           <div 
             style={{
@@ -349,6 +432,102 @@ const MapViewer = () => {
               }}
               onDragStart={(e) => e.preventDefault()} // Prevent image drag
             />
+            
+            {/* SVG Overlay for measurements */}
+            {mapImageRef.current && (
+              <svg
+                className="absolute top-0 left-0 pointer-events-none"
+                width={mapImageRef.current.naturalWidth}
+                height={mapImageRef.current.naturalHeight}
+                style={{
+                  imageRendering: 'pixelated'
+                }}
+              >
+                {/* Markers */}
+                {markers.map(marker => {
+                  const svgCoord = mapToSvgCoords(marker);
+                  return (
+                    <circle
+                      key={marker.id}
+                      cx={svgCoord.x}
+                      cy={svgCoord.y}
+                      r="6"
+                      fill="#ef4444"
+                      stroke="#fff"
+                      strokeWidth="2"
+                    />
+                  );
+                })}
+                
+                {/* Completed measurements */}
+                {measurements.map(measurement => {
+                  const startSvg = mapToSvgCoords(measurement.start);
+                  const endSvg = mapToSvgCoords(measurement.end);
+                  const midX = (startSvg.x + endSvg.x) / 2;
+                  const midY = (startSvg.y + endSvg.y) / 2;
+                  
+                  // Calculate arrow rotation
+                  const angle = Math.atan2(endSvg.y - startSvg.y, endSvg.x - startSvg.x) * 180 / Math.PI;
+                  
+                  return (
+                    <g key={measurement.id}>
+                      {/* Line */}
+                      <line
+                        x1={startSvg.x}
+                        y1={startSvg.y}
+                        x2={endSvg.x}
+                        y2={endSvg.y}
+                        stroke="#3b82f6"
+                        strokeWidth="3"
+                        strokeDasharray="5,5"
+                      />
+                      
+                      {/* Arrow */}
+                      <polygon
+                        points="0,-5 10,0 0,5"
+                        fill="#3b82f6"
+                        transform={`translate(${endSvg.x}, ${endSvg.y}) rotate(${angle})`}
+                      />
+                      
+                      {/* Distance label */}
+                      <rect
+                        x={midX - 25}
+                        y={midY - 12}
+                        width="50"
+                        height="24"
+                        fill="white"
+                        stroke="#3b82f6"
+                        strokeWidth="1"
+                        rx="3"
+                      />
+                      <text
+                        x={midX}
+                        y={midY + 4}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="#1f2937"
+                        fontFamily="monospace"
+                      >
+                        {formatDistance(measurement.distance)}
+                      </text>
+                    </g>
+                  );
+                })}
+                
+                {/* Active measurement line */}
+                {currentMeasurement && (
+                  <line
+                    x1={mapToSvgCoords(currentMeasurement.start).x}
+                    y1={mapToSvgCoords(currentMeasurement.start).y}
+                    x2={mapToSvgCoords(mouseCoords).x}
+                    y2={mapToSvgCoords(mouseCoords).y}
+                    stroke="#fbbf24"
+                    strokeWidth="2"
+                    strokeDasharray="3,3"
+                  />
+                )}
+              </svg>
+            )}
           </div>
         </div>
 
@@ -364,7 +543,12 @@ const MapViewer = () => {
                 : 'none' // Flip to left side if near right edge
             }}
           >
-            {mouseCoords.x}:{mouseCoords.y}
+            <div>{mouseCoords.x}:{mouseCoords.y}</div>
+            {currentMeasurement && (
+              <div className="text-yellow-300">
+                {formatDistance(calculateDistance(currentMeasurement.start, mouseCoords))}
+              </div>
+            )}
           </div>
         )}
 
@@ -377,6 +561,7 @@ const MapViewer = () => {
             <div>• Click and drag to pan</div>
             <div>• Mouse wheel to zoom</div>
             <div>• Hover to see coordinates</div>
+            <div>• Right-click to measure distances</div>
             <div>• Use buttons to reset view</div>
           </div>
         </div>
