@@ -481,14 +481,86 @@ const MapViewer = () => {
           return (
             <div
               key={marker.id}
-              className="absolute w-6 h-6 bg-red-500 rounded-full border-2 border-white pointer-events-none z-20"
+              className="absolute w-3 h-3 bg-red-500 rounded-full border border-white pointer-events-none z-20"
               style={{
-                left: screenPos.x - 12,
-                top: screenPos.y - 12,
+                left: screenPos.x - 6,
+                top: screenPos.y - 6,
               }}
             />
           );
         })}
+
+        {/* Measurement lines and labels */}
+        {measurements.map(measurement => {
+          const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
+          const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
+          
+          // Calculate line properties
+          const deltaX = endPos.x - startPos.x;
+          const deltaY = endPos.y - startPos.y;
+          const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+          
+          // Midpoint for label
+          const midX = (startPos.x + endPos.x) / 2;
+          const midY = (startPos.y + endPos.y) / 2;
+          
+          return (
+            <div key={`measurement-${measurement.id}`}>
+              {/* Line */}
+              <div
+                className="absolute bg-yellow-400 pointer-events-none z-15"
+                style={{
+                  left: startPos.x,
+                  top: startPos.y - 1,
+                  width: length,
+                  height: 2,
+                  transformOrigin: 'left center',
+                  transform: `rotate(${angle}deg)`,
+                }}
+              />
+              
+              {/* Distance label */}
+              <div
+                className="absolute pointer-events-none z-20 bg-yellow-400 text-black px-2 py-1 rounded text-xs font-mono font-bold"
+                style={{
+                  left: midX,
+                  top: midY - 20,
+                  transform: 'translateX(-50%)',
+                }}
+              >
+                {formatDistance(measurement.distance)}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* Current measurement line (while measuring) */}
+        {currentMeasurement && isMouseOverMap && (
+          (() => {
+            const startPos = mapCoordsToCurrentScreenPos(currentMeasurement.start.mapCoords);
+            const endPos = { x: mousePosition.x, y: mousePosition.y };
+            
+            const deltaX = endPos.x - startPos.x;
+            const deltaY = endPos.y - startPos.y;
+            const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+            
+            return (
+              <div
+                className="absolute bg-yellow-300 pointer-events-none z-15 opacity-70"
+                style={{
+                  left: startPos.x,
+                  top: startPos.y - 1,
+                  width: length,
+                  height: 2,
+                  transformOrigin: 'left center',
+                  transform: `rotate(${angle}deg)`,
+                }}
+              />
+            );
+          })()
+        )}
 
         {/* Floating Coordinate Box */}
         {isMouseOverMap && (
