@@ -293,8 +293,8 @@ const MapViewer = () => {
   // Update URL with measurement coordinates
   const updateURLWithMeasurement = (startCoords, endCoords) => {
     const params = new URLSearchParams();
-    params.set('from', `${Math.round(startCoords.x)},${Math.round(startCoords.y)}`);
-    params.set('to', `${Math.round(endCoords.x)},${Math.round(endCoords.y)}`);
+    params.set('from', `${Math.round(startCoords.x)}-${Math.round(startCoords.y)}`);
+    params.set('to', `${Math.round(endCoords.x)}-${Math.round(endCoords.y)}`);
     setSearchParams(params);
   };
 
@@ -389,8 +389,8 @@ const MapViewer = () => {
     
     if (fromParam && toParam && mapBounds) {
       try {
-        const [fromX, fromY] = fromParam.split(',').map(Number);
-        const [toX, toY] = toParam.split(',').map(Number);
+        const [fromX, fromY] = fromParam.split('-').map(Number);
+        const [toX, toY] = toParam.split('-').map(Number);
         
         // Validate coordinates are within map bounds
         if (fromX >= mapBounds.minX && fromX <= mapBounds.maxX && 
