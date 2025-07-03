@@ -734,9 +734,8 @@ const MapViewer = () => {
           const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
           
-          // Shorten line by arrow width (12px) so it doesn't show behind arrow
-          const arrowWidth = 12;
-          const length = Math.max(0, fullLength - arrowWidth);
+          // Extend line slightly under arrow to hide any seam
+          const length = fullLength;
           
           // Midpoint for label
           const midX = (startPos.x + endPos.x) / 2;
@@ -824,9 +823,8 @@ const MapViewer = () => {
             const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
             
-            // Shorten line by arrow width (12px) so it doesn't show behind arrow
-            const arrowWidth = 12;
-            const shortenedLength = Math.max(0, fullLength - arrowWidth);
+            // Extend line slightly under arrow to hide any seam
+            const shortenedLength = fullLength;
             
             return (
               <>
