@@ -744,34 +744,50 @@ const MapViewer = () => {
           
           return (
             <div key={`measurement-${measurement.id}-${transformKey}`}>
-              {/* Line without outline */}
-              <div
-                className="absolute bg-black pointer-events-none z-15"
-                style={{
-                  left: startPos.x,
-                  top: startPos.y - 2,
-                  width: length,
-                  height: 4,
-                  transformOrigin: 'left center',
-                  transform: `rotate(${angle}deg)`,
-                }}
-              />
-              
-              {/* Arrow without outline */}
-              <div
+              {/* SVG arrow line as single element */}
+              <svg
                 className="absolute pointer-events-none z-15"
                 style={{
-                  left: endPos.x,
-                  top: endPos.y,
-                  width: 0,
-                  height: 0,
-                  borderLeft: '12px solid black',
-                  borderTop: '8px solid transparent',
-                  borderBottom: '8px solid transparent',
-                  transform: `rotate(${angle}deg) translate(-12px, -8px)`,
-                  transformOrigin: '0 0',
+                  left: startPos.x,
+                  top: startPos.y,
+                  width: fullLength,
+                  height: 20,
+                  transform: `rotate(${angle}deg)`,
+                  transformOrigin: '0 center',
+                  overflow: 'visible'
                 }}
-              />
+              >
+                <defs>
+                  <marker
+                    id={`arrowhead-${measurement.id}`}
+                    markerWidth="12"
+                    markerHeight="8"
+                    refX="12"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <polygon
+                      points="0,0 12,4 0,8"
+                      fill="#1e40af"
+                      stroke="black"
+                      strokeWidth="1"
+                    />
+                  </marker>
+                </defs>
+                <line
+                  x1="0"
+                  y1="10"
+                  x2={fullLength}
+                  y2="10"
+                  stroke="#1e40af"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  markerEnd={`url(#arrowhead-${measurement.id})`}
+                  style={{
+                    filter: 'drop-shadow(0 0 1px black)'
+                  }}
+                />
+              </svg>
               
               {/* Distance label */}
               <div
@@ -805,34 +821,50 @@ const MapViewer = () => {
             
             return (
               <>
-                {/* Line without outline */}
-                <div
-                  className="absolute bg-black pointer-events-none z-15 opacity-70"
-                  style={{
-                    left: startPos.x,
-                    top: startPos.y - 2,
-                    width: shortenedLength,
-                    height: 4,
-                    transformOrigin: 'left center',
-                    transform: `rotate(${angle}deg)`,
-                  }}
-                />
-                
-                {/* Arrow without outline */}
-                <div
+                {/* SVG arrow line as single element */}
+                <svg
                   className="absolute pointer-events-none z-15 opacity-70"
                   style={{
-                    left: endPos.x,
-                    top: endPos.y,
-                    width: 0,
-                    height: 0,
-                    borderLeft: '12px solid black',
-                    borderTop: '8px solid transparent',
-                    borderBottom: '8px solid transparent',
-                    transform: `rotate(${angle}deg) translate(-12px, -8px)`,
-                    transformOrigin: '0 0',
+                    left: startPos.x,
+                    top: startPos.y,
+                    width: fullLength,
+                    height: 20,
+                    transform: `rotate(${angle}deg)`,
+                    transformOrigin: '0 center',
+                    overflow: 'visible'
                   }}
-                />
+                >
+                  <defs>
+                    <marker
+                      id="arrowhead-temp"
+                      markerWidth="12"
+                      markerHeight="8"
+                      refX="12"
+                      refY="4"
+                      orient="auto"
+                    >
+                      <polygon
+                        points="0,0 12,4 0,8"
+                        fill="#1d4ed8"
+                        stroke="black"
+                        strokeWidth="1"
+                      />
+                    </marker>
+                  </defs>
+                  <line
+                    x1="0"
+                    y1="10"
+                    x2={fullLength}
+                    y2="10"
+                    stroke="#1d4ed8"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    markerEnd="url(#arrowhead-temp)"
+                    style={{
+                      filter: 'drop-shadow(0 0 1px black)'
+                    }}
+                  />
+                </svg>
               </>
             );
           })()
