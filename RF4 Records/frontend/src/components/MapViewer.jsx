@@ -4,16 +4,17 @@ import { ZoomIn, ZoomOut, RotateCcw, Home, X } from 'lucide-react';
 const MapViewer = () => {
   // Parse filename to extract coordinate bounds
   const parseMapBounds = (filename) => {
-    // Format: "Testmap-1-1-100-100.jpg" -> {minX: 1, minY: 1, maxX: 100, maxY: 100}
-    const match = filename.match(/^([^-]+)-(\d+)-(\d+)-(\d+)-(\d+)\./);
+    // Format: "Testmap-1-1-100-100.jpg" or "Testmap-1.5-2.3-100.7-99.2.jpg"
+    // Supports both integers and decimals
+    const match = filename.match(/^([^-]+)-([\d.]+)-([\d.]+)-([\d.]+)-([\d.]+)\./);
     if (match) {
       const [, name, minX, minY, maxX, maxY] = match;
       return {
         name,
-        minX: parseInt(minX),
-        minY: parseInt(minY),
-        maxX: parseInt(maxX),
-        maxY: parseInt(maxY)
+        minX: parseFloat(minX),
+        minY: parseFloat(minY),
+        maxX: parseFloat(maxX),
+        maxY: parseFloat(maxY)
       };
     }
     return null;
