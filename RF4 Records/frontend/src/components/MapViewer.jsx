@@ -380,12 +380,13 @@ const MapViewer = () => {
     };
   }, [handleWheel]);
 
-  // Load coordinates from URL parameters
+  // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
     const fromParam = searchParams.get('from');
     const toParam = searchParams.get('to');
     
-    if (fromParam && toParam && mapBounds) {
+    // Only load from URL if we don't already have measurements (prevents overriding active measurements)
+    if (fromParam && toParam && mapBounds && measurements.length === 0 && markers.length === 0) {
       try {
         const [fromX, fromY] = fromParam.split('-').map(Number);
         const [toX, toY] = toParam.split('-').map(Number);
@@ -418,7 +419,7 @@ const MapViewer = () => {
         console.error('Invalid coordinate parameters:', error);
       }
     }
-  }, [searchParams, mapBounds, calculateDistance]);
+  }, [searchParams, mapBounds, calculateDistance, measurements.length, markers.length]);
 
   // Handle URL map changes and redirect if no map specified
   useEffect(() => {
@@ -607,11 +608,6 @@ const MapViewer = () => {
         {markers.map((marker, index) => {
           const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
           
-          // Debug logging for first marker
-          if (index === 0) {
-            console.log('First marker coords:', marker.mapCoords);
-            console.log('First marker screen pos:', screenPos);
-          }
           
           // Check if this is the first marker and if there's a measurement
           const isFirstMarker = index === 0;
@@ -691,9 +687,6 @@ const MapViewer = () => {
           const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
           const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
           
-          // Debug logging for measurement line
-          console.log('Measurement start coords:', measurement.start.mapCoords);
-          console.log('Measurement start screen pos:', startPos);
           
           // Calculate line properties
           const deltaX = endPos.x - startPos.x;
