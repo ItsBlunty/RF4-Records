@@ -1,8 +1,8 @@
 // Available maps configuration
 // Map from URL name to filename
 export const availableMaps = {
-  'elklake': 'Elk Lake-38-38-162-161.5.png',
-  'copper': 'Copper Lake-24-23.5-78-77.png',
-  'mosquito': 'Mosquito Lake-30-33-112-115.5.png',
-  'winding': 'Winding Rivulet-45-54-141.5-150.5.png'
+  'elklake': 'Elk Lake_38_38_162_161.5.png',
+  'copper': 'Copper Lake_24_23.5_78_77.png',
+  'mosquito': 'Mosquito Lake_30_33_112_115.5.png',
+  'winding': 'Winding Rivulet_45_54_141.5_150.5.png'
 };
