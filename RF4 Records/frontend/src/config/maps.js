@@ -5,5 +5,5 @@ export const availableMaps = {
   'copper': 'Copper Lake_24_23.5_78_77.png',
   'mosquito': 'Mosquito Lake_30_33_112_115.5.png',
   'winding': 'Winding Rivulet_45_54_141.5_150.5.png',
-  'oldburg': 'Old Burg_-3_-3_82.5_82.5.png'
+  'oldburg': 'Old Burg_-3_-3_83_83.png'
 };
