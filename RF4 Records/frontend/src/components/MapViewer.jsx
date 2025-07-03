@@ -64,6 +64,10 @@ const MapViewer = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
   
+  // Simple left-click hold state
+  const [isLeftHolding, setIsLeftHolding] = useState(false);
+  const leftHoldTimerRef = useRef(null);
+  
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
 
@@ -153,8 +157,8 @@ const MapViewer = () => {
     }
     
     
-    // Handle dragging
-    if (isDragging) {
+    // Handle dragging (both right-click and left-click hold)
+    if (isDragging || isLeftHolding) {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -164,7 +168,7 @@ const MapViewer = () => {
         translateY: dragStartTransform.translateY + deltaY
       }));
     }
-  }, [pixelToMapCoords, isDragging, dragStart, dragStartTransform]);
+  }, [pixelToMapCoords, isDragging, isLeftHolding, dragStart, dragStartTransform]);
 
   // Handle mouse events
   const handleMouseDown = useCallback((e) => {
@@ -174,43 +178,15 @@ const MapViewer = () => {
       
       if (!mapImageRef.current) return;
       
-      const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
-      
-      // No longer need to store screen coordinates - we'll calculate them dynamically
-      
-      if (!currentMeasurement) {
-        // Start new measurement - clear previous markers and measurements
-        const newMarker = { 
-          id: Date.now(), 
-          mapCoords: mapCoords // Keep precise coordinates for calculations
-        };
-        setMarkers([newMarker]); // Replace all markers with just the new one
-        setMeasurements([]); // Clear previous measurements
-        setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
-      } else {
-        // Complete measurement
-        const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
-        const newMeasurement = {
-          id: Date.now(),
-          start: currentMeasurement.start,
-          end: { mapCoords },
-          distance: distance
-        };
-        
-        // Add second marker and complete the measurement
-        const endMarker = {
-          id: Date.now() + 1,
-          mapCoords: mapCoords
-        };
-        
-        // Use the original first marker without modification to prevent any coordinate changes
-        setMarkers([currentMeasurement.startMarker, endMarker]);
-        setMeasurements([newMeasurement]);
-        setCurrentMeasurement(null);
-        
-        // Update URL with coordinates
-        updateURLWithMeasurement(currentMeasurement.start.mapCoords, mapCoords);
-      }
+      // Start hold timer for potential drag (doesn't interfere with measurements)
+      leftHoldTimerRef.current = setTimeout(() => {
+        setIsLeftHolding(true);
+        setDragStart({ x: e.clientX, y: e.clientY });
+        setDragStartTransform({
+          translateX: transform.translateX,
+          translateY: transform.translateY
+        });
+      }, 250);
     } else if (e.button === 2) {
       // Right click - handle panning
       e.preventDefault();
@@ -221,11 +197,60 @@ const MapViewer = () => {
         translateY: transform.translateY
       });
     }
-  }, [transform.translateX, transform.translateY, currentMeasurement, pixelToMapCoords, calculateDistance]);
+  }, [transform.translateX, transform.translateY]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e) => {
+    // Clean up left-click hold timer
+    if (leftHoldTimerRef.current) {
+      clearTimeout(leftHoldTimerRef.current);
+      leftHoldTimerRef.current = null;
+    }
+    
+    if (e.button === 0) {
+      if (isLeftHolding) {
+        // Was in drag mode - just stop dragging
+        setIsLeftHolding(false);
+      } else {
+        // Was a quick click - handle measurement (existing logic)
+        if (!mapImageRef.current) return;
+        
+        const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
+        
+        if (!currentMeasurement) {
+          // Start new measurement - clear previous markers and measurements
+          const newMarker = { 
+            id: Date.now(), 
+            mapCoords: mapCoords
+          };
+          setMarkers([newMarker]);
+          setMeasurements([]);
+          setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
+        } else {
+          // Complete measurement
+          const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
+          const newMeasurement = {
+            id: Date.now(),
+            start: currentMeasurement.start,
+            end: { mapCoords },
+            distance: distance
+          };
+          
+          const endMarker = {
+            id: Date.now() + 1,
+            mapCoords: mapCoords
+          };
+          
+          setMarkers([currentMeasurement.startMarker, endMarker]);
+          setMeasurements([newMeasurement]);
+          setCurrentMeasurement(null);
+          
+          updateURLWithMeasurement(currentMeasurement.start.mapCoords, mapCoords);
+        }
+      }
+    }
+    
     setIsDragging(false);
-  }, []);
+  }, [isLeftHolding, currentMeasurement, pixelToMapCoords, calculateDistance, updateURLWithMeasurement]);
 
   // Handle context menu to prevent right-click menu
   const handleContextMenu = useCallback((e) => {
@@ -347,13 +372,13 @@ const MapViewer = () => {
 
   // Global mouse event listeners
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isLeftHolding) {
       const handleGlobalMouseMove = (e) => {
         handleMouseMove(e);
       };
       
       const handleGlobalMouseUp = (e) => {
-        handleMouseUp();
+        handleMouseUp(e);
       };
       
       document.addEventListener('mousemove', handleGlobalMouseMove);
@@ -366,7 +391,7 @@ const MapViewer = () => {
         document.body.style.cursor = 'default';
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, isLeftHolding, handleMouseMove, handleMouseUp]);
 
   // Add wheel event listener to map container
   useEffect(() => {
@@ -581,7 +606,7 @@ const MapViewer = () => {
         {/* Map Display */}
         <div 
           ref={mapContainerRef}
-          className={`w-full h-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
+          className={`w-full h-full overflow-hidden ${(isDragging || isLeftHolding) ? 'cursor-grabbing' : 'cursor-default'}`}
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -916,6 +941,7 @@ const MapViewer = () => {
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <div>• Right-click and drag to pan</div>
+            <div>• Hold left-click to pan</div>
             <div>• Mouse wheel to zoom</div>
             <div>• Hover to see coordinates</div>
             <div>• Left-click to measure distances</div>
