@@ -148,11 +148,6 @@ const MapViewer = () => {
       });
     }
     
-    // Debug: log coordinate conversion for testing
-    if (coords.x && coords.y) {
-      const containerRect = mapContainerRef.current?.getBoundingClientRect();
-      console.log('Mouse coords:', coords, 'Raw clientX/Y:', e.clientX, e.clientY, 'Container offset:', containerRect?.left, containerRect?.top);
-    }
     
     // Handle dragging
     if (isDragging) {
