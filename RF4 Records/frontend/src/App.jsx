@@ -132,6 +132,12 @@ function AppContent() {
     setShowAbout(false);
   };
 
+  // Available maps - keep in sync with MapViewer
+  const availableMaps = {
+    'elklake': 'Elk Lake-38-38-162-161.5.png',
+    'copper': 'Copper Lake-24-23.5-78-77.png'
+  };
+
   const handlePageChange = (page) => {
     if (page === 'records') {
       navigate('/');
@@ -156,8 +162,9 @@ function AppContent() {
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'maps') {
-      // Navigate to first map in the list (currently elklake)
-      navigate('/maps/elklake');
+      // Navigate to first map in the availableMaps list dynamically
+      const firstMapKey = Object.keys(availableMaps)[0];
+      navigate(`/maps/${firstMapKey}`);
     }
   };
 
