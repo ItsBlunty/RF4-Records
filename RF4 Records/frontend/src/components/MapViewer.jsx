@@ -203,7 +203,14 @@ const MapViewer = () => {
           id: Date.now() + 1,
           mapCoords: mapCoords
         };
-        setMarkers(prev => [...prev, endMarker]);
+        
+        // Update the first marker to use the exact same coordinates as the measurement
+        const updatedFirstMarker = {
+          id: markers[0].id,
+          mapCoords: currentMeasurement.start.mapCoords
+        };
+        
+        setMarkers([updatedFirstMarker, endMarker]);
         setMeasurements([newMeasurement]);
         setCurrentMeasurement(null);
         
