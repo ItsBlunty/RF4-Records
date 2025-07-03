@@ -623,6 +623,8 @@ const MapViewer = () => {
         {/* Click markers - positioned relative to map container */}
         {markers.map((marker, index) => {
           const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
+          // Force recalculation by including transformKey in the calculation
+          const forceUpdate = transformKey;
           
           
           // Check if this is the first marker and if there's a measurement
@@ -671,7 +673,7 @@ const MapViewer = () => {
           }
           
           return (
-            <div key={marker.id}>
+            <div key={`${marker.id}-${transformKey}`}>
               {/* Only show dot for first marker */}
               {isFirstMarker && (
                 <div
@@ -702,6 +704,8 @@ const MapViewer = () => {
         {measurements.map(measurement => {
           const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
           const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
+          // Force recalculation by including transformKey in the calculation
+          const forceUpdate = transformKey;
           
           
           // Calculate line properties
@@ -715,7 +719,7 @@ const MapViewer = () => {
           const midY = (startPos.y + endPos.y) / 2;
           
           return (
-            <div key={`measurement-${measurement.id}`}>
+            <div key={`measurement-${measurement.id}-${transformKey}`}>
               {/* Line with black outline */}
               <div
                 className="absolute bg-black pointer-events-none z-14"
