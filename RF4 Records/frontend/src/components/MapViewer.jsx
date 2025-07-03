@@ -746,7 +746,7 @@ const MapViewer = () => {
             <div key={`measurement-${measurement.id}-${transformKey}`}>
               {/* Line without outline */}
               <div
-                className="absolute bg-blue-800 pointer-events-none z-15"
+                className="absolute bg-black pointer-events-none z-15"
                 style={{
                   left: startPos.x,
                   top: startPos.y - 2,
@@ -765,7 +765,7 @@ const MapViewer = () => {
                   top: endPos.y,
                   width: 0,
                   height: 0,
-                  borderLeft: '12px solid #1e40af',
+                  borderLeft: '12px solid black',
                   borderTop: '8px solid transparent',
                   borderBottom: '8px solid transparent',
                   transform: `rotate(${angle}deg) translate(-12px, -8px)`,
@@ -807,7 +807,7 @@ const MapViewer = () => {
               <>
                 {/* Line without outline */}
                 <div
-                  className="absolute bg-blue-700 pointer-events-none z-15 opacity-70"
+                  className="absolute bg-black pointer-events-none z-15 opacity-70"
                   style={{
                     left: startPos.x,
                     top: startPos.y - 2,
@@ -826,7 +826,7 @@ const MapViewer = () => {
                     top: endPos.y,
                     width: 0,
                     height: 0,
-                    borderLeft: '12px solid #1d4ed8',
+                    borderLeft: '12px solid black',
                     borderTop: '8px solid transparent',
                     borderBottom: '8px solid transparent',
                     transform: `rotate(${angle}deg) translate(-12px, -8px)`,
