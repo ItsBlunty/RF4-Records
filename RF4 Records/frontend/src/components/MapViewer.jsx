@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ZoomIn, ZoomOut, RotateCcw, Home, X } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2 } from 'lucide-react';
 
 const MapViewer = () => {
   const { mapName } = useParams();
@@ -298,6 +298,34 @@ const MapViewer = () => {
     setSearchParams(params);
   };
 
+  // Check if coordinates are available to share
+  const hasCoordinatesToShare = () => {
+    return searchParams.get('from') && searchParams.get('to');
+  };
+
+  // Copy current URL to clipboard
+  const handleShareSpot = async () => {
+    if (!hasCoordinatesToShare()) return;
+    
+    try {
+      const currentUrl = window.location.href;
+      await navigator.clipboard.writeText(currentUrl);
+      
+      // Optional: Show a brief success message
+      // You could add a toast notification here if desired
+      console.log('URL copied to clipboard:', currentUrl);
+    } catch (error) {
+      console.error('Failed to copy URL to clipboard:', error);
+      // Fallback: select the URL in an input field
+      const tempInput = document.createElement('input');
+      tempInput.value = window.location.href;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+    }
+  };
+
   // Handle wheel zoom
   const handleWheel = useCallback((e) => {
     // Only handle wheel events when mouse is over the map
@@ -451,6 +479,21 @@ const MapViewer = () => {
                 </option>
               ))}
             </select>
+            
+            {/* Share Spot Button */}
+            <button
+              onClick={handleShareSpot}
+              disabled={!hasCoordinatesToShare()}
+              className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                hasCoordinatesToShare()
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              }`}
+              title={hasCoordinatesToShare() ? 'Copy shareable link to clipboard' : 'Make a measurement to share coordinates'}
+            >
+              <Share2 className="w-4 h-4 mr-1" />
+              Share Spot
+            </button>
           </div>
           
           {/* Map Info */}
