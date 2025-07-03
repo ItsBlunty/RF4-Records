@@ -27,8 +27,8 @@ const MapViewer = () => {
 
   // Available maps - map from URL name to filename
   const availableMaps = {
-    'copper': 'Copper-24-23.5-78-77.png',
-    'elklake': 'ElkLake-38-38-162-161.5.png'
+    'elklake': 'Elk Lake-38-38-162-161.5.png',
+    'copper': 'Copper Lake-24-23.5-78-77.png'
   };
 
   // Get current map from URL or default to first available
@@ -426,7 +426,7 @@ const MapViewer = () => {
   useEffect(() => {
     // If we're on /maps without a specific map, redirect to default map
     if (location.pathname === '/maps' && !mapName) {
-      navigate('/maps/copper', { replace: true });
+      navigate('/maps/elklake', { replace: true });
       return;
     }
     
