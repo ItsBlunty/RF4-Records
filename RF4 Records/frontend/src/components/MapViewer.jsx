@@ -157,8 +157,8 @@ const MapViewer = () => {
     }
     
     
-    // Handle dragging (both right-click and left-click hold)
-    if (isDragging || isLeftHolding) {
+    // Handle dragging
+    if (isDragging) {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -168,7 +168,7 @@ const MapViewer = () => {
         translateY: dragStartTransform.translateY + deltaY
       }));
     }
-  }, [pixelToMapCoords, isDragging, isLeftHolding, dragStart, dragStartTransform]);
+  }, [pixelToMapCoords, isDragging, dragStart, dragStartTransform]);
 
   // Handle mouse events
   const handleMouseDown = useCallback((e) => {
@@ -177,16 +177,6 @@ const MapViewer = () => {
       e.preventDefault();
       
       if (!mapImageRef.current) return;
-      
-      // Start timer for potential drag (but don't interfere with measurements)
-      leftHoldTimerRef.current = setTimeout(() => {
-        setIsLeftHolding(true);
-        setDragStart({ x: e.clientX, y: e.clientY });
-        setDragStartTransform({
-          translateX: transform.translateX,
-          translateY: transform.translateY
-        });
-      }, 250);
       
       const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
       
@@ -235,17 +225,10 @@ const MapViewer = () => {
         translateY: transform.translateY
       });
     }
-  }, [transform.translateX, transform.translateY, currentMeasurement, pixelToMapCoords, calculateDistance, updateURLWithMeasurement]);
+  }, [transform.translateX, transform.translateY, currentMeasurement, pixelToMapCoords, calculateDistance]);
 
   const handleMouseUp = useCallback(() => {
-    // Clean up left-click timer
-    if (leftHoldTimerRef.current) {
-      clearTimeout(leftHoldTimerRef.current);
-      leftHoldTimerRef.current = null;
-    }
-    
     setIsDragging(false);
-    setIsLeftHolding(false);
   }, []);
 
   // Handle context menu to prevent right-click menu
@@ -368,7 +351,7 @@ const MapViewer = () => {
 
   // Global mouse event listeners
   useEffect(() => {
-    if (isDragging || isLeftHolding) {
+    if (isDragging) {
       const handleGlobalMouseMove = (e) => {
         handleMouseMove(e);
       };
@@ -387,7 +370,7 @@ const MapViewer = () => {
         document.body.style.cursor = 'default';
       };
     }
-  }, [isDragging, isLeftHolding, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Add wheel event listener to map container
   useEffect(() => {
@@ -602,7 +585,7 @@ const MapViewer = () => {
         {/* Map Display */}
         <div 
           ref={mapContainerRef}
-          className={`w-full h-full overflow-hidden ${(isDragging || isLeftHolding) ? 'cursor-grabbing' : 'cursor-default'}`}
+          className={`w-full h-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
