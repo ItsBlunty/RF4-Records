@@ -40,6 +40,7 @@ const MapViewer = () => {
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   
   // Measurement state - store map coordinates only
   const [markers, setMarkers] = useState([]); // { id, mapCoords: {x,y} }
@@ -628,6 +629,8 @@ const MapViewer = () => {
                   console.error('Failed to load map image:', e);
                   setImageReady(true); // Show even if error to avoid infinite loading
                 }}
+                onMouseEnter={() => setIsMouseOverImage(true)}
+                onMouseLeave={() => setIsMouseOverImage(false)}
                 onDragStart={(e) => e.preventDefault()} // Prevent image drag
               />
             </>
@@ -886,7 +889,7 @@ const MapViewer = () => {
         )}
 
         {/* Floating Coordinate Box */}
-        {isMouseOverMap && (
+        {isMouseOverImage && (
           <div 
             className="absolute pointer-events-none z-20 bg-blue-800 text-white px-2 py-1 rounded text-sm font-mono font-bold border border-black"
             style={{
