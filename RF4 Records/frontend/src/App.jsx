@@ -156,7 +156,8 @@ function AppContent() {
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'maps') {
-      navigate('/maps'); // Let MapViewer handle default redirect to first map
+      // Navigate to first map in the list (currently elklake)
+      navigate('/maps/elklake');
     }
   };
 
