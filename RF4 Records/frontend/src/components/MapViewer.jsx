@@ -22,7 +22,6 @@ const MapViewer = () => {
 
   // Available maps
   const availableMaps = [
-    'Testmap-1-1-100-100.jpg',
     'Copper-24-23.5-78-77.png'
   ];
 
