@@ -57,6 +57,9 @@ const MapViewer = () => {
     translateY: 0
   });
   
+  // Force re-render when transform changes to update marker positions
+  const [transformKey, setTransformKey] = useState(0);
+  
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
@@ -85,7 +88,7 @@ const MapViewer = () => {
     const screenY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
     
     return { x: screenX, y: screenY };
-  }, [mapBounds]);
+  }, [mapBounds, transformKey]);
 
   // Calculate distance between two map coordinates (in meters)
   const calculateDistance = useCallback((coord1, coord2) => {
@@ -380,6 +383,11 @@ const MapViewer = () => {
       mapContainer.removeEventListener('wheel', wheelHandler);
     };
   }, [handleWheel]);
+
+  // Force marker and measurement updates when transform changes
+  useEffect(() => {
+    setTransformKey(prev => prev + 1);
+  }, [transform]);
 
   // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
