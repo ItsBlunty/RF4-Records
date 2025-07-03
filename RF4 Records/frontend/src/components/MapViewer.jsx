@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2, Loader2 } from 'lucide-react';
+import { availableMaps } from '../config/maps.js';
 
 const MapViewer = () => {
   const { mapName } = useParams();
@@ -25,11 +26,6 @@ const MapViewer = () => {
     return null;
   };
 
-  // Available maps - map from URL name to filename
-  const availableMaps = {
-    'elklake': 'Elk Lake-38-38-162-161.5.png',
-    'copper': 'Copper Lake-24-23.5-78-77.png'
-  };
 
   // Get current map from URL or default to first available
   const getCurrentMapFile = () => {

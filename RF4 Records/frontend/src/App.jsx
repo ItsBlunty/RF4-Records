@@ -19,6 +19,7 @@ import ReelInfo from './components/ReelInfo.jsx';
 import RodInfo from './components/RodInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
+import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 import trophyIcon from './assets/trophy-clean.png';
 import superTrophyIcon from './assets/super-trophy-clean.png';
@@ -132,11 +133,6 @@ function AppContent() {
     setShowAbout(false);
   };
 
-  // Available maps - keep in sync with MapViewer
-  const availableMaps = {
-    'elklake': 'Elk Lake-38-38-162-161.5.png',
-    'copper': 'Copper Lake-24-23.5-78-77.png'
-  };
 
   const handlePageChange = (page) => {
     if (page === 'records') {
