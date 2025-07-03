@@ -58,7 +58,7 @@ function AppContent() {
     if (location.pathname === '/alcohol') return 'alcohol';
     if (location.pathname === '/reelinfo') return 'reelinfo';
     if (location.pathname === '/rodinfo') return 'rodinfo';
-    if (location.pathname === '/maps') return 'maps';
+    if (location.pathname.startsWith('/maps')) return 'maps';
     return 'records';
   };
   
@@ -156,7 +156,7 @@ function AppContent() {
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'maps') {
-      navigate('/maps');
+      navigate('/maps/copper'); // Default to copper map
     }
   };
 
@@ -655,6 +655,7 @@ function App() {
         <Route path="/reelinfo" element={<AppContent />} />
         <Route path="/rodinfo" element={<AppContent />} />
         <Route path="/maps" element={<AppContent />} />
+        <Route path="/maps/:mapName" element={<AppContent />} />
       </Routes>
     </Router>
   );

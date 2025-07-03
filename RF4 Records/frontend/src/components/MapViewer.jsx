@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ZoomIn, ZoomOut, RotateCcw, Home, X } from 'lucide-react';
 
 const MapViewer = () => {
+  const { mapName } = useParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   // Parse filename to extract coordinate bounds
   const parseMapBounds = (filename) => {
     // Format: "Testmap-1-1-100-100.jpg" or "Testmap-1.5-2.3-100.7-99.2.jpg"
@@ -20,13 +24,21 @@ const MapViewer = () => {
     return null;
   };
 
-  // Available maps
-  const availableMaps = [
-    'Copper-24-23.5-78-77.png'
-  ];
+  // Available maps - map from URL name to filename
+  const availableMaps = {
+    'copper': 'Copper-24-23.5-78-77.png'
+  };
 
-  const [currentMap, setCurrentMap] = useState(availableMaps[0]);
-  const [mapBounds, setMapBounds] = useState(() => parseMapBounds(availableMaps[0]));
+  // Get current map from URL or default to first available
+  const getCurrentMapFile = () => {
+    if (mapName && availableMaps[mapName.toLowerCase()]) {
+      return availableMaps[mapName.toLowerCase()];
+    }
+    return Object.values(availableMaps)[0];
+  };
+
+  const [currentMap, setCurrentMap] = useState(getCurrentMapFile());
+  const [mapBounds, setMapBounds] = useState(() => parseMapBounds(getCurrentMapFile()));
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
@@ -193,6 +205,9 @@ const MapViewer = () => {
         setMarkers(prev => [...prev, endMarker]);
         setMeasurements([newMeasurement]);
         setCurrentMeasurement(null);
+        
+        // Update URL with coordinates
+        updateURLWithMeasurement(currentMeasurement.start.mapCoords, mapCoords);
       }
     } else if (e.button === 2) {
       // Right click - handle panning
@@ -271,6 +286,16 @@ const MapViewer = () => {
     setMarkers([]);
     setMeasurements([]);
     setCurrentMeasurement(null);
+    // Clear URL parameters
+    setSearchParams({});
+  };
+
+  // Update URL with measurement coordinates
+  const updateURLWithMeasurement = (startCoords, endCoords) => {
+    const params = new URLSearchParams();
+    params.set('from', `${Math.round(startCoords.x)},${Math.round(startCoords.y)}`);
+    params.set('to', `${Math.round(endCoords.x)},${Math.round(endCoords.y)}`);
+    setSearchParams(params);
   };
 
   // Handle wheel zoom
@@ -329,12 +354,63 @@ const MapViewer = () => {
     };
   }, [handleWheel]);
 
+  // Load coordinates from URL parameters
+  useEffect(() => {
+    const fromParam = searchParams.get('from');
+    const toParam = searchParams.get('to');
+    
+    if (fromParam && toParam && mapBounds) {
+      try {
+        const [fromX, fromY] = fromParam.split(',').map(Number);
+        const [toX, toY] = toParam.split(',').map(Number);
+        
+        // Validate coordinates are within map bounds
+        if (fromX >= mapBounds.minX && fromX <= mapBounds.maxX && 
+            fromY >= mapBounds.minY && fromY <= mapBounds.maxY &&
+            toX >= mapBounds.minX && toX <= mapBounds.maxX && 
+            toY >= mapBounds.minY && toY <= mapBounds.maxY) {
+          
+          const startCoords = { x: fromX, y: fromY };
+          const endCoords = { x: toX, y: toY };
+          
+          // Create markers and measurement
+          const startMarker = { id: Date.now(), mapCoords: startCoords };
+          const endMarker = { id: Date.now() + 1, mapCoords: endCoords };
+          const distance = calculateDistance(startCoords, endCoords);
+          const measurement = {
+            id: Date.now() + 2,
+            start: { mapCoords: startCoords },
+            end: { mapCoords: endCoords },
+            distance: distance
+          };
+          
+          setMarkers([startMarker, endMarker]);
+          setMeasurements([measurement]);
+          setCurrentMeasurement(null);
+        }
+      } catch (error) {
+        console.error('Invalid coordinate parameters:', error);
+      }
+    }
+  }, [searchParams, mapBounds, calculateDistance]);
+
+  // Handle URL map changes
+  useEffect(() => {
+    const newMapFile = getCurrentMapFile();
+    if (newMapFile !== currentMap) {
+      setCurrentMap(newMapFile);
+    }
+  }, [mapName]);
+
   // Update map bounds when map changes
   useEffect(() => {
     const bounds = parseMapBounds(currentMap);
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
-    clearMeasurements(); // Clear measurements when switching maps
+    // Only clear measurements if not loading from URL
+    if (!searchParams.get('from') || !searchParams.get('to')) {
+      clearMeasurements(); // Clear measurements when switching maps
+    }
   }, [currentMap]);
 
   if (!mapBounds) {
@@ -362,13 +438,16 @@ const MapViewer = () => {
               RF4 Map Viewer
             </h1>
             <select 
-              value={currentMap} 
-              onChange={(e) => setCurrentMap(e.target.value)}
+              value={mapName || Object.keys(availableMaps)[0]} 
+              onChange={(e) => {
+                const selectedMapName = e.target.value;
+                navigate(`/maps/${selectedMapName}`);
+              }}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
-              {availableMaps.map(map => (
-                <option key={map} value={map}>
-                  {parseMapBounds(map)?.name || map}
+              {Object.entries(availableMaps).map(([mapKey, mapFile]) => (
+                <option key={mapKey} value={mapKey}>
+                  {parseMapBounds(mapFile)?.name || mapKey}
                 </option>
               ))}
             </select>
