@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2 } from 'lucide-react';
 
 const MapViewer = () => {
   const { mapName } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Parse filename to extract coordinate bounds
   const parseMapBounds = (filename) => {
@@ -422,13 +423,19 @@ const MapViewer = () => {
     }
   }, [searchParams, mapBounds, calculateDistance]);
 
-  // Handle URL map changes
+  // Handle URL map changes and redirect if no map specified
   useEffect(() => {
+    // If we're on /maps without a specific map, redirect to default map
+    if (location.pathname === '/maps' && !mapName) {
+      navigate('/maps/copper', { replace: true });
+      return;
+    }
+    
     const newMapFile = getCurrentMapFile();
     if (newMapFile !== currentMap) {
       setCurrentMap(newMapFile);
     }
-  }, [mapName]);
+  }, [mapName, navigate]);
 
   // Update map bounds when map changes
   useEffect(() => {
@@ -469,7 +476,9 @@ const MapViewer = () => {
               value={mapName || Object.keys(availableMaps)[0]} 
               onChange={(e) => {
                 const selectedMapName = e.target.value;
-                navigate(`/maps/${selectedMapName}`);
+                if (selectedMapName !== mapName) {
+                  navigate(`/maps/${selectedMapName}`);
+                }
               }}
               className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
             >
