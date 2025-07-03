@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2, Loader2 } from 'lucide-react';
+import { availableMaps } from '../config/maps.js';
 
 const MapViewer = () => {
   const { mapName } = useParams();
@@ -25,11 +26,6 @@ const MapViewer = () => {
     return null;
   };
 
-  // Available maps - map from URL name to filename
-  const availableMaps = {
-    'copper': 'Copper-24-23.5-78-77.png',
-    'elklake': 'ElkLake-38-38-162-161.5.png'
-  };
 
   // Get current map from URL or default to first available
   const getCurrentMapFile = () => {
@@ -44,18 +40,25 @@ const MapViewer = () => {
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   
   // Measurement state - store map coordinates only
   const [markers, setMarkers] = useState([]); // { id, mapCoords: {x,y} }
   const [measurements, setMeasurements] = useState([]);
   const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {mapCoords} }
   
-  // Pan and zoom state
+  // Pan and zoom state - start with smaller scale to prevent flash
   const [transform, setTransform] = useState({
-    scale: 1,
+    scale: 0.3,
     translateX: 0,
     translateY: 0
   });
+  
+  // Force re-render when transform changes to update marker positions
+  const [transformKey, setTransformKey] = useState(0);
+  
+  // Track if image is loaded and sized to prevent flash
+  const [imageReady, setImageReady] = useState(false);
   
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
@@ -85,7 +88,7 @@ const MapViewer = () => {
     const screenY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
     
     return { x: screenX, y: screenY };
-  }, [mapBounds]);
+  }, [mapBounds, transformKey]);
 
   // Calculate distance between two map coordinates (in meters)
   const calculateDistance = useCallback((coord1, coord2) => {
@@ -381,6 +384,18 @@ const MapViewer = () => {
     };
   }, [handleWheel]);
 
+  // Force marker and measurement updates when transform changes
+  useEffect(() => {
+    // Use double requestAnimationFrame to ensure CSS transforms have been applied
+    const updateMarkers = () => {
+      requestAnimationFrame(() => {
+        setTransformKey(prev => prev + 1);
+      });
+    };
+    
+    requestAnimationFrame(updateMarkers);
+  }, [transform]);
+
   // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
     const fromParam = searchParams.get('from');
@@ -426,7 +441,7 @@ const MapViewer = () => {
   useEffect(() => {
     // If we're on /maps without a specific map, redirect to default map
     if (location.pathname === '/maps' && !mapName) {
-      navigate('/maps/copper', { replace: true });
+      navigate('/maps/elklake', { replace: true });
       return;
     }
     
@@ -441,6 +456,7 @@ const MapViewer = () => {
     const bounds = parseMapBounds(currentMap);
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
+    setImageReady(false); // Hide image while new one loads
     // Only clear measurements if not loading from URL
     if (!searchParams.get('from') || !searchParams.get('to')) {
       clearMeasurements(); // Clear measurements when switching maps
@@ -580,25 +596,44 @@ const MapViewer = () => {
             }}
             className="w-full h-full flex items-center justify-center"
           >
-            <img
-              ref={mapImageRef}
-              src={`/images/${currentMap}`}
-              alt={`Map: ${mapBounds.name}`}
-              className="max-w-none select-none"
-              style={{
-                imageRendering: 'pixelated', // Preserve crisp edges when zoomed
-                maxWidth: 'none',
-                maxHeight: 'none'
-              }}
-              onLoad={() => {
-                // Auto-fit to screen when image loads
-                setTimeout(fitToScreen, 100);
-              }}
-              onError={(e) => {
-                console.error('Failed to load map image:', e);
-              }}
-              onDragStart={(e) => e.preventDefault()} // Prevent image drag
-            />
+            <>
+              {/* Loading indicator */}
+              {!imageReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+                  <div className="flex flex-col items-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Loading map...</span>
+                  </div>
+                </div>
+              )}
+              
+              <img
+                ref={mapImageRef}
+                src={`/images/${currentMap}`}
+                alt={`Map: ${mapBounds.name}`}
+                className="max-w-none select-none"
+                style={{
+                  imageRendering: 'pixelated', // Preserve crisp edges when zoomed
+                  maxWidth: 'none',
+                  maxHeight: 'none',
+                  opacity: imageReady ? 1 : 0,
+                  transition: 'opacity 0.2s ease-in-out'
+                }}
+                onLoad={() => {
+                  // Auto-fit to screen when image loads - no delay to prevent flash
+                  fitToScreen();
+                  // Show image after it's properly sized
+                  setTimeout(() => setImageReady(true), 50);
+                }}
+                onError={(e) => {
+                  console.error('Failed to load map image:', e);
+                  setImageReady(true); // Show even if error to avoid infinite loading
+                }}
+                onMouseEnter={() => setIsMouseOverImage(true)}
+                onMouseLeave={() => setIsMouseOverImage(false)}
+                onDragStart={(e) => e.preventDefault()} // Prevent image drag
+              />
+            </>
             
             
           </div>
@@ -608,6 +643,8 @@ const MapViewer = () => {
         {/* Click markers - positioned relative to map container */}
         {markers.map((marker, index) => {
           const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
+          // Force recalculation by including transformKey in the calculation
+          const forceUpdate = transformKey;
           
           
           // Check if this is the first marker and if there's a measurement
@@ -656,7 +693,7 @@ const MapViewer = () => {
           }
           
           return (
-            <div key={marker.id}>
+            <div key={`${marker.id}-${transformKey}`}>
               {/* Only show dot for first marker */}
               {isFirstMarker && (
                 <div
@@ -687,20 +724,26 @@ const MapViewer = () => {
         {measurements.map(measurement => {
           const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
           const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
+          // Force recalculation by including transformKey in the calculation
+          const forceUpdate = transformKey;
           
           
           // Calculate line properties
           const deltaX = endPos.x - startPos.x;
           const deltaY = endPos.y - startPos.y;
-          const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+          
+          // Shorten line by arrow width so it doesn't show behind arrow
+          const arrowWidth = 12;
+          const length = Math.max(0, fullLength - arrowWidth);
           
           // Midpoint for label
           const midX = (startPos.x + endPos.x) / 2;
           const midY = (startPos.y + endPos.y) / 2;
           
           return (
-            <div key={`measurement-${measurement.id}`}>
+            <div key={`measurement-${measurement.id}-${transformKey}`}>
               {/* Line with black outline */}
               <div
                 className="absolute bg-black pointer-events-none z-14"
@@ -725,7 +768,7 @@ const MapViewer = () => {
                 }}
               />
               
-              {/* Arrow at end point with black outline */}
+              {/* Arrow with black outline */}
               <div
                 className="absolute pointer-events-none z-14"
                 style={{
@@ -778,17 +821,22 @@ const MapViewer = () => {
             
             const deltaX = endPos.x - startPos.x;
             const deltaY = endPos.y - startPos.y;
-            const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+            
+            // Shorten line by arrow width so it doesn't show behind arrow
+            const arrowWidth = 12;
+            const shortenedLength = Math.max(0, fullLength - arrowWidth);
             
             return (
               <>
+                {/* Line with black outline */}
                 <div
                   className="absolute bg-black pointer-events-none z-14 opacity-50"
                   style={{
                     left: startPos.x,
                     top: startPos.y - 3,
-                    width: length,
+                    width: shortenedLength,
                     height: 6,
                     transformOrigin: 'left center',
                     transform: `rotate(${angle}deg)`,
@@ -799,10 +847,40 @@ const MapViewer = () => {
                   style={{
                     left: startPos.x,
                     top: startPos.y - 2,
-                    width: length,
+                    width: shortenedLength,
                     height: 4,
                     transformOrigin: 'left center',
                     transform: `rotate(${angle}deg)`,
+                  }}
+                />
+                
+                {/* Arrow with black outline */}
+                <div
+                  className="absolute pointer-events-none z-14 opacity-50"
+                  style={{
+                    left: endPos.x,
+                    top: endPos.y,
+                    width: 0,
+                    height: 0,
+                    borderLeft: '14px solid black',
+                    borderTop: '9px solid transparent',
+                    borderBottom: '9px solid transparent',
+                    transform: `rotate(${angle}deg) translate(-14px, -9px)`,
+                    transformOrigin: '0 0',
+                  }}
+                />
+                <div
+                  className="absolute pointer-events-none z-15 opacity-70"
+                  style={{
+                    left: endPos.x,
+                    top: endPos.y,
+                    width: 0,
+                    height: 0,
+                    borderLeft: '12px solid #1d4ed8',
+                    borderTop: '8px solid transparent',
+                    borderBottom: '8px solid transparent',
+                    transform: `rotate(${angle}deg) translate(-12px, -8px)`,
+                    transformOrigin: '0 0',
                   }}
                 />
               </>
@@ -811,7 +889,7 @@ const MapViewer = () => {
         )}
 
         {/* Floating Coordinate Box */}
-        {isMouseOverMap && (
+        {isMouseOverImage && (
           <div 
             className="absolute pointer-events-none z-20 bg-blue-800 text-white px-2 py-1 rounded text-sm font-mono font-bold border border-black"
             style={{

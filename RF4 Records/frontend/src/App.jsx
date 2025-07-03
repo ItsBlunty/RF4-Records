@@ -19,6 +19,7 @@ import ReelInfo from './components/ReelInfo.jsx';
 import RodInfo from './components/RodInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
+import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 import trophyIcon from './assets/trophy-clean.png';
 import superTrophyIcon from './assets/super-trophy-clean.png';
@@ -132,6 +133,7 @@ function AppContent() {
     setShowAbout(false);
   };
 
+
   const handlePageChange = (page) => {
     if (page === 'records') {
       navigate('/');
@@ -156,7 +158,9 @@ function AppContent() {
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'maps') {
-      navigate('/maps/copper'); // Default to copper map
+      // Navigate to first map in the availableMaps list dynamically
+      const firstMapKey = Object.keys(availableMaps)[0];
+      navigate(`/maps/${firstMapKey}`);
     }
   };
 
