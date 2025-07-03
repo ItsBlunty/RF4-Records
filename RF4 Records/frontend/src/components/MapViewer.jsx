@@ -59,12 +59,25 @@ const MapViewer = () => {
   // Track if image is loaded and sized to prevent flash
   const [imageReady, setImageReady] = useState(false);
   
+  // Progressive loading states
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [fullResLoaded, setFullResLoaded] = useState(false);
+  
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
   
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
+  const previewImageRef = useRef(null);
+
+  // Generate preview image filename (smaller version)
+  const getPreviewImageName = (filename) => {
+    const parts = filename.split('.');
+    const extension = parts.pop();
+    const name = parts.join('.');
+    return `${name}-preview.${extension}`;
+  };
 
   // Function to convert map coordinates to current screen position
   const mapCoordsToCurrentScreenPos = useCallback((mapCoords) => {
@@ -455,7 +468,12 @@ const MapViewer = () => {
     const bounds = parseMapBounds(currentMap);
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
-    setImageReady(false); // Hide image while new one loads
+    
+    // Reset all loading states when switching maps
+    setImageReady(false);
+    setPreviewLoaded(false);
+    setFullResLoaded(false);
+    
     // Only clear measurements if not loading from URL
     if (!searchParams.get('from') || !searchParams.get('to')) {
       clearMeasurements(); // Clear measurements when switching maps
@@ -597,7 +615,7 @@ const MapViewer = () => {
           >
             <>
               {/* Loading indicator */}
-              {!imageReady && (
+              {!previewLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
                   <div className="flex flex-col items-center space-y-3">
                     <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
@@ -606,29 +624,55 @@ const MapViewer = () => {
                 </div>
               )}
               
+              {/* Preview image (lower quality, loads first) */}
+              <img
+                ref={previewImageRef}
+                src={`/images/${getPreviewImageName(currentMap)}`}
+                alt={`Map Preview: ${mapBounds.name}`}
+                className="max-w-none select-none"
+                style={{
+                  imageRendering: 'pixelated',
+                  maxWidth: 'none',
+                  maxHeight: 'none',
+                  opacity: previewLoaded && !fullResLoaded ? 1 : 0,
+                  transition: 'opacity 0.2s ease-in-out',
+                  filter: 'blur(1px)' // Slight blur to indicate it's preview
+                }}
+                onLoad={() => {
+                  setPreviewLoaded(true);
+                  fitToScreen();
+                  setTimeout(() => setImageReady(true), 50);
+                }}
+                onError={() => {
+                  // If preview fails, skip to full res
+                  console.log('Preview image not available, loading full resolution');
+                  setPreviewLoaded(true);
+                }}
+                onDragStart={(e) => e.preventDefault()}
+              />
+              
+              {/* Full resolution image (loads after preview) */}
               <img
                 ref={mapImageRef}
                 src={`/images/${currentMap}`}
                 alt={`Map: ${mapBounds.name}`}
                 className="max-w-none select-none"
                 style={{
-                  imageRendering: 'pixelated', // Preserve crisp edges when zoomed
+                  imageRendering: 'pixelated',
                   maxWidth: 'none',
                   maxHeight: 'none',
-                  opacity: imageReady ? 1 : 0,
-                  transition: 'opacity 0.2s ease-in-out'
+                  opacity: fullResLoaded ? 1 : 0,
+                  transition: 'opacity 0.3s ease-in-out'
                 }}
                 onLoad={() => {
-                  // Auto-fit to screen when image loads - no delay to prevent flash
+                  setFullResLoaded(true);
                   fitToScreen();
-                  // Show image after it's properly sized
-                  setTimeout(() => setImageReady(true), 50);
                 }}
                 onError={(e) => {
-                  console.error('Failed to load map image:', e);
-                  setImageReady(true); // Show even if error to avoid infinite loading
+                  console.error('Failed to load full resolution map image:', e);
+                  setFullResLoaded(true); // Show even if error
                 }}
-                onDragStart={(e) => e.preventDefault()} // Prevent image drag
+                onDragStart={(e) => e.preventDefault()}
               />
             </>
             
