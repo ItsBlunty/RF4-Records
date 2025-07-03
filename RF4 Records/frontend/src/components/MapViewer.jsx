@@ -60,6 +60,9 @@ const MapViewer = () => {
   // Force re-render when transform changes to update marker positions
   const [transformKey, setTransformKey] = useState(0);
   
+  // Track if image is loaded and sized to prevent flash
+  const [imageReady, setImageReady] = useState(false);
+  
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
@@ -456,6 +459,7 @@ const MapViewer = () => {
     const bounds = parseMapBounds(currentMap);
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
+    setImageReady(false); // Hide image while new one loads
     // Only clear measurements if not loading from URL
     if (!searchParams.get('from') || !searchParams.get('to')) {
       clearMeasurements(); // Clear measurements when switching maps
@@ -603,11 +607,15 @@ const MapViewer = () => {
               style={{
                 imageRendering: 'pixelated', // Preserve crisp edges when zoomed
                 maxWidth: 'none',
-                maxHeight: 'none'
+                maxHeight: 'none',
+                opacity: imageReady ? 1 : 0,
+                transition: 'opacity 0.2s ease-in-out'
               }}
               onLoad={() => {
                 // Auto-fit to screen when image loads - no delay to prevent flash
                 fitToScreen();
+                // Show image after it's properly sized
+                setTimeout(() => setImageReady(true), 50);
               }}
               onError={(e) => {
                 console.error('Failed to load map image:', e);
