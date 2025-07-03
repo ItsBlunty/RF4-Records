@@ -64,6 +64,10 @@ const MapViewer = () => {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
   
+  // Test: add state variables only
+  const [isLeftHolding, setIsLeftHolding] = useState(false);
+  const leftHoldTimerRef = useRef(null);
+  
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
 
