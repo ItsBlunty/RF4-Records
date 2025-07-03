@@ -629,18 +629,21 @@ const MapViewer = () => {
                 ref={previewImageRef}
                 src={`/images/${getPreviewImageName(currentMap)}`}
                 alt={`Map Preview: ${mapBounds.name}`}
-                className="max-w-none select-none"
+                className="max-w-none select-none absolute inset-0"
                 style={{
                   imageRendering: 'pixelated',
                   maxWidth: 'none',
                   maxHeight: 'none',
                   opacity: previewLoaded && !fullResLoaded ? 1 : 0,
                   transition: 'opacity 0.2s ease-in-out',
-                  filter: 'blur(1px)' // Slight blur to indicate it's preview
+                  filter: 'blur(1px)', // Slight blur to indicate it's preview
+                  objectFit: 'contain',
+                  width: '100%',
+                  height: '100%'
                 }}
                 onLoad={() => {
                   setPreviewLoaded(true);
-                  fitToScreen();
+                  // Don't call fitToScreen here - wait for full res
                   setTimeout(() => setImageReady(true), 50);
                 }}
                 onError={() => {
@@ -651,7 +654,7 @@ const MapViewer = () => {
                 onDragStart={(e) => e.preventDefault()}
               />
               
-              {/* Full resolution image (loads after preview) */}
+              {/* Full resolution image (loads after preview) - this one controls positioning */}
               <img
                 ref={mapImageRef}
                 src={`/images/${currentMap}`}
@@ -666,6 +669,7 @@ const MapViewer = () => {
                 }}
                 onLoad={() => {
                   setFullResLoaded(true);
+                  // Only call fitToScreen when full resolution loads
                   fitToScreen();
                 }}
                 onError={(e) => {
