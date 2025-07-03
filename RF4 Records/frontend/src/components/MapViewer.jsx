@@ -50,9 +50,9 @@ const MapViewer = () => {
   const [measurements, setMeasurements] = useState([]);
   const [currentMeasurement, setCurrentMeasurement] = useState(null); // { start: {mapCoords} }
   
-  // Pan and zoom state
+  // Pan and zoom state - start with smaller scale to prevent flash
   const [transform, setTransform] = useState({
-    scale: 1,
+    scale: 0.3,
     translateX: 0,
     translateY: 0
   });
@@ -606,8 +606,8 @@ const MapViewer = () => {
                 maxHeight: 'none'
               }}
               onLoad={() => {
-                // Auto-fit to screen when image loads
-                setTimeout(fitToScreen, 100);
+                // Auto-fit to screen when image loads - no delay to prevent flash
+                fitToScreen();
               }}
               onError={(e) => {
                 console.error('Failed to load map image:', e);
