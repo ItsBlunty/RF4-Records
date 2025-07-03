@@ -187,7 +187,7 @@ const MapViewer = () => {
         };
         setMarkers([newMarker]); // Replace all markers with just the new one
         setMeasurements([]); // Clear previous measurements
-        setCurrentMeasurement({ start: { mapCoords } });
+        setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
       } else {
         // Complete measurement
         const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
@@ -204,13 +204,8 @@ const MapViewer = () => {
           mapCoords: mapCoords
         };
         
-        // Update the first marker to use the exact same coordinates as the measurement
-        const updatedFirstMarker = {
-          id: markers[0].id,
-          mapCoords: currentMeasurement.start.mapCoords
-        };
-        
-        setMarkers([updatedFirstMarker, endMarker]);
+        // Use the original first marker without modification to prevent any coordinate changes
+        setMarkers([currentMeasurement.startMarker, endMarker]);
         setMeasurements([newMeasurement]);
         setCurrentMeasurement(null);
         
