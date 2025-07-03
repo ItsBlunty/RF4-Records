@@ -386,7 +386,14 @@ const MapViewer = () => {
 
   // Force marker and measurement updates when transform changes
   useEffect(() => {
-    setTransformKey(prev => prev + 1);
+    // Use double requestAnimationFrame to ensure CSS transforms have been applied
+    const updateMarkers = () => {
+      requestAnimationFrame(() => {
+        setTransformKey(prev => prev + 1);
+      });
+    };
+    
+    requestAnimationFrame(updateMarkers);
   }, [transform]);
 
   // Load coordinates from URL parameters (only on initial page load)
