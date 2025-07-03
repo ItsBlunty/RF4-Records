@@ -156,7 +156,7 @@ function AppContent() {
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'maps') {
-      navigate('/maps/copper'); // Default to copper map
+      navigate('/maps'); // Let MapViewer handle default redirect to first map
     }
   };
 
