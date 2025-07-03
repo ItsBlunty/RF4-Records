@@ -734,8 +734,9 @@ const MapViewer = () => {
           const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
           
-          // Extend line slightly under arrow to hide any seam
-          const length = fullLength;
+          // Shorten line by arrow width so it doesn't show behind arrow
+          const arrowWidth = 12;
+          const length = Math.max(0, fullLength - arrowWidth);
           
           // Midpoint for label
           const midX = (startPos.x + endPos.x) / 2;
@@ -743,18 +744,7 @@ const MapViewer = () => {
           
           return (
             <div key={`measurement-${measurement.id}-${transformKey}`}>
-              {/* Line with black outline */}
-              <div
-                className="absolute bg-black pointer-events-none z-14"
-                style={{
-                  left: startPos.x,
-                  top: startPos.y - 3,
-                  width: length,
-                  height: 6,
-                  transformOrigin: 'left center',
-                  transform: `rotate(${angle}deg)`,
-                }}
-              />
+              {/* Line without outline */}
               <div
                 className="absolute bg-blue-800 pointer-events-none z-15"
                 style={{
@@ -767,21 +757,7 @@ const MapViewer = () => {
                 }}
               />
               
-              {/* Arrow at end point with black outline */}
-              <div
-                className="absolute pointer-events-none z-14"
-                style={{
-                  left: endPos.x,
-                  top: endPos.y,
-                  width: 0,
-                  height: 0,
-                  borderLeft: '14px solid black',
-                  borderTop: '9px solid transparent',
-                  borderBottom: '9px solid transparent',
-                  transform: `rotate(${angle}deg) translate(-16px, -9px)`,
-                  transformOrigin: '0 0',
-                }}
-              />
+              {/* Arrow without outline */}
               <div
                 className="absolute pointer-events-none z-15"
                 style={{
@@ -792,7 +768,7 @@ const MapViewer = () => {
                   borderLeft: '12px solid #1e40af',
                   borderTop: '8px solid transparent',
                   borderBottom: '8px solid transparent',
-                  transform: `rotate(${angle}deg) translate(-14px, -8px)`,
+                  transform: `rotate(${angle}deg) translate(-12px, -8px)`,
                   transformOrigin: '0 0',
                 }}
               />
@@ -823,23 +799,13 @@ const MapViewer = () => {
             const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
             
-            // Extend line slightly under arrow to hide any seam
-            const shortenedLength = fullLength;
+            // Shorten line by arrow width so it doesn't show behind arrow
+            const arrowWidth = 12;
+            const shortenedLength = Math.max(0, fullLength - arrowWidth);
             
             return (
               <>
-                {/* Shortened line with black outline */}
-                <div
-                  className="absolute bg-black pointer-events-none z-14 opacity-50"
-                  style={{
-                    left: startPos.x,
-                    top: startPos.y - 3,
-                    width: shortenedLength,
-                    height: 6,
-                    transformOrigin: 'left center',
-                    transform: `rotate(${angle}deg)`,
-                  }}
-                />
+                {/* Line without outline */}
                 <div
                   className="absolute bg-blue-700 pointer-events-none z-15 opacity-70"
                   style={{
@@ -852,21 +818,7 @@ const MapViewer = () => {
                   }}
                 />
                 
-                {/* Arrow at end point */}
-                <div
-                  className="absolute pointer-events-none z-14 opacity-50"
-                  style={{
-                    left: endPos.x,
-                    top: endPos.y,
-                    width: 0,
-                    height: 0,
-                    borderLeft: '14px solid black',
-                    borderTop: '9px solid transparent',
-                    borderBottom: '9px solid transparent',
-                    transform: `rotate(${angle}deg) translate(-16px, -9px)`,
-                    transformOrigin: '0 0',
-                  }}
-                />
+                {/* Arrow without outline */}
                 <div
                   className="absolute pointer-events-none z-15 opacity-70"
                   style={{
@@ -877,7 +829,7 @@ const MapViewer = () => {
                     borderLeft: '12px solid #1d4ed8',
                     borderTop: '8px solid transparent',
                     borderBottom: '8px solid transparent',
-                    transform: `rotate(${angle}deg) translate(-14px, -8px)`,
+                    transform: `rotate(${angle}deg) translate(-12px, -8px)`,
                     transformOrigin: '0 0',
                   }}
                 />
