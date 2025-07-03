@@ -10,9 +10,9 @@ const MapViewer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   // Parse filename to extract coordinate bounds
   const parseMapBounds = (filename) => {
-    // Format: "Testmap-1-1-100-100.jpg" or "Testmap-1.5-2.3-100.7-99.2.jpg"
-    // Supports both integers and decimals
-    const match = filename.match(/^([^-]+)-([\d.]+)-([\d.]+)-([\d.]+)-([\d.]+)\./);
+    // Format: "Testmap_1_1_100_100.jpg" or "Testmap_-1.5_2.3_100.7_-99.2.jpg"
+    // Supports both integers, decimals, and negative values
+    const match = filename.match(/^([^_]+)_([-\d.]+)_([-\d.]+)_([-\d.]+)_([-\d.]+)\./);
     if (match) {
       const [, name, minX, minY, maxX, maxY] = match;
       return {
