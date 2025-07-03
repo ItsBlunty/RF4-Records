@@ -779,7 +779,7 @@ const MapViewer = () => {
                   borderLeft: '14px solid black',
                   borderTop: '9px solid transparent',
                   borderBottom: '9px solid transparent',
-                  transform: `rotate(${angle}deg) translate(-14px, -9px)`,
+                  transform: `rotate(${angle}deg) translate(-13px, -9px)`,
                   transformOrigin: '0 0',
                 }}
               />
@@ -793,7 +793,7 @@ const MapViewer = () => {
                   borderLeft: '12px solid #1e40af',
                   borderTop: '8px solid transparent',
                   borderBottom: '8px solid transparent',
-                  transform: `rotate(${angle}deg) translate(-12px, -8px)`,
+                  transform: `rotate(${angle}deg) translate(-11px, -8px)`,
                   transformOrigin: '0 0',
                 }}
               />
@@ -865,7 +865,7 @@ const MapViewer = () => {
                     borderLeft: '14px solid black',
                     borderTop: '9px solid transparent',
                     borderBottom: '9px solid transparent',
-                    transform: `rotate(${angle}deg) translate(-14px, -9px)`,
+                    transform: `rotate(${angle}deg) translate(-13px, -9px)`,
                     transformOrigin: '0 0',
                   }}
                 />
@@ -879,7 +879,7 @@ const MapViewer = () => {
                     borderLeft: '12px solid #1d4ed8',
                     borderTop: '8px solid transparent',
                     borderBottom: '8px solid transparent',
-                    transform: `rotate(${angle}deg) translate(-12px, -8px)`,
+                    transform: `rotate(${angle}deg) translate(-11px, -8px)`,
                     transformOrigin: '0 0',
                   }}
                 />
