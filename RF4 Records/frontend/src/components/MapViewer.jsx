@@ -22,7 +22,7 @@ const MapViewer = () => {
   // Available maps
   const availableMaps = [
     'Testmap-1-1-100-100.jpg',
-    'Copper-24-24-78-78.png'
+    'Copper-24-23-78-78.png'
   ];
 
   const [currentMap, setCurrentMap] = useState(availableMaps[0]);
