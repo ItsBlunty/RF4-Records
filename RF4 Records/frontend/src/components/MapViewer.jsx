@@ -728,8 +728,12 @@ const MapViewer = () => {
           // Calculate line properties
           const deltaX = endPos.x - startPos.x;
           const deltaY = endPos.y - startPos.y;
-          const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
           const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+          
+          // Shorten line by arrow width (12px) so it doesn't show behind arrow
+          const arrowWidth = 12;
+          const length = Math.max(0, fullLength - arrowWidth);
           
           // Midpoint for label
           const midX = (startPos.x + endPos.x) / 2;
@@ -814,17 +818,22 @@ const MapViewer = () => {
             
             const deltaX = endPos.x - startPos.x;
             const deltaY = endPos.y - startPos.y;
-            const length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            const fullLength = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
             const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+            
+            // Shorten line by arrow width (12px) so it doesn't show behind arrow
+            const arrowWidth = 12;
+            const shortenedLength = Math.max(0, fullLength - arrowWidth);
             
             return (
               <>
+                {/* Shortened line with black outline */}
                 <div
                   className="absolute bg-black pointer-events-none z-14 opacity-50"
                   style={{
                     left: startPos.x,
                     top: startPos.y - 3,
-                    width: length,
+                    width: shortenedLength,
                     height: 6,
                     transformOrigin: 'left center',
                     transform: `rotate(${angle}deg)`,
@@ -835,10 +844,40 @@ const MapViewer = () => {
                   style={{
                     left: startPos.x,
                     top: startPos.y - 2,
-                    width: length,
+                    width: shortenedLength,
                     height: 4,
                     transformOrigin: 'left center',
                     transform: `rotate(${angle}deg)`,
+                  }}
+                />
+                
+                {/* Arrow at end point */}
+                <div
+                  className="absolute pointer-events-none z-14 opacity-50"
+                  style={{
+                    left: endPos.x,
+                    top: endPos.y,
+                    width: 0,
+                    height: 0,
+                    borderLeft: '14px solid black',
+                    borderTop: '9px solid transparent',
+                    borderBottom: '9px solid transparent',
+                    transform: `rotate(${angle}deg) translate(-14px, -9px)`,
+                    transformOrigin: '0 0',
+                  }}
+                />
+                <div
+                  className="absolute pointer-events-none z-15 opacity-70"
+                  style={{
+                    left: endPos.x,
+                    top: endPos.y,
+                    width: 0,
+                    height: 0,
+                    borderLeft: '12px solid #1d4ed8',
+                    borderTop: '8px solid transparent',
+                    borderBottom: '8px solid transparent',
+                    transform: `rotate(${angle}deg) translate(-12px, -8px)`,
+                    transformOrigin: '0 0',
                   }}
                 />
               </>
