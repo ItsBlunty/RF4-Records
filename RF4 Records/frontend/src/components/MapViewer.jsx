@@ -158,7 +158,7 @@ const MapViewer = () => {
     
     
     // Handle dragging
-    if (isDragging || isLeftHolding) {
+    if (isDragging) {
       const deltaX = e.clientX - dragStart.x;
       const deltaY = e.clientY - dragStart.y;
       
@@ -168,26 +168,15 @@ const MapViewer = () => {
         translateY: dragStartTransform.translateY + deltaY
       }));
     }
-  }, [pixelToMapCoords, isDragging, isLeftHolding, dragStart, dragStartTransform]);
+  }, [pixelToMapCoords, isDragging, dragStart, dragStartTransform]);
 
   // Handle mouse events
   const handleMouseDown = useCallback((e) => {
     if (e.button === 0) {
-      // Left click - check if holding shift for pan, otherwise measure
+      // Left click - handle measurements
       e.preventDefault();
       
       if (!mapImageRef.current) return;
-      
-      if (e.shiftKey) {
-        // Shift+left click = pan mode
-        setIsLeftHolding(true);
-        setDragStart({ x: e.clientX, y: e.clientY });
-        setDragStartTransform({
-          translateX: transform.translateX,
-          translateY: transform.translateY
-        });
-        return;
-      }
       
       const mapCoords = pixelToMapCoords(e.clientX, e.clientY);
       
@@ -240,7 +229,6 @@ const MapViewer = () => {
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
-    setIsLeftHolding(false);
   }, []);
 
   // Handle context menu to prevent right-click menu
@@ -363,7 +351,7 @@ const MapViewer = () => {
 
   // Global mouse event listeners
   useEffect(() => {
-    if (isDragging || isLeftHolding) {
+    if (isDragging) {
       const handleGlobalMouseMove = (e) => {
         handleMouseMove(e);
       };
@@ -382,7 +370,7 @@ const MapViewer = () => {
         document.body.style.cursor = 'default';
       };
     }
-  }, [isDragging, isLeftHolding, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp]);
 
   // Add wheel event listener to map container
   useEffect(() => {
@@ -597,7 +585,7 @@ const MapViewer = () => {
         {/* Map Display */}
         <div 
           ref={mapContainerRef}
-          className={`w-full h-full overflow-hidden ${(isDragging || isLeftHolding) ? 'cursor-grabbing' : 'cursor-default'}`}
+          className={`w-full h-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -932,7 +920,6 @@ const MapViewer = () => {
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
             <div>• Right-click and drag to pan</div>
-            <div>• Shift+left-click and drag to pan</div>
             <div>• Mouse wheel to zoom</div>
             <div>• Hover to see coordinates</div>
             <div>• Left-click to measure distances</div>
