@@ -612,6 +612,12 @@ const MapViewer = () => {
         {markers.map((marker, index) => {
           const screenPos = mapCoordsToCurrentScreenPos(marker.mapCoords);
           
+          // Debug logging for first marker
+          if (index === 0) {
+            console.log('First marker coords:', marker.mapCoords);
+            console.log('First marker screen pos:', screenPos);
+          }
+          
           // Check if this is the first marker and if there's a measurement
           const isFirstMarker = index === 0;
           const hasActiveMeasurement = measurements.length > 0;
@@ -689,6 +695,10 @@ const MapViewer = () => {
         {measurements.map(measurement => {
           const startPos = mapCoordsToCurrentScreenPos(measurement.start.mapCoords);
           const endPos = mapCoordsToCurrentScreenPos(measurement.end.mapCoords);
+          
+          // Debug logging for measurement line
+          console.log('Measurement start coords:', measurement.start.mapCoords);
+          console.log('Measurement start screen pos:', startPos);
           
           // Calculate line properties
           const deltaX = endPos.x - startPos.x;
