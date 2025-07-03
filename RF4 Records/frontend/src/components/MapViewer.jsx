@@ -27,7 +27,8 @@ const MapViewer = () => {
 
   // Available maps - map from URL name to filename
   const availableMaps = {
-    'copper': 'Copper-24-23.5-78-77.png'
+    'copper': 'Copper-24-23.5-78-77.png',
+    'elklake': 'ElkLake-38-38-162-161.5.png'
   };
 
   // Get current map from URL or default to first available
