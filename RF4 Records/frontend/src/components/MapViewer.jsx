@@ -73,42 +73,22 @@ const MapViewer = () => {
       return { x: 0, y: 0 };
     }
 
-    const img = mapImageRef.current;
-    const container = mapContainerRef.current;
-    
-    // Get the original image dimensions and container size
-    const imgNaturalWidth = img.naturalWidth;
-    const imgNaturalHeight = img.naturalHeight;
-    const containerRect = container.getBoundingClientRect();
-    
-    // Calculate the base image size before transform
-    const containerWidth = containerRect.width;
-    const containerHeight = containerRect.height;
-    
-    // The image is centered in the container initially
-    const baseImageWidth = imgNaturalWidth;
-    const baseImageHeight = imgNaturalHeight;
-    
-    // Calculate where the image would be positioned in the container (centered)
-    const baseLeft = (containerWidth - baseImageWidth) / 2;
-    const baseTop = (containerHeight - baseImageHeight) / 2;
-    
-    // Apply the current transform to get the actual position
-    const scaledWidth = baseImageWidth * transform.scale;
-    const scaledHeight = baseImageHeight * transform.scale;
-    const transformedLeft = baseLeft * transform.scale + transform.translateX;
-    const transformedTop = baseTop * transform.scale + transform.translateY;
+    // This uses the same conversion as the working popup, just in reverse
+    const containerRect = mapContainerRef.current.getBoundingClientRect();
     
     // Convert map coords to relative position (0-1)
     const relativeX = (mapCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
     const relativeY = (mapBounds.maxY - mapCoords.y) / (mapBounds.maxY - mapBounds.minY);
     
+    // Get current image bounds
+    const imgRect = mapImageRef.current.getBoundingClientRect();
+    
     // Convert to screen coordinates relative to container
-    const screenX = transformedLeft + (relativeX * scaledWidth);
-    const screenY = transformedTop + (relativeY * scaledHeight);
+    const screenX = (imgRect.left - containerRect.left) + (relativeX * imgRect.width);
+    const screenY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
     
     return { x: screenX, y: screenY };
-  }, [mapBounds, transform, transformKey]);
+  }, [mapBounds, transformKey]);
 
   // Calculate distance between two map coordinates (in meters)
   const calculateDistance = useCallback((coord1, coord2) => {
