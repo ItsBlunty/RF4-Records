@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2, Loader2 } from 'lucide-react';
 
 const MapViewer = () => {
   const { mapName } = useParams();
@@ -599,29 +599,42 @@ const MapViewer = () => {
             }}
             className="w-full h-full flex items-center justify-center"
           >
-            <img
-              ref={mapImageRef}
-              src={`/images/${currentMap}`}
-              alt={`Map: ${mapBounds.name}`}
-              className="max-w-none select-none"
-              style={{
-                imageRendering: 'pixelated', // Preserve crisp edges when zoomed
-                maxWidth: 'none',
-                maxHeight: 'none',
-                opacity: imageReady ? 1 : 0,
-                transition: 'opacity 0.2s ease-in-out'
-              }}
-              onLoad={() => {
-                // Auto-fit to screen when image loads - no delay to prevent flash
-                fitToScreen();
-                // Show image after it's properly sized
-                setTimeout(() => setImageReady(true), 50);
-              }}
-              onError={(e) => {
-                console.error('Failed to load map image:', e);
-              }}
-              onDragStart={(e) => e.preventDefault()} // Prevent image drag
-            />
+            <>
+              {/* Loading indicator */}
+              {!imageReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+                  <div className="flex flex-col items-center space-y-3">
+                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Loading map...</span>
+                  </div>
+                </div>
+              )}
+              
+              <img
+                ref={mapImageRef}
+                src={`/images/${currentMap}`}
+                alt={`Map: ${mapBounds.name}`}
+                className="max-w-none select-none"
+                style={{
+                  imageRendering: 'pixelated', // Preserve crisp edges when zoomed
+                  maxWidth: 'none',
+                  maxHeight: 'none',
+                  opacity: imageReady ? 1 : 0,
+                  transition: 'opacity 0.2s ease-in-out'
+                }}
+                onLoad={() => {
+                  // Auto-fit to screen when image loads - no delay to prevent flash
+                  fitToScreen();
+                  // Show image after it's properly sized
+                  setTimeout(() => setImageReady(true), 50);
+                }}
+                onError={(e) => {
+                  console.error('Failed to load map image:', e);
+                  setImageReady(true); // Show even if error to avoid infinite loading
+                }}
+                onDragStart={(e) => e.preventDefault()} // Prevent image drag
+              />
+            </>
             
             
           </div>
