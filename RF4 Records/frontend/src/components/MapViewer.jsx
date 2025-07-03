@@ -390,11 +390,21 @@ const MapViewer = () => {
     const updateMarkers = () => {
       requestAnimationFrame(() => {
         setTransformKey(prev => prev + 1);
+        
+        // Try to trigger a synthetic mouse move event to force position update
+        if (mapContainerRef.current) {
+          const syntheticEvent = new MouseEvent('mousemove', {
+            bubbles: true,
+            clientX: mousePosition.absoluteX || 0,
+            clientY: mousePosition.absoluteY || 0
+          });
+          mapContainerRef.current.dispatchEvent(syntheticEvent);
+        }
       });
     };
     
     requestAnimationFrame(updateMarkers);
-  }, [transform]);
+  }, [transform, mousePosition.absoluteX, mousePosition.absoluteY]);
 
   // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
