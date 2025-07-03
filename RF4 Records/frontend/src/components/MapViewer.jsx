@@ -291,8 +291,8 @@ const MapViewer = () => {
   // Update URL with measurement coordinates
   const updateURLWithMeasurement = (startCoords, endCoords) => {
     const params = new URLSearchParams();
-    params.set('from', `${Math.round(startCoords.x)}-${Math.round(startCoords.y)}`);
-    params.set('to', `${Math.round(endCoords.x)}-${Math.round(endCoords.y)}`);
+    params.set('from', `${startCoords.x.toFixed(2)}-${startCoords.y.toFixed(2)}`);
+    params.set('to', `${endCoords.x.toFixed(2)}-${endCoords.y.toFixed(2)}`);
     setSearchParams(params);
   };
 
