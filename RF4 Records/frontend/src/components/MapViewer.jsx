@@ -83,10 +83,11 @@ const MapViewer = () => {
 
   // Format distance for display
   const formatDistance = useCallback((meters) => {
-    if (meters < 1000) {
-      return `${meters.toFixed(1)}m`;
+    const roundedMeters = Math.round(meters);
+    if (roundedMeters < 1000) {
+      return `${roundedMeters}m`;
     } else {
-      return `${(meters / 1000).toFixed(2)}km`;
+      return `${(roundedMeters / 1000).toFixed(1)}km`;
     }
   }, []);
 
@@ -111,8 +112,8 @@ const MapViewer = () => {
     const mapY = mapBounds.maxY - (relativeY * (mapBounds.maxY - mapBounds.minY));
     
     return {
-      x: Math.round(mapX),
-      y: Math.round(mapY)
+      x: mapX, // Keep decimal precision for accurate distance calculations
+      y: mapY
     };
   }, [mapBounds]);
 
@@ -169,7 +170,7 @@ const MapViewer = () => {
         // Start new measurement - clear previous markers and measurements
         const newMarker = { 
           id: Date.now(), 
-          mapCoords: mapCoords
+          mapCoords: mapCoords // Keep precise coordinates for calculations
         };
         setMarkers([newMarker]); // Replace all markers with just the new one
         setMeasurements([]); // Clear previous measurements
@@ -544,7 +545,7 @@ const MapViewer = () => {
                     top: screenPos.y + popupOffset.y,
                   }}
                 >
-                  {marker.mapCoords.x}:{marker.mapCoords.y}
+                  {Math.round(marker.mapCoords.x)}:{Math.round(marker.mapCoords.y)}
                 </div>
               )}
             </div>
@@ -689,7 +690,7 @@ const MapViewer = () => {
                 : 'none' // Flip to left side if near right edge
             }}
           >
-            <div>{mouseCoords.x}:{mouseCoords.y}</div>
+            <div>{Math.round(mouseCoords.x)}:{Math.round(mouseCoords.y)}</div>
             {currentMeasurement && (
               <div className="text-blue-300">
                 {formatDistance(calculateDistance(currentMeasurement.start.mapCoords, mouseCoords))}
