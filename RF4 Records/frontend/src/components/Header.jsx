@@ -5,8 +5,9 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   // Check if we're in development/staging environment
   const isDevelopment = window.location.hostname !== 'rf4records.com';
   
-  // Dropdown state for gear info
+  // Dropdown state for gear info and skill info
   const [gearDropdownOpen, setGearDropdownOpen] = useState(false);
+  const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
 
   const formatLastRefresh = (date) => {
     if (!date) return '';
@@ -102,29 +103,50 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               Waterbody Prices
             </button>
 
-            <button
-              onClick={() => onPageChange && onPageChange('guides')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'guides' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 mr-2" />
-              Skill Leveling Guides
-            </button>
-
-            <button
-              onClick={() => onPageChange && onPageChange('skilltrees')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'skilltrees' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <TreePine className="w-4 h-4 mr-2" />
-              Skill Trees
-            </button>
+            {/* Skill Info Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setSkillDropdownOpen(!skillDropdownOpen)}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  ['guides', 'skilltrees'].includes(currentPage)
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                    : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+                }`}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Skill Info
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${skillDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {skillDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('guides');
+                      setSkillDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg ${
+                      currentPage === 'guides' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4 inline mr-2" />
+                    Skill Leveling Guides
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('skilltrees');
+                      setSkillDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'skilltrees' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <TreePine className="w-4 h-4 inline mr-2" />
+                    Skill Trees
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Gear Info Dropdown */}
             <div className="relative">
