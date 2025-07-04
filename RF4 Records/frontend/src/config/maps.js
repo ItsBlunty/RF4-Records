@@ -8,5 +8,5 @@ export const availableMaps = {
   'oldburg': 'Old Burg_-2_-2_83_83.png',
   'belaya': 'Belaya River_-1_-9_114_107.png',
   'kuori': 'Kuori Lake_53_53_149_149.png',
-  'bear': 'Bear Lake_3_5_95_93.png'
+  'bear': 'Bear Lake_5_3_95_93.png'
 };
