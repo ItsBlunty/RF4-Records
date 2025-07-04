@@ -619,7 +619,7 @@ const MapViewer = () => {
         {/* Map Display */}
         <div 
           ref={mapContainerRef}
-          className={`w-full h-full overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
+          className={`absolute inset-0 overflow-hidden ${isDragging ? 'cursor-grabbing' : 'cursor-default'}`}
           onMouseDown={handleMouseDown}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -632,7 +632,7 @@ const MapViewer = () => {
               transformOrigin: 'center center',
               transition: isDragging ? 'none' : 'transform 0.1s ease-out'
             }}
-            className="w-full h-full flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center"
           >
             <>
               {/* Loading indicator */}
