@@ -11,5 +11,6 @@ export const availableMaps = {
   'bear': 'Bear Lake_5_3_95_93.png',
   'volkhov': 'Volkhov River_-8_-9_210_208.png',
   'seversky': 'Seversky Donets River_5_4_196_195.png',
-  'sura': 'Sura River_-6_-3_163_165.png'
+  'sura': 'Sura River_-6_-3_163_165.png',
+  'ladoga': 'Ladoga Lake_5_0_102_97.png'
 };
