@@ -55,6 +55,7 @@ function AppContent() {
     if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
     if (location.pathname === '/skilltrees') return 'skilltrees';
+    if (location.pathname === '/lurecrafting') return 'lurecrafting';
     if (location.pathname === '/wearcalc') return 'wearcalc';
     if (location.pathname === '/waterbodyprices') return 'waterbodyprices';
     if (location.pathname === '/alcohol') return 'alcohol';
