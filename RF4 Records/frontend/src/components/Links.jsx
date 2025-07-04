@@ -89,7 +89,7 @@ const Links = () => {
       title: "Player Guides",
       icon: <BookOpen className="w-5 h-5" />,
       links: [
-        { name: "Beluga/Keluga Fishing", url: "https://rf4game.com/forum/index.php?/topic/26290-how-to-fish-beluga-kaluga-guide/" },
+        { name: "Beluga/Kaluga Fishing", url: "https://rf4game.com/forum/index.php?/topic/26290-how-to-fish-beluga-kaluga-guide/" },
         { name: "MDawg Long Form Leveling 2020", url: "https://tinyurl.com/2k9e9cta" },
         { name: "MDawg Long Form Leveling 2022", url: "https://tinyurl.com/4yvcdt6w" },
         { name: "Midnight Gaming With Mystic Nightmare's Tutorials", url: "https://tinyurl.com/ycx4dkdx" },
