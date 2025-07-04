@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
@@ -8,6 +8,27 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   // Dropdown state for gear info and skill info
   const [gearDropdownOpen, setGearDropdownOpen] = useState(false);
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  
+  // Refs for dropdown containers
+  const gearDropdownRef = useRef(null);
+  const skillDropdownRef = useRef(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (gearDropdownRef.current && !gearDropdownRef.current.contains(event.target)) {
+        setGearDropdownOpen(false);
+      }
+      if (skillDropdownRef.current && !skillDropdownRef.current.contains(event.target)) {
+        setSkillDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const formatLastRefresh = (date) => {
     if (!date) return '';
@@ -104,7 +125,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             </button>
 
             {/* Skill Info Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={skillDropdownRef}>
               <button
                 onClick={() => setSkillDropdownOpen(!skillDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
@@ -149,7 +170,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             </div>
 
             {/* Gear Info Dropdown */}
-            <div className="relative">
+            <div className="relative" ref={gearDropdownRef}>
               <button
                 onClick={() => setGearDropdownOpen(!gearDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
