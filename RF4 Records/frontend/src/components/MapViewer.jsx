@@ -949,13 +949,10 @@ const MapViewer = () => {
 
       </div>
 
-      {/* Bottom Footer Bar */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-t border-gray-200 dark:border-gray-700 p-4 z-30">
+      {/* Bottom Footer Bar - Fixed to bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm border-t border-gray-200 dark:border-gray-700 p-4 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
-              RF4 Map Viewer
-            </h1>
             <select 
               value={mapName || Object.keys(availableMaps)[0]} 
               onChange={(e) => {
