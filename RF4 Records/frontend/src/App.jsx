@@ -149,6 +149,8 @@ function AppContent() {
       navigate('/skillguides');
     } else if (page === 'skilltrees') {
       navigate('/skilltrees');
+    } else if (page === 'lurecrafting') {
+      navigate('/lurecrafting');
     } else if (page === 'wearcalc') {
       navigate('/wearcalc');
     } else if (page === 'waterbodyprices') {
