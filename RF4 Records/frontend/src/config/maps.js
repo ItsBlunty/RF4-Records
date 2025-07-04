@@ -6,5 +6,5 @@ export const availableMaps = {
   'mosquito': 'Mosquito Lake_30_33_112_115.5.png',
   'winding': 'Winding Rivulet_45_54_141.5_150.5.png',
   'oldburg': 'Old Burg_-2_-2_83_83.png',
-  'belaya': 'Belaya River_0_-5.5_114_107.png'
+  'belaya': 'Belaya River_-1_-9_114_107.png'
 };
