@@ -488,6 +488,50 @@ const MapViewer = () => {
   return (
     <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden" style={{ top: '100px' }}>
 
+      {/* Top Controls Bar */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4 z-30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <select 
+              value={mapName || Object.keys(availableMaps)[0]} 
+              onChange={(e) => {
+                const selectedMapName = e.target.value;
+                if (selectedMapName !== mapName) {
+                  navigate(`/maps/${selectedMapName}`);
+                }
+              }}
+              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            >
+              {Object.entries(availableMaps).map(([mapKey, mapFile]) => (
+                <option key={mapKey} value={mapKey}>
+                  {parseMapBounds(mapFile)?.name || mapKey}
+                </option>
+              ))}
+            </select>
+            
+            {/* Share Spot Button */}
+            <button
+              onClick={handleShareSpot}
+              disabled={!hasCoordinatesToShare()}
+              className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                hasCoordinatesToShare()
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
+                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              }`}
+              title={hasCoordinatesToShare() ? 'Copy shareable link to clipboard' : 'Make a measurement to share coordinates'}
+            >
+              <Share2 className="w-4 h-4 mr-1" />
+              Share Spot
+            </button>
+          </div>
+          
+          {/* Map Info */}
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Bounds: {effectiveBounds.minX}:{effectiveBounds.minY} to {effectiveBounds.maxX}:{effectiveBounds.maxY}
+          </div>
+        </div>
+      </div>
+
       {/* Map Container */}
       <div className="flex-1 relative overflow-hidden bg-transparent">
         {/* Control Panel */}
@@ -947,50 +991,6 @@ const MapViewer = () => {
           </div>
         )}
 
-      </div>
-
-      {/* Bottom Footer Bar - Fixed to bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm border-t border-gray-200 dark:border-gray-700 p-4 z-30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <select 
-              value={mapName || Object.keys(availableMaps)[0]} 
-              onChange={(e) => {
-                const selectedMapName = e.target.value;
-                if (selectedMapName !== mapName) {
-                  navigate(`/maps/${selectedMapName}`);
-                }
-              }}
-              className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-            >
-              {Object.entries(availableMaps).map(([mapKey, mapFile]) => (
-                <option key={mapKey} value={mapKey}>
-                  {parseMapBounds(mapFile)?.name || mapKey}
-                </option>
-              ))}
-            </select>
-            
-            {/* Share Spot Button */}
-            <button
-              onClick={handleShareSpot}
-              disabled={!hasCoordinatesToShare()}
-              className={`inline-flex items-center px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                hasCoordinatesToShare()
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm'
-                  : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
-              }`}
-              title={hasCoordinatesToShare() ? 'Copy shareable link to clipboard' : 'Make a measurement to share coordinates'}
-            >
-              <Share2 className="w-4 h-4 mr-1" />
-              Share Spot
-            </button>
-          </div>
-          
-          {/* Map Info */}
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Bounds: {effectiveBounds.minX}:{effectiveBounds.minY} to {effectiveBounds.maxX}:{effectiveBounds.maxY}
-          </div>
-        </div>
       </div>
     </div>
   );
