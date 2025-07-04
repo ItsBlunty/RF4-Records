@@ -585,7 +585,8 @@ const MapViewer = () => {
           </div>
         </div>
 
-        {/* Dev Panel */}
+        {/* Dev Panel - only show on dev environment */}
+        {window.location.hostname.includes('dev') && (
         <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
           <button
             onClick={() => setShowDevPanel(!showDevPanel)}
@@ -659,6 +660,7 @@ const MapViewer = () => {
             </div>
           )}
         </div>
+        )}
 
         {/* Map Display */}
         <div 
