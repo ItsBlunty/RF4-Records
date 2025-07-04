@@ -601,6 +601,7 @@ const MapViewer = () => {
                   type="number"
                   step="0.1"
                   placeholder="Min X"
+                  value={devCoords?.minX || ''}
                   className="px-1 py-1 text-xs border rounded"
                   onChange={(e) => setDevCoords({
                     ...(devCoords || mapBounds),
@@ -611,6 +612,7 @@ const MapViewer = () => {
                   type="number"
                   step="0.1"
                   placeholder="Min Y"
+                  value={devCoords?.minY || ''}
                   className="px-1 py-1 text-xs border rounded"
                   onChange={(e) => setDevCoords({
                     ...(devCoords || mapBounds),
@@ -621,6 +623,7 @@ const MapViewer = () => {
                   type="number"
                   step="0.1"
                   placeholder="Max X"
+                  value={devCoords?.maxX || ''}
                   className="px-1 py-1 text-xs border rounded"
                   onChange={(e) => setDevCoords({
                     ...(devCoords || mapBounds),
@@ -631,6 +634,7 @@ const MapViewer = () => {
                   type="number"
                   step="0.1"
                   placeholder="Max Y"
+                  value={devCoords?.maxY || ''}
                   className="px-1 py-1 text-xs border rounded"
                   onChange={(e) => setDevCoords({
                     ...(devCoords || mapBounds),
