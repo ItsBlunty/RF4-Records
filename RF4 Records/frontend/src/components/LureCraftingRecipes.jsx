@@ -5,7 +5,7 @@ const LureCraftingRecipes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTool, setSelectedTool] = useState('all');
 
-  // Parse the CSV data
+  // Parse the CSV data (in order from the CSV file)
   const recipeData = [
     { name: "Novgorod Spoon", type: "Lure", tool: "Novgorod Spoon Mold", ingredients: ["Sandpaper", "Tin Bar"] },
     { name: "Moscow Spoon", type: "Lure", tool: "", ingredients: ["Sandpaper", "Tin Bar"] },
