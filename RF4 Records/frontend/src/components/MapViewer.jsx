@@ -409,16 +409,16 @@ const MapViewer = () => {
     const toParam = searchParams.get('to');
     
     // Only load from URL if we don't already have measurements (prevents overriding active measurements)
-    if (fromParam && toParam && mapBounds && measurements.length === 0 && markers.length === 0) {
+    if (fromParam && toParam && effectiveBounds && measurements.length === 0 && markers.length === 0) {
       try {
         const [fromX, fromY] = fromParam.split('-').map(Number);
         const [toX, toY] = toParam.split('-').map(Number);
         
         // Validate coordinates are within map bounds
-        if (fromX >= mapBounds.minX && fromX <= mapBounds.maxX && 
-            fromY >= mapBounds.minY && fromY <= mapBounds.maxY &&
-            toX >= mapBounds.minX && toX <= mapBounds.maxX && 
-            toY >= mapBounds.minY && toY <= mapBounds.maxY) {
+        if (fromX >= effectiveBounds.minX && fromX <= effectiveBounds.maxX && 
+            fromY >= effectiveBounds.minY && fromY <= effectiveBounds.maxY &&
+            toX >= effectiveBounds.minX && toX <= effectiveBounds.maxX && 
+            toY >= effectiveBounds.minY && toY <= effectiveBounds.maxY) {
           
           const startCoords = { x: fromX, y: fromY };
           const endCoords = { x: toX, y: toY };
@@ -442,7 +442,7 @@ const MapViewer = () => {
         console.error('Invalid coordinate parameters:', error);
       }
     }
-  }, [searchParams, mapBounds, calculateDistance, measurements.length, markers.length]);
+  }, [searchParams, effectiveBounds, calculateDistance, measurements.length, markers.length]);
 
   // Handle URL map changes and redirect if no map specified
   useEffect(() => {
@@ -470,7 +470,7 @@ const MapViewer = () => {
     }
   }, [currentMap]);
 
-  if (!mapBounds) {
+  if (!effectiveBounds) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
         <div className="text-center">
@@ -529,7 +529,7 @@ const MapViewer = () => {
           
           {/* Map Info */}
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Bounds: {mapBounds.minX}:{mapBounds.minY} to {mapBounds.maxX}:{mapBounds.maxY}
+            Bounds: {effectiveBounds.minX}:{effectiveBounds.minY} to {effectiveBounds.maxX}:{effectiveBounds.maxY}
           </div>
         </div>
       </div>
@@ -692,7 +692,7 @@ const MapViewer = () => {
               <img
                 ref={mapImageRef}
                 src={`/images/${currentMap}`}
-                alt={`Map: ${mapBounds.name}`}
+                alt={`Map: ${effectiveBounds.name || mapBounds?.name}`}
                 className="max-w-none select-none"
                 style={{
                   imageRendering: 'pixelated', // Preserve crisp edges when zoomed
