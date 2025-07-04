@@ -37,6 +37,13 @@ const MapViewer = () => {
 
   const [currentMap, setCurrentMap] = useState(getCurrentMapFile());
   const [mapBounds, setMapBounds] = useState(() => parseMapBounds(getCurrentMapFile()));
+  
+  // Dev panel state
+  const [showDevPanel, setShowDevPanel] = useState(false);
+  const [devCoords, setDevCoords] = useState(null);
+  
+  // Use dev coordinates if available, otherwise use parsed map bounds
+  const effectiveBounds = devCoords || mapBounds;
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
@@ -69,7 +76,7 @@ const MapViewer = () => {
 
   // Function to convert map coordinates to current screen position
   const mapCoordsToCurrentScreenPos = useCallback((mapCoords) => {
-    if (!mapImageRef.current || !mapContainerRef.current || !mapBounds) {
+    if (!mapImageRef.current || !mapContainerRef.current || !effectiveBounds) {
       return { x: 0, y: 0 };
     }
 
@@ -77,8 +84,8 @@ const MapViewer = () => {
     const containerRect = mapContainerRef.current.getBoundingClientRect();
     
     // Convert map coords to relative position (0-1)
-    const relativeX = (mapCoords.x - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX);
-    const relativeY = (mapBounds.maxY - mapCoords.y) / (mapBounds.maxY - mapBounds.minY);
+    const relativeX = (mapCoords.x - effectiveBounds.minX) / (effectiveBounds.maxX - effectiveBounds.minX);
+    const relativeY = (effectiveBounds.maxY - mapCoords.y) / (effectiveBounds.maxY - effectiveBounds.minY);
     
     // Get current image bounds
     const imgRect = mapImageRef.current.getBoundingClientRect();
@@ -88,7 +95,7 @@ const MapViewer = () => {
     const screenY = (imgRect.top - containerRect.top) + (relativeY * imgRect.height);
     
     return { x: screenX, y: screenY };
-  }, [mapBounds, transformKey]);
+  }, [effectiveBounds, transformKey]);
 
   // Calculate distance between two map coordinates (in meters)
   const calculateDistance = useCallback((coord1, coord2) => {
@@ -112,7 +119,7 @@ const MapViewer = () => {
 
   // Convert pixel coordinates to map coordinates (accounting for transforms)
   const pixelToMapCoords = useCallback((pixelX, pixelY) => {
-    if (!mapBounds || !mapImageRef.current || !mapContainerRef.current) return { x: 0, y: 0 };
+    if (!effectiveBounds || !mapImageRef.current || !mapContainerRef.current) return { x: 0, y: 0 };
     
     const img = mapImageRef.current;
     const container = mapContainerRef.current;
@@ -125,14 +132,14 @@ const MapViewer = () => {
     
     // Convert to map coordinates
     // Note: Image Y coordinates go top-to-bottom, but map coordinates go bottom-to-top
-    const mapX = mapBounds.minX + (relativeX * (mapBounds.maxX - mapBounds.minX));
-    const mapY = mapBounds.maxY - (relativeY * (mapBounds.maxY - mapBounds.minY));
+    const mapX = effectiveBounds.minX + (relativeX * (effectiveBounds.maxX - effectiveBounds.minX));
+    const mapY = effectiveBounds.maxY - (relativeY * (effectiveBounds.maxY - effectiveBounds.minY));
     
     return {
       x: mapX, // Keep decimal precision for accurate distance calculations
       y: mapY
     };
-  }, [mapBounds]);
+  }, [effectiveBounds]);
 
   // Handle mouse movement over the map
   const handleMouseMove = useCallback((e) => {
@@ -576,6 +583,69 @@ const MapViewer = () => {
               {Math.round(transform.scale * 100)}%
             </div>
           </div>
+        </div>
+
+        {/* Dev Panel */}
+        <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
+          <button
+            onClick={() => setShowDevPanel(!showDevPanel)}
+            className="text-xs text-gray-500 dark:text-gray-400"
+          >
+            {showDevPanel ? 'Hide' : 'Show'} Dev
+          </button>
+          
+          {showDevPanel && (
+            <div className="mt-2 space-y-1">
+              <div className="grid grid-cols-2 gap-1 text-xs">
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Min X"
+                  className="px-1 py-1 text-xs border rounded"
+                  onChange={(e) => setDevCoords({
+                    ...(devCoords || mapBounds),
+                    minX: parseFloat(e.target.value) || 0
+                  })}
+                />
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Min Y"
+                  className="px-1 py-1 text-xs border rounded"
+                  onChange={(e) => setDevCoords({
+                    ...(devCoords || mapBounds),
+                    minY: parseFloat(e.target.value) || 0
+                  })}
+                />
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Max X"
+                  className="px-1 py-1 text-xs border rounded"
+                  onChange={(e) => setDevCoords({
+                    ...(devCoords || mapBounds),
+                    maxX: parseFloat(e.target.value) || 0
+                  })}
+                />
+                <input
+                  type="number"
+                  step="0.1"
+                  placeholder="Max Y"
+                  className="px-1 py-1 text-xs border rounded"
+                  onChange={(e) => setDevCoords({
+                    ...(devCoords || mapBounds),
+                    maxY: parseFloat(e.target.value) || 0
+                  })}
+                />
+              </div>
+              <button
+                onClick={() => setDevCoords(null)}
+                className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
+              >
+                Clear
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Map Display */}
