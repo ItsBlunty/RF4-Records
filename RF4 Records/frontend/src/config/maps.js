@@ -18,5 +18,5 @@ export const availableMaps = {
   'copper': 'Copper Lake_24_23.5_78_77.png',
   'lowertunguska': 'Lower Tunguska River_-10.5_-10.5_251_251.png',
   'yama': 'Yama River_-12.5_-11.5_310_310.5.png',
-  'norwegian': 'Norwegian Sea_-30_-30_1037_1037.png'
+  'norwegian': 'Norwegian Sea_-41_-42_1037_1037.png'
 };
