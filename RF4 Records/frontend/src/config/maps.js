@@ -16,5 +16,6 @@ export const availableMaps = {
   'archipelago': 'Ladoga Archipelago_-25.5_-26_625_625.png',
   'akhtuba': 'Akhtuba River_-6_-8.5_207_208.png',
   'copper': 'Copper Lake_24_23.5_78_77.png',
-  'lowertunguska': 'Lower Tunguska River_-10.5_-10.5_251_251.png'
+  'lowertunguska': 'Lower Tunguska River_-10.5_-10.5_251_251.png',
+  'yama': 'Yama River_-10_-10.5_310_310.5.png'
 };
