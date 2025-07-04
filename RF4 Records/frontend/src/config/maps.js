@@ -14,5 +14,5 @@ export const availableMaps = {
   'sura': 'Sura River_-6_-3_163_165.png',
   'ladoga': 'Ladoga Lake_5_-1_102_97.png',
   'amber': 'Amber Lake_-2_18_194_212.5.png',
-  'archipelago': 'Ladoga Archipelago_-26_-26_625_625.png'
+  'archipelago': 'Ladoga Archipelago_-25.5_-26_625_625.png'
 };
