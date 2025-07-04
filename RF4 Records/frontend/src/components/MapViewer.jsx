@@ -486,7 +486,7 @@ const MapViewer = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
+    <div className="fixed left-0 right-0 bottom-0 bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden" style={{ top: '140px' }}>
 
       {/* Map Container */}
       <div className="flex-1 relative overflow-hidden">
