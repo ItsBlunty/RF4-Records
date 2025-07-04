@@ -18,6 +18,7 @@ import SkillTrees from './components/SkillTrees.jsx';
 import ReelInfo from './components/ReelInfo.jsx';
 import RodInfo from './components/RodInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
+import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
@@ -633,6 +634,8 @@ function AppContent() {
         <RodInfo />
       ) : getCurrentPage() === 'maps' ? (
         <MapViewer />
+      ) : getCurrentPage() === 'lurecrafting' ? (
+        <LureCraftingRecipes />
       ) : null}
       
       {/* About Modal */}
@@ -660,6 +663,7 @@ function App() {
         <Route path="/rodinfo" element={<AppContent />} />
         <Route path="/maps" element={<AppContent />} />
         <Route path="/maps/:mapName" element={<AppContent />} />
+        <Route path="/lurecrafting" element={<AppContent />} />
       </Routes>
     </Router>
   );

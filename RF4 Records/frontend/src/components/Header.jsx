@@ -129,7 +129,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setSkillDropdownOpen(!skillDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  ['guides', 'skilltrees'].includes(currentPage)
+                  ['guides', 'skilltrees', 'lurecrafting'].includes(currentPage)
                     ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
                     : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
                 }`}
@@ -158,12 +158,24 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                       onPageChange && onPageChange('skilltrees');
                       setSkillDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                       currentPage === 'skilltrees' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <TreePine className="w-4 h-4 inline mr-2" />
                     Skill Trees
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('lurecrafting');
+                      setSkillDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'lurecrafting' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Lure Crafting Recipes
                   </button>
                 </div>
               )}
