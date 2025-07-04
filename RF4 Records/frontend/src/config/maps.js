@@ -16,5 +16,5 @@ export const availableMaps = {
   'amber': 'Amber Lake_-2_18_194_212.5.png',
   'archipelago': 'Ladoga Archipelago_-25.5_-26_625_625.png',
   'akhtuba': 'Akhtuba River_-6_-8.5_207_208.png',
-  'lowertunguska': 'Lower Tunguska River_-8_-8_251_251.png'
+  'lowertunguska': 'Lower Tunguska River_-10.5_-10.5_251_251.png'
 };
