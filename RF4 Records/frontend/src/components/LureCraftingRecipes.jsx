@@ -8,7 +8,7 @@ const LureCraftingRecipes = () => {
   // Parse the CSV data (in order from the CSV file)
   const recipeData = [
     { name: "Novgorod Spoon", type: "Lure", tool: "Novgorod Spoon Mold", ingredients: ["Sandpaper", "Tin Bar"] },
-    { name: "Moscow Spoon", type: "Lure", tool: "", ingredients: ["Sandpaper", "Tin Bar"] },
+    { name: "Moscow Spoon", type: "Lure", tool: "Moscow Spoon Mold", ingredients: ["Sandpaper", "Tin Bar"] },
     { name: "Foam-Rubber Fish", type: "Lure", tool: "", ingredients: ["A Set of Paints", "Foam Rubber"] },
     { name: "Large Lower Volga Spoon", type: "Lure", tool: "Lower Volga Spoon Mold", ingredients: ["Sandpaper", "Tin Bar"] },
     { name: "Small Lower Volga Spoon", type: "Lure", tool: "Lower Volga Spoon Mold", ingredients: ["Sandpaper", "Tin Bar"] },
