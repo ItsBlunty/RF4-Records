@@ -125,7 +125,7 @@ const LureCraftingRecipes = () => {
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredRecipes.map((recipe, index) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <div className="flex items-center">
                         <Package className="w-4 h-4 text-blue-500 mr-2" />
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -133,22 +133,14 @@ const LureCraftingRecipes = () => {
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-3 whitespace-nowrap">
                       <span className="text-sm text-gray-600 dark:text-gray-400">
                         {recipe.tool || 'None'}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        {recipe.ingredients.map((ingredient, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                     bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"
-                          >
-                            {ingredient}
-                          </span>
-                        ))}
+                    <td className="px-6 py-3">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {recipe.ingredients.join(', ')}
                       </div>
                     </td>
                   </tr>
