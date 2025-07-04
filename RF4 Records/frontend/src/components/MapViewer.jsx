@@ -642,12 +642,20 @@ const MapViewer = () => {
                   })}
                 />
               </div>
-              <button
-                onClick={() => setDevCoords(null)}
-                className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
-              >
-                Clear
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setDevCoords({...mapBounds})}
+                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded"
+                >
+                  Reset
+                </button>
+                <button
+                  onClick={() => setDevCoords(null)}
+                  className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
           )}
         </div>
