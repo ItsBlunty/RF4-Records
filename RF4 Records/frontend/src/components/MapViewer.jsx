@@ -947,19 +947,6 @@ const MapViewer = () => {
           </div>
         )}
 
-        {/* Instructions */}
-        <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3 max-w-xs">
-          <h3 className="text-sm font-medium text-gray-800 dark:text-gray-200 mb-2">
-            Controls
-          </h3>
-          <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-            <div>• Right-click and drag to pan</div>
-            <div>• Mouse wheel to zoom</div>
-            <div>• Hover to see coordinates</div>
-            <div>• Left-click to measure distances</div>
-            <div>• Use buttons to reset view</div>
-          </div>
-        </div>
       </div>
 
       {/* Bottom Footer Bar */}
