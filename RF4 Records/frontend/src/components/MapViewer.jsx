@@ -486,10 +486,10 @@ const MapViewer = () => {
   }
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-gray-900 flex flex-col">
+    <div className="fixed inset-0 bg-gray-100 dark:bg-gray-900 flex flex-col overflow-hidden">
 
       {/* Map Container */}
-      <div className="flex-1 relative overflow-hidden pb-20">
+      <div className="flex-1 relative overflow-hidden">
         {/* Control Panel */}
         <div className="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
           <div className="flex flex-col space-y-2">
@@ -962,8 +962,8 @@ const MapViewer = () => {
         </div>
       </div>
 
-      {/* Bottom Footer Bar - Fixed to bottom */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-sm border-t border-gray-200 dark:border-gray-700 p-4 z-30">
+      {/* Bottom Footer Bar */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-t border-gray-200 dark:border-gray-700 p-4 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <h1 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
