@@ -20,7 +20,7 @@ const WaterbodyPrices = () => {
     { location: "The Amber Lake", travel: "31.60", fishSell: "120%", tackle: "103%", hardware: "105%", grocery: "150%" },
     { location: "Ladoga Archipelago", travel: "33.80", fishSell: "120%", tackle: "113%", hardware: "None", grocery: "187.50%" },
     { location: "Akhtuba River", travel: "34.80", fishSell: "120%", tackle: "100%", hardware: "100%", grocery: "162.50%" },
-    { location: "Copper Lake", travel: "44.90", fishSell: "?", tackle: "104%", hardware: "None", grocery: "None" },
+    { location: "Copper Lake", travel: "44.90", fishSell: "120%", tackle: "104%", hardware: "None", grocery: "None" },
     { location: "Lower Tunguska River", travel: "48.80", fishSell: "120%", tackle: "100%", hardware: "100%", grocery: "162.50%" },
     { location: "Yama River", travel: "98.80", fishSell: "120%", tackle: "100%", hardware: "100%", grocery: "162.50%" },
     { location: "Norwegian Sea", travel: "98.80", fishSell: "120%", tackle: "100%", hardware: "116%", grocery: "250%" }
