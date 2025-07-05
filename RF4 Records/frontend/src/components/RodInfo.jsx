@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, Info } from 'lucide-react';
+import { Search, Star, Info, Filter, X } from 'lucide-react';
 
 const RodInfo = () => {
   const [rods, setRods] = useState([]);
@@ -7,6 +7,13 @@ const RodInfo = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
+  const [powerFilter, setPowerFilter] = useState('All');
+  const [actionFilter, setActionFilter] = useState('All');
+  const [stiffnessMin, setStiffnessMin] = useState('');
+  const [stiffnessMax, setStiffnessMax] = useState('');
+  const [levelMin, setLevelMin] = useState('');
+  const [levelMax, setLevelMax] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   useEffect(() => {
@@ -149,7 +156,23 @@ const RodInfo = () => {
       const matchesSearch = rod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rod.type.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === 'All' || rod.type === typeFilter;
-      return matchesSearch && matchesType;
+      const matchesPower = powerFilter === 'All' || rod.power === powerFilter;
+      const matchesAction = actionFilter === 'All' || rod.action === actionFilter;
+      
+      // Stiffness range filter
+      const stiffnessMinNum = stiffnessMin ? parseInt(stiffnessMin) : null;
+      const stiffnessMaxNum = stiffnessMax ? parseInt(stiffnessMax) : null;
+      const matchesStiffnessMin = !stiffnessMinNum || rod.stiffness >= stiffnessMinNum;
+      const matchesStiffnessMax = !stiffnessMaxNum || rod.stiffness <= stiffnessMaxNum;
+      
+      // Level range filter
+      const levelMinNum = levelMin ? parseInt(levelMin) : null;
+      const levelMaxNum = levelMax ? parseInt(levelMax) : null;
+      const matchesLevelMin = !levelMinNum || rod.level >= levelMinNum;
+      const matchesLevelMax = !levelMaxNum || rod.level <= levelMaxNum;
+      
+      return matchesSearch && matchesType && matchesPower && matchesAction && 
+             matchesStiffnessMin && matchesStiffnessMax && matchesLevelMin && matchesLevelMax;
     });
 
     if (!sortConfig.key) return filtered;
@@ -193,6 +216,23 @@ const RodInfo = () => {
   }, [filteredAndSortedRods]);
 
   const uniqueTypes = [...new Set(rods.map(rod => rod.type))].sort();
+  const uniquePowers = [...new Set(rods.map(rod => rod.power))].sort();
+  const uniqueActions = [...new Set(rods.map(rod => rod.action))].sort();
+  
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('All');
+    setPowerFilter('All');
+    setActionFilter('All');
+    setStiffnessMin('');
+    setStiffnessMax('');
+    setLevelMin('');
+    setLevelMax('');
+  };
+  
+  const hasActiveFilters = searchTerm || typeFilter !== 'All' || powerFilter !== 'All' || 
+                          actionFilter !== 'All' || stiffnessMin || stiffnessMax || 
+                          levelMin || levelMax;
 
   if (loading) {
     return (
@@ -233,7 +273,8 @@ const RodInfo = () => {
 
           {/* Filters */}
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-            <div className="flex flex-col sm:flex-row gap-4">
+            {/* Basic Filters */}
+            <div className="flex flex-col lg:flex-row gap-4 mb-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -258,7 +299,116 @@ const RodInfo = () => {
                   ))}
                 </select>
               </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                    showAdvancedFilters || hasActiveFilters
+                      ? 'bg-blue-600 text-white hover:bg-blue-700'
+                      : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  Advanced
+                </button>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearAllFilters}
+                    className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Advanced Filters */}
+            {showAdvancedFilters && (
+              <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Power Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Power
+                    </label>
+                    <select
+                      value={powerFilter}
+                      onChange={(e) => setPowerFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                    >
+                      <option value="All">All Powers</option>
+                      {uniquePowers.map(power => (
+                        <option key={power} value={power}>{power}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Action Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Action
+                    </label>
+                    <select
+                      value={actionFilter}
+                      onChange={(e) => setActionFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                    >
+                      <option value="All">All Actions</option>
+                      {uniqueActions.map(action => (
+                        <option key={action} value={action}>{action}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Stiffness Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Stiffness Range
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={stiffnessMin}
+                        onChange={(e) => setStiffnessMin(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={stiffnessMax}
+                        onChange={(e) => setStiffnessMax(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Level Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Level Range
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={levelMin}
+                        onChange={(e) => setLevelMin(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={levelMax}
+                        onChange={(e) => setLevelMax(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Results count */}
