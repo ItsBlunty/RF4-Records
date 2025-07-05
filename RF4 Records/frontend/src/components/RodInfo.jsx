@@ -11,6 +11,8 @@ const RodInfo = () => {
   const [actionFilter, setActionFilter] = useState('All');
   const [stiffnessMin, setStiffnessMin] = useState('');
   const [stiffnessMax, setStiffnessMax] = useState('');
+  const [lengthMin, setLengthMin] = useState('');
+  const [lengthMax, setLengthMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
