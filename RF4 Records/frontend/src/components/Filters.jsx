@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Clock, Search, Target, Trophy } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 
-const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageChange, currentPage }) => {
+const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
@@ -18,6 +18,27 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
   const handleKeyPress = (e) => {
     if (e.key === 'Enter') {
       onSubmit();
+    }
+  };
+
+  const handleAddAndSearch = (field) => (newValues) => {
+    // Create new filter object with the updated field
+    const newFilters = {
+      ...filters,
+      [field]: newValues
+    };
+    
+    // Update the filter state and immediately trigger search with the new values
+    onChange(field, newValues);
+    
+    // Use the new search function that accepts specific filter values
+    if (onSubmitWithValues) {
+      onSubmitWithValues(newFilters);
+    } else {
+      // Fallback to old behavior
+      setTimeout(() => {
+        onSubmit();
+      }, 0);
     }
   };
 
@@ -68,6 +89,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.fish}
             onChange={(values) => handleInputChange('fish', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('fish')}
             className="flex-1 min-w-[200px]"
           />
 
@@ -79,6 +101,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.waterbody}
             onChange={(values) => handleInputChange('waterbody', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('waterbody')}
             className="flex-1 min-w-[200px]"
           />
 
@@ -90,6 +113,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.bait}
             onChange={(values) => handleInputChange('bait', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('bait')}
             className="flex-1 min-w-[200px]"
           />
 
