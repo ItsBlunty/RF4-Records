@@ -21,6 +21,15 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
     }
   };
 
+  const handleAddAndSearch = (field) => (newValues) => {
+    // Update the filter and immediately trigger search
+    onChange(field, newValues);
+    // Use setTimeout to ensure the state update has been processed
+    setTimeout(() => {
+      onSubmit();
+    }, 0);
+  };
+
   const handleDataAgeChange = (field, value) => {
     onChange(field, value);
     // Data age filter should not auto-submit, only submit on button press
@@ -68,6 +77,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.fish}
             onChange={(values) => handleInputChange('fish', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('fish')}
             className="flex-1 min-w-[200px]"
           />
 
@@ -79,6 +89,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.waterbody}
             onChange={(values) => handleInputChange('waterbody', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('waterbody')}
             className="flex-1 min-w-[200px]"
           />
 
@@ -90,6 +101,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
             selectedValues={filters.bait}
             onChange={(values) => handleInputChange('bait', values)}
             onKeyPress={handleKeyPress}
+            onAddAndSearch={handleAddAndSearch('bait')}
             className="flex-1 min-w-[200px]"
           />
 

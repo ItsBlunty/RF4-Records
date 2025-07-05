@@ -8,6 +8,7 @@ const MultiSelectFilter = ({
   selectedValues = [], 
   onChange, 
   onKeyPress,
+  onAddAndSearch,
   className = '' 
 }) => {
   const [inputValue, setInputValue] = useState('');
@@ -77,19 +78,24 @@ const MultiSelectFilter = ({
       }
       
       if (valueToAdd && !selectedValues.includes(valueToAdd)) {
-        // Update the parent with new values immediately
+        // Update the parent with new values and trigger search
         const newValues = [...selectedValues, valueToAdd];
-        onChange(newValues);
         setInputValue('');
         setIsOpen(false);
         setHighlightedIndex(-1);
         
-        // Trigger search after updating parent state
-        setTimeout(() => {
-          if (onKeyPress) {
-            onKeyPress(e);
-          }
-        }, 50); // Increased timeout to ensure parent state is updated
+        if (onAddAndSearch) {
+          // Use the new callback that handles both updating state and searching
+          onAddAndSearch(newValues);
+        } else {
+          // Fallback to old behavior
+          onChange(newValues);
+          setTimeout(() => {
+            if (onKeyPress) {
+              onKeyPress(e);
+            }
+          }, 50);
+        }
       } else {
         // No value to add, just trigger search with current values
         if (onKeyPress) {
