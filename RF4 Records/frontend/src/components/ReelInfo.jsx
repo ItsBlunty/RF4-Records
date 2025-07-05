@@ -119,12 +119,19 @@ const ReelInfo = () => {
       const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
       const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
       
+      // Price range filter
+      const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
+      const priceMinNum = priceMin ? parseFloat(priceMin) : null;
+      const priceMaxNum = priceMax ? parseFloat(priceMax) : null;
+      const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
+      const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
+      
       return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
-             matchesMechWeightMin && matchesMechWeightMax;
+             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, mechWeightMin, mechWeightMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
