@@ -62,30 +62,36 @@ const MultiSelectFilter = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       
+      let valueToAdd = null;
+      
       if (highlightedIndex >= 0 && filteredValues[highlightedIndex]) {
         // Select highlighted option
-        addValue(filteredValues[highlightedIndex]);
-        // Trigger search after state update
-        setTimeout(() => {
-          if (onKeyPress) {
-            onKeyPress(e);
-          }
-        }, 0);
+        valueToAdd = filteredValues[highlightedIndex];
       } else if (inputValue.trim()) {
         // If there's an exact match, use it; otherwise, use the input value
         const exactMatch = values.find(v => 
           v.toLowerCase() === inputValue.toLowerCase() && 
           !selectedValues.includes(v)
         );
-        addValue(exactMatch || inputValue.trim());
-        // Trigger search after state update
+        valueToAdd = exactMatch || inputValue.trim();
+      }
+      
+      if (valueToAdd && !selectedValues.includes(valueToAdd)) {
+        // Update the parent with new values immediately
+        const newValues = [...selectedValues, valueToAdd];
+        onChange(newValues);
+        setInputValue('');
+        setIsOpen(false);
+        setHighlightedIndex(-1);
+        
+        // Trigger search after updating parent state
         setTimeout(() => {
           if (onKeyPress) {
             onKeyPress(e);
           }
-        }, 0);
+        }, 50); // Increased timeout to ensure parent state is updated
       } else {
-        // No input to add, just trigger search
+        // No value to add, just trigger search with current values
         if (onKeyPress) {
           onKeyPress(e);
         }
