@@ -10,7 +10,7 @@ const Timeline = () => {
   useEffect(() => {
     const loadTimelineData = async () => {
       try {
-        const response = await fetch('/RF4UpdateTimeline.csv');
+        const response = await fetch('/RF4UpdateTimeline.csv?v=' + Date.now());
         if (!response.ok) {
           throw new Error('Failed to load timeline data');
         }
