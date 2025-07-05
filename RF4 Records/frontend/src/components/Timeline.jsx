@@ -31,6 +31,8 @@ const Timeline = () => {
     const lines = csvText.trim().split('\n');
     const headers = lines[0].split(',').map(header => header.trim());
     
+    console.log('CSV Headers:', headers); // Debug log
+    
     const data = [];
     for (let i = 1; i < lines.length; i++) {
       const values = parseCSVLine(lines[i]);
@@ -44,6 +46,13 @@ const Timeline = () => {
         }
       }
     }
+    
+    // Debug: Log first few items with Side column
+    console.log('First 5 items with Side column:', data.slice(0, 5).map(item => ({
+      Date: item.Date,
+      Side: item.Side,
+      Major: item['Major Features in Patch']
+    })));
     
     // Sort by date (newest first)
     return data.sort((a, b) => new Date(b.Date) - new Date(a.Date));
