@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, HelpCircle } from 'lucide-react';
 
 const MultiSelectFilter = ({ 
   label, 
@@ -14,8 +14,10 @@ const MultiSelectFilter = ({
   const [isOpen, setIsOpen] = useState(false);
   const [filteredValues, setFilteredValues] = useState([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [showTooltip, setShowTooltip] = useState(false);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const tooltipRef = useRef(null);
 
   // Filter available values based on input and exclude already selected
   useEffect(() => {
@@ -37,11 +39,14 @@ const MultiSelectFilter = ({
     setHighlightedIndex(-1);
   }, [inputValue, values, selectedValues]);
 
-  // Close dropdown when clicking outside
+  // Close dropdown and tooltip when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
+      }
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setShowTooltip(false);
       }
     };
 
@@ -134,9 +139,33 @@ const MultiSelectFilter = ({
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-        {label}
-      </label>
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+          {label}
+        </label>
+        <div className="relative" ref={tooltipRef}>
+          <button
+            type="button"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <HelpCircle className="h-3 w-3" />
+          </button>
+          {showTooltip && (
+            <div className="absolute right-0 top-full mt-1 w-64 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg p-2 shadow-lg z-50">
+              <div className="space-y-1">
+                <div>• Press <strong>Enter</strong> to search</div>
+                <div>• Press <strong>Tab</strong> to add as bubble</div>
+                <div>• Click from dropdown to select</div>
+                <div>• Use arrow keys to navigate</div>
+              </div>
+              <div className="absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
+            </div>
+          )}
+        </div>
+      </div>
       
       <div className="relative">
         <div className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center">
@@ -195,11 +224,6 @@ const MultiSelectFilter = ({
             ))}
           </div>
         )}
-      </div>
-      
-      {/* Helper text */}
-      <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        Press Enter to search, Tab to add as bubble, or click from dropdown
       </div>
     </div>
   );
