@@ -446,6 +446,9 @@ const ReelInfo = () => {
                     Retrieve Speed
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Tested Drag (kg)
+                  </th>
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Listed Drag (kg)
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -480,6 +483,9 @@ const ReelInfo = () => {
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
+                    </td>
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
+                      {parseDragValues(reel.Drag_Real).tested}
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {parseDragValues(reel.Drag_Real).listed}
