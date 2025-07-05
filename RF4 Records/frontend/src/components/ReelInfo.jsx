@@ -104,8 +104,8 @@ const ReelInfo = () => {
       
       // Saltwater filter
       const matchesSaltwater = saltwaterFilter === 'All' || 
-                              (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance === '💧') ||
-                              (saltwaterFilter === 'No' && reel.Saltwater_Resistance !== '💧');
+                              (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('\ud83d\udca7')) ||
+                              (saltwaterFilter === 'No' && (!reel.Saltwater_Resistance || !reel.Saltwater_Resistance.includes('\ud83d\udca7')));
       
       // Test Weight range filter
       const testWeight = parseFloat(reel.Test_Weight?.replace('~', ''));
