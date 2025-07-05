@@ -48,12 +48,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-      {/* Development Environment Banner */}
-      {isDevelopment && (
-        <div className="bg-yellow-500 dark:bg-yellow-600 text-black dark:text-white text-center py-1 text-sm font-medium">
-          🚧 DEVELOPMENT ENVIRONMENT - Not Production Data 🚧
-        </div>
-      )}
       
       <div className="mx-auto px-6 py-3">
         {/* Top Section - Title, Attribution, and Navigation */}
