@@ -65,6 +65,12 @@ const MultiSelectFilter = ({
       if (highlightedIndex >= 0 && filteredValues[highlightedIndex]) {
         // Select highlighted option
         addValue(filteredValues[highlightedIndex]);
+        // Trigger search after state update
+        setTimeout(() => {
+          if (onKeyPress) {
+            onKeyPress(e);
+          }
+        }, 0);
       } else if (inputValue.trim()) {
         // If there's an exact match, use it; otherwise, use the input value
         const exactMatch = values.find(v => 
@@ -72,11 +78,17 @@ const MultiSelectFilter = ({
           !selectedValues.includes(v)
         );
         addValue(exactMatch || inputValue.trim());
-      }
-      
-      // Call parent's onKeyPress if provided
-      if (onKeyPress) {
-        onKeyPress(e);
+        // Trigger search after state update
+        setTimeout(() => {
+          if (onKeyPress) {
+            onKeyPress(e);
+          }
+        }, 0);
+      } else {
+        // No input to add, just trigger search
+        if (onKeyPress) {
+          onKeyPress(e);
+        }
       }
     } else if (e.key === 'Tab') {
       e.preventDefault();
