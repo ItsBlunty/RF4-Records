@@ -96,33 +96,6 @@ const Timeline = () => {
     }
   };
 
-  const getTimelineItemIcon = (item) => {
-    const majorFeatures = item['Major Features in Patch'] || '';
-    if (majorFeatures.toLowerCase().includes('lake') || majorFeatures.toLowerCase().includes('river') || majorFeatures.toLowerCase().includes('sea')) {
-      return <MapPin className="w-4 h-4" />;
-    }
-    if (majorFeatures.toLowerCase().includes('fish')) {
-      return <Package className="w-4 h-4" />;
-    }
-    if (majorFeatures.toLowerCase().includes('anniversary') || majorFeatures.toLowerCase().includes('fair') || majorFeatures.toLowerCase().includes('event')) {
-      return <Calendar className="w-4 h-4" />;
-    }
-    return <Info className="w-4 h-4" />;
-  };
-
-  const getTimelineItemColor = (item) => {
-    const majorFeatures = item['Major Features in Patch'] || '';
-    if (majorFeatures.toLowerCase().includes('lake') || majorFeatures.toLowerCase().includes('river') || majorFeatures.toLowerCase().includes('sea')) {
-      return 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200';
-    }
-    if (majorFeatures.toLowerCase().includes('fish')) {
-      return 'bg-green-100 border-green-300 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200';
-    }
-    if (majorFeatures.toLowerCase().includes('anniversary') || majorFeatures.toLowerCase().includes('fair') || majorFeatures.toLowerCase().includes('event')) {
-      return 'bg-purple-100 border-purple-300 text-purple-800 dark:bg-purple-900 dark:border-purple-700 dark:text-purple-200';
-    }
-    return 'bg-gray-100 border-gray-300 text-gray-800 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200';
-  };
 
   if (loading) {
     return (
@@ -176,31 +149,20 @@ const Timeline = () => {
             const hasLink = item['Link To Notes/Vid/etc'] && item['Link To Notes/Vid/etc'].trim();
             
             return (
-              <div key={index} className="relative mb-6">
+              <div key={index} className="relative mb-4">
                 {/* Timeline dot */}
-                <div className={`absolute left-4 w-4 h-4 rounded-full border-2 ${
-                  hasMajorFeatures 
-                    ? 'bg-blue-600 border-blue-600' 
-                    : 'bg-gray-400 border-gray-400'
-                } dark:border-gray-600`}></div>
+                <div className="absolute left-4 w-3 h-3 rounded-full bg-blue-600 border-2 border-blue-600 dark:border-gray-600"></div>
                 
                 {/* Timeline content */}
                 <div className="ml-12">
                   <div 
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
-                      hasMajorFeatures 
-                        ? getTimelineItemColor(item) + ' hover:shadow-lg' 
-                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                    }`}
+                    className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500"
                     onClick={() => toggleExpand(index)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center mb-2">
-                          <div className="flex items-center mr-3">
-                            {getTimelineItemIcon(item)}
-                          </div>
-                          <h3 className="text-lg font-semibold">
+                        <div className="flex items-center mb-1">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                             {formatDate(item.Date)}
                           </h3>
                           {hasLink && (
@@ -217,21 +179,21 @@ const Timeline = () => {
                         </div>
                         
                         {hasMajorFeatures ? (
-                          <p className="text-base font-medium mb-2">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                             {item['Major Features in Patch']}
                           </p>
                         ) : (
-                          <p className="text-base text-gray-600 dark:text-gray-400 mb-2">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
                             Minor update / Bug fixes
                           </p>
                         )}
                         
                         {isExpanded && hasChangeList && (
-                          <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                            <h4 className="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">
+                          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                            <h4 className="font-medium text-xs mb-1 text-gray-700 dark:text-gray-300">
                               Detailed Changes:
                             </h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+                            <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
                               {item['Change List']}
                             </p>
                           </div>
@@ -240,9 +202,9 @@ const Timeline = () => {
                       
                       <div className="ml-4 flex-shrink-0">
                         {isExpanded ? (
-                          <ChevronDown className="w-5 h-5 text-gray-400" />
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
                         ) : (
-                          <ChevronRight className="w-5 h-5 text-gray-400" />
+                          <ChevronRight className="w-4 h-4 text-gray-400" />
                         )}
                       </div>
                     </div>
