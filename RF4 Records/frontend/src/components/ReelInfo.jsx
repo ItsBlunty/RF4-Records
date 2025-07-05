@@ -10,8 +10,6 @@ const ReelInfo = () => {
   const [saltwaterFilter, setSaltwaterFilter] = useState('All');
   const [testWeightMin, setTestWeightMin] = useState('');
   const [testWeightMax, setTestWeightMax] = useState('');
-  const [dragTestedMin, setDragTestedMin] = useState('');
-  const [dragTestedMax, setDragTestedMax] = useState('');
   const [dragListedMin, setDragListedMin] = useState('');
   const [dragListedMax, setDragListedMax] = useState('');
   const [mechWeightMin, setMechWeightMin] = useState('');
@@ -114,11 +112,36 @@ const ReelInfo = () => {
       const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
       const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
       
-      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax;
+      // Listed Drag range filter
+      const listedDragRaw = parseDragValues(reel.Drag_Real).listed;
+      const listedDrag = listedDragRaw === '-' ? NaN : parseFloat(listedDragRaw);
+      const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
+      const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
+      const matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
+      const matchesDragListedMax = !dragListedMaxNum || (!isNaN(listedDrag) && listedDrag <= dragListedMaxNum);
+      
+      // Mechanism Weight range filter
+      const mechWeight = parseFloat(reel.Mechanism_Weight);
+      const mechWeightMinNum = mechWeightMin ? parseFloat(mechWeightMin) : null;
+      const mechWeightMaxNum = mechWeightMax ? parseFloat(mechWeightMax) : null;
+      const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
+      const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
+      
+      // Price range filter
+      const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
+      const priceMinNum = priceMin ? parseFloat(priceMin) : null;
+      const priceMaxNum = priceMax ? parseFloat(priceMax) : null;
+      const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
+      const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
+      
+      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
+             matchesDragListedMin && matchesDragListedMax &&
+             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, 
+      dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
@@ -195,8 +218,6 @@ const ReelInfo = () => {
     setSaltwaterFilter('All');
     setTestWeightMin('');
     setTestWeightMax('');
-    setDragTestedMin('');
-    setDragTestedMax('');
     setDragListedMin('');
     setDragListedMax('');
     setMechWeightMin('');
@@ -206,7 +227,7 @@ const ReelInfo = () => {
   };
   
   const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || testWeightMin || testWeightMax ||
-                         dragTestedMin || dragTestedMax || dragListedMin || dragListedMax ||
+                         dragListedMin || dragListedMax ||
                          mechWeightMin || mechWeightMax || priceMin || priceMax;
 
   if (loading) {
@@ -308,7 +329,7 @@ const ReelInfo = () => {
           {/* Advanced Filters */}
           {showAdvancedFilters && (
             <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                 {/* Test Weight Range */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -327,31 +348,6 @@ const ReelInfo = () => {
                       placeholder="Max"
                       value={testWeightMax}
                       onChange={(e) => setTestWeightMax(e.target.value)}
-                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    />
-                  </div>
-                </div>
-                
-                {/* Tested Drag Range */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Tested Drag Range
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      step="0.1"
-                      placeholder="Min"
-                      value={dragTestedMin}
-                      onChange={(e) => setDragTestedMin(e.target.value)}
-                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    />
-                    <input
-                      type="number"
-                      step="0.1"
-                      placeholder="Max"
-                      value={dragTestedMax}
-                      onChange={(e) => setDragTestedMax(e.target.value)}
                       className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     />
                   </div>
@@ -460,9 +456,6 @@ const ReelInfo = () => {
                     Retrieve Speed
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Tested Drag (kg)
-                  </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Listed Drag (kg)
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -497,9 +490,6 @@ const ReelInfo = () => {
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4)}
-                    </td>
-                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
-                      {parseDragValues(reel.Drag_Real).tested}
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {parseDragValues(reel.Drag_Real).listed}
