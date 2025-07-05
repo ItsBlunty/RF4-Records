@@ -107,11 +107,18 @@ const ReelInfo = () => {
                               (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('💧')) ||
                               (saltwaterFilter === 'No' && (!reel.Saltwater_Resistance || !reel.Saltwater_Resistance.includes('💧')));
       
-      return matchesSearch && matchesSaltwater;
+      // Test Weight range filter
+      const testWeight = parseFloat(reel.Test_Weight?.replace('~', ''));
+      const testWeightMinNum = testWeightMin ? parseFloat(testWeightMin) : null;
+      const testWeightMaxNum = testWeightMax ? parseFloat(testWeightMax) : null;
+      const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
+      const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
+      
+      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
