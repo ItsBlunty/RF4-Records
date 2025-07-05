@@ -18,6 +18,7 @@ const ReelInfo = () => {
   const [priceMax, setPriceMax] = useState('');
   const [gearRatioMin, setGearRatioMin] = useState('');
   const [gearRatioMax, setGearRatioMax] = useState('');
+  const [reelTypeFilter, setReelTypeFilter] = useState('All');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Parse CSV data and extract reel information
@@ -43,23 +44,24 @@ const ReelInfo = () => {
       // Extract reel data
       const reel = {
         Name: values[1] || '',
-        Test_Weight: values[2] || '',
-        Saltwater_Resistance: values[3] || '',
-        Gear_Ratio_1: values[6] || '',
-        Gear_Ratio_2: values[7] || '',
-        Line_Capacity: values[9] || '',
-        Line_Capacity_2: values[10] || '',
-        Retrieve_Speed_1: values[12] || '',
-        Retrieve_Speed_2: values[13] || '',
-        Retrieve_Speed_3: values[14] || '',
-        Retrieve_Speed_4: values[15] || '',
-        Drag_Real: values[16] || '',
-        Drag_Claimed: values[17] || '',
-        Moving_Weight: values[18] || '',
-        Mechanism_Weight: values[19] || '',
-        Mechanism_Weight_2: values[20] || '',
-        Price: values[22] || '',
-        Price_New: values[23] || ''
+        Reel_Type: values[2] || '',
+        Test_Weight: values[3] || '',
+        Saltwater_Resistance: values[4] || '',
+        Gear_Ratio_1: values[7] || '',
+        Gear_Ratio_2: values[8] || '',
+        Line_Capacity: values[10] || '',
+        Line_Capacity_2: values[11] || '',
+        Retrieve_Speed_1: values[13] || '',
+        Retrieve_Speed_2: values[14] || '',
+        Retrieve_Speed_3: values[15] || '',
+        Retrieve_Speed_4: values[16] || '',
+        Drag_Real: values[17] || '',
+        Drag_Claimed: values[18] || '',
+        Moving_Weight: values[19] || '',
+        Mechanism_Weight: values[20] || '',
+        Mechanism_Weight_2: values[21] || '',
+        Price: values[23] || '',
+        Price_New: values[24] || ''
       };
       
       // Only add if it has a valid name
@@ -157,14 +159,18 @@ const ReelInfo = () => {
       const matchesGearRatioMin = !gearRatioMinNum || (gearRatioValue >= gearRatioMinNum);
       const matchesGearRatioMax = !gearRatioMaxNum || (gearRatioValue <= gearRatioMaxNum);
       
+      // Reel Type filter
+      const matchesReelType = reelTypeFilter === 'All' || 
+                             (reel.Reel_Type && reel.Reel_Type === reelTypeFilter);
+      
       return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
              reelMatchesDragListedMin && reelMatchesDragListedMax &&
              matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax &&
-             matchesGearRatioMin && matchesGearRatioMax;
+             matchesGearRatioMin && matchesGearRatioMax && matchesReelType;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax, gearRatioMin, gearRatioMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax, gearRatioMin, gearRatioMax, reelTypeFilter]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
@@ -249,12 +255,13 @@ const ReelInfo = () => {
     setPriceMax('');
     setGearRatioMin('');
     setGearRatioMax('');
+    setReelTypeFilter('All');
   };
   
   const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || testWeightMin || testWeightMax ||
                          dragListedMin || dragListedMax ||
                          mechWeightMin || mechWeightMax || priceMin || priceMax ||
-                         gearRatioMin || gearRatioMax;
+                         gearRatioMin || gearRatioMax || reelTypeFilter !== 'All';
 
   if (loading) {
     return (
@@ -324,6 +331,21 @@ const ReelInfo = () => {
               >
                 <option value="All">All Reels</option>
                 <option value="Yes">Saltwater Only</option>
+              </select>
+            </div>
+            
+            {/* Reel Type Filter */}
+            <div className="sm:w-52">
+              <select
+                value={reelTypeFilter}
+                onChange={(e) => setReelTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="All">All Types</option>
+                <option value="Spinning">Spinning</option>
+                <option value="Classic Baitcasting">Classic Baitcasting</option>
+                <option value="Low-Profile Baitcasting">Low-Profile Baitcasting</option>
+                <option value="Conventional">Conventional</option>
               </select>
             </div>
             
@@ -494,6 +516,9 @@ const ReelInfo = () => {
                     Reel Name
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     Test Weight
                   </th>
                   <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -531,6 +556,17 @@ const ReelInfo = () => {
                           <span className="text-blue-500" title="Saltwater Resistant">💧</span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        reel.Reel_Type === 'Spinning' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                        reel.Reel_Type === 'Classic Baitcasting' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                        reel.Reel_Type === 'Low-Profile Baitcasting' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                        reel.Reel_Type === 'Conventional' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                        'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                      }`}>
+                        {reel.Reel_Type || '-'}
+                      </span>
                     </td>
                     <td className="px-4 py-2 text-center text-sm text-gray-900 dark:text-white">
                       {reel.Test_Weight || '-'}
