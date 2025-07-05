@@ -417,33 +417,37 @@ function AppContent() {
   };
 
   const handleFilterSubmit = () => {
-    // Update URL with current filters
+    handleFilterSubmitWithValues(filters);
+  };
+
+  const handleFilterSubmitWithValues = (filtersToUse) => {
+    // Update URL with specified filters
     const params = new URLSearchParams();
-    if (filters.fish && filters.fish.length > 0) {
-      params.append('fish', filters.fish.join(','));
+    if (filtersToUse.fish && filtersToUse.fish.length > 0) {
+      params.append('fish', filtersToUse.fish.join(','));
     }
-    if (filters.waterbody && filters.waterbody.length > 0) {
-      params.append('waterbody', filters.waterbody.join(','));
+    if (filtersToUse.waterbody && filtersToUse.waterbody.length > 0) {
+      params.append('waterbody', filtersToUse.waterbody.join(','));
     }
-    if (filters.bait && filters.bait.length > 0) {
-      params.append('bait', filters.bait.join(','));
+    if (filtersToUse.bait && filtersToUse.bait.length > 0) {
+      params.append('bait', filtersToUse.bait.join(','));
     }
-    if (filters.dataAge && filters.dataAge !== '1-day') params.append('data_age', filters.dataAge);
+    if (filtersToUse.dataAge && filtersToUse.dataAge !== '1-day') params.append('data_age', filtersToUse.dataAge);
     
     const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
     navigate(newUrl, { replace: true });
     
     // Auto-switch view mode based on search filters (only when search is submitted)
-    if (filters.bait && filters.bait.length > 0 && (!filters.fish || filters.fish.length === 0)) {
+    if (filtersToUse.bait && filtersToUse.bait.length > 0 && (!filtersToUse.fish || filtersToUse.fish.length === 0)) {
       // If only bait is searched, switch to fish grouping to see which fish work with that bait
       setViewMode('fish-grouped');
-    } else if (filters.fish && filters.fish.length > 0 && (!filters.bait || filters.bait.length === 0)) {
+    } else if (filtersToUse.fish && filtersToUse.fish.length > 0 && (!filtersToUse.bait || filtersToUse.bait.length === 0)) {
       // If only fish is searched, switch to bait grouping to see which baits work for that fish
       setViewMode('grouped');
     }
     // If both fish and bait are provided, don't auto-switch since both groupings show the same result
     
-    fetchFilteredRecords();
+    fetchFilteredRecordsWithFilters(filtersToUse);
   };
 
   const handleSort = (key) => {
@@ -511,6 +515,7 @@ function AppContent() {
             uniqueValues={uniqueValues}
             onChange={handleFilterChange}
             onSubmit={handleFilterSubmit}
+            onSubmitWithValues={handleFilterSubmitWithValues}
             onClear={clearFilters}
             onPageChange={handlePageChange}
             currentPage={getCurrentPage()}

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { X, Clock, Search, Target, Trophy } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 
-const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageChange, currentPage }) => {
+const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
@@ -22,12 +22,24 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
   };
 
   const handleAddAndSearch = (field) => (newValues) => {
-    // Update the filter and immediately trigger search
+    // Create new filter object with the updated field
+    const newFilters = {
+      ...filters,
+      [field]: newValues
+    };
+    
+    // Update the filter state and immediately trigger search with the new values
     onChange(field, newValues);
-    // Use setTimeout to ensure the state update has been processed
-    setTimeout(() => {
-      onSubmit();
-    }, 0);
+    
+    // Use the new search function that accepts specific filter values
+    if (onSubmitWithValues) {
+      onSubmitWithValues(newFilters);
+    } else {
+      // Fallback to old behavior
+      setTimeout(() => {
+        onSubmit();
+      }, 0);
+    }
   };
 
   const handleDataAgeChange = (field, value) => {
