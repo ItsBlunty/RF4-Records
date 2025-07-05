@@ -163,8 +163,27 @@ const RodInfo = () => {
       const matchesStiffnessMin = !stiffnessMinNum || rod.stiffness >= stiffnessMinNum;
       const matchesStiffnessMax = !stiffnessMaxNum || rod.stiffness <= stiffnessMaxNum;
       
+      // Length range filter
+      const lengthMinNum = lengthMin ? parseFloat(lengthMin) : null;
+      const lengthMaxNum = lengthMax ? parseFloat(lengthMax) : null;
+      const matchesLengthMin = !lengthMinNum || rod.length >= lengthMinNum;
+      const matchesLengthMax = !lengthMaxNum || rod.length <= lengthMaxNum;
+      
+      // Low Test range filter
+      const lowTestMinNum = lowTestMin ? parseInt(lowTestMin) : null;
+      const lowTestMaxNum = lowTestMax ? parseInt(lowTestMax) : null;
+      const matchesLowTestMin = !lowTestMinNum || rod.lowTest >= lowTestMinNum;
+      const matchesLowTestMax = !lowTestMaxNum || rod.lowTest <= lowTestMaxNum;
+      
+      // High Test range filter
+      const highTestMinNum = highTestMin ? parseInt(highTestMin) : null;
+      const highTestMaxNum = highTestMax ? parseInt(highTestMax) : null;
+      const matchesHighTestMin = !highTestMinNum || rod.highTest >= highTestMinNum;
+      const matchesHighTestMax = !highTestMaxNum || rod.highTest <= highTestMaxNum;
+      
       return matchesSearch && matchesType && matchesPower && matchesAction && 
-             matchesStiffnessMin && matchesStiffnessMax;
+             matchesStiffnessMin && matchesStiffnessMax && matchesLengthMin && matchesLengthMax &&
+             matchesLowTestMin && matchesLowTestMax && matchesHighTestMin && matchesHighTestMax;
     });
 
     if (!sortConfig.key) return filtered;
@@ -193,7 +212,7 @@ const RodInfo = () => {
       }
       return 0;
     });
-  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, lengthMin, lengthMax, sortConfig]);
+  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, lengthMin, lengthMax, lowTestMin, lowTestMax, highTestMin, highTestMax, sortConfig]);
 
   // Group rods by type
   const rodsByType = useMemo(() => {
@@ -234,10 +253,18 @@ const RodInfo = () => {
     setActionFilter('All');
     setStiffnessMin('');
     setStiffnessMax('');
+    setLengthMin('');
+    setLengthMax('');
+    setLowTestMin('');
+    setLowTestMax('');
+    setHighTestMin('');
+    setHighTestMax('');
   };
   
   const hasActiveFilters = searchTerm || typeFilter !== 'All' || powerFilter !== 'All' || 
-                          actionFilter !== 'All' || stiffnessMin || stiffnessMax;
+                          actionFilter !== 'All' || stiffnessMin || stiffnessMax || 
+                          lengthMin || lengthMax || lowTestMin || lowTestMax || 
+                          highTestMin || highTestMax;
 
   if (loading) {
     return (
@@ -331,7 +358,7 @@ const RodInfo = () => {
             {/* Advanced Filters */}
             {showAdvancedFilters && (
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                   {/* Power Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -377,14 +404,14 @@ const RodInfo = () => {
                         placeholder="Min"
                         value={stiffnessMin}
                         onChange={(e) => setStiffnessMin(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={stiffnessMax}
                         onChange={(e) => setStiffnessMax(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                       />
                     </div>
                   </div>
@@ -401,7 +428,7 @@ const RodInfo = () => {
                         placeholder="Min"
                         value={lengthMin}
                         onChange={(e) => setLengthMin(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                       />
                       <input
                         type="number"
@@ -409,7 +436,53 @@ const RodInfo = () => {
                         placeholder="Max"
                         value={lengthMax}
                         onChange={(e) => setLengthMax(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Low Test Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Low Test Range
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={lowTestMin}
+                        onChange={(e) => setLowTestMin(e.target.value)}
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={lowTestMax}
+                        onChange={(e) => setLowTestMax(e.target.value)}
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* High Test Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      High Test Range
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        placeholder="Min"
+                        value={highTestMin}
+                        onChange={(e) => setHighTestMin(e.target.value)}
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Max"
+                        value={highTestMax}
+                        onChange={(e) => setHighTestMax(e.target.value)}
+                        className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                       />
                     </div>
                   </div>
