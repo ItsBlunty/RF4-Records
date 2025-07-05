@@ -76,11 +76,11 @@ function AppContent() {
     direction: 'descending'
   });
   
-  // Filter states
+  // Filter states - now supporting arrays for multi-select
   const [filters, setFilters] = useState({
-    fish: '',
-    waterbody: '',
-    bait: '',
+    fish: [],
+    waterbody: [],
+    bait: [],
     dataAge: '1-day'
   });
 
@@ -219,9 +219,15 @@ function AppContent() {
       
       // Build query parameters
       const params = new URLSearchParams();
-      if (filtersToUse.fish) params.append('fish', filtersToUse.fish);
-      if (filtersToUse.waterbody) params.append('waterbody', filtersToUse.waterbody);
-      if (filtersToUse.bait) params.append('bait', filtersToUse.bait);
+      if (filtersToUse.fish && filtersToUse.fish.length > 0) {
+        params.append('fish', filtersToUse.fish.join(','));
+      }
+      if (filtersToUse.waterbody && filtersToUse.waterbody.length > 0) {
+        params.append('waterbody', filtersToUse.waterbody.join(','));
+      }
+      if (filtersToUse.bait && filtersToUse.bait.length > 0) {
+        params.append('bait', filtersToUse.bait.join(','));
+      }
       if (filtersToUse.dataAge) params.append('data_age', filtersToUse.dataAge);
       
       const url = import.meta.env.DEV ? '/api/records/filtered' : '/records/filtered';
@@ -303,12 +309,17 @@ function AppContent() {
 
   // Helper function to check if any filters are applied
   const hasFilters = () => {
-    return filters.fish || filters.waterbody || filters.bait;
+    return (filters.fish && filters.fish.length > 0) || 
+           (filters.waterbody && filters.waterbody.length > 0) || 
+           (filters.bait && filters.bait.length > 0);
   };
   
   // Helper function to check if any filters are applied with specific filter values
   const hasFiltersWithValues = (filtersToCheck) => {
-    return filtersToCheck.fish || filtersToCheck.waterbody || filtersToCheck.bait || filtersToCheck.dataAge;
+    return (filtersToCheck.fish && filtersToCheck.fish.length > 0) || 
+           (filtersToCheck.waterbody && filtersToCheck.waterbody.length > 0) || 
+           (filtersToCheck.bait && filtersToCheck.bait.length > 0) || 
+           filtersToCheck.dataAge;
   };
 
   useEffect(() => {
@@ -327,9 +338,9 @@ function AppContent() {
     // Only update filters if there are URL parameters
     if (urlParams.get('fish') || urlParams.get('waterbody') || urlParams.get('bait') || urlParams.get('data_age')) {
       const urlFilters = {
-        fish: urlParams.get('fish') || '',
-        waterbody: urlParams.get('waterbody') || '',
-        bait: urlParams.get('bait') || '',
+        fish: urlParams.get('fish') ? urlParams.get('fish').split(',') : [],
+        waterbody: urlParams.get('waterbody') ? urlParams.get('waterbody').split(',') : [],
+        bait: urlParams.get('bait') ? urlParams.get('bait').split(',') : [],
         dataAge: urlParams.get('data_age') || '1-day'
       };
       
@@ -387,9 +398,9 @@ function AppContent() {
 
   const clearFilters = () => {
     setFilters({
-      fish: '',
-      waterbody: '',
-      bait: '',
+      fish: [],
+      waterbody: [],
+      bait: [],
       dataAge: '1-day'
     });
     // Clear displayed records but keep cached data
@@ -408,19 +419,25 @@ function AppContent() {
   const handleFilterSubmit = () => {
     // Update URL with current filters
     const params = new URLSearchParams();
-    if (filters.fish) params.append('fish', filters.fish);
-    if (filters.waterbody) params.append('waterbody', filters.waterbody);
-    if (filters.bait) params.append('bait', filters.bait);
+    if (filters.fish && filters.fish.length > 0) {
+      params.append('fish', filters.fish.join(','));
+    }
+    if (filters.waterbody && filters.waterbody.length > 0) {
+      params.append('waterbody', filters.waterbody.join(','));
+    }
+    if (filters.bait && filters.bait.length > 0) {
+      params.append('bait', filters.bait.join(','));
+    }
     if (filters.dataAge && filters.dataAge !== '1-day') params.append('data_age', filters.dataAge);
     
     const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
     navigate(newUrl, { replace: true });
     
     // Auto-switch view mode based on search filters (only when search is submitted)
-    if (filters.bait && !filters.fish) {
+    if (filters.bait && filters.bait.length > 0 && (!filters.fish || filters.fish.length === 0)) {
       // If only bait is searched, switch to fish grouping to see which fish work with that bait
       setViewMode('fish-grouped');
-    } else if (filters.fish && !filters.bait) {
+    } else if (filters.fish && filters.fish.length > 0 && (!filters.bait || filters.bait.length === 0)) {
       // If only fish is searched, switch to bait grouping to see which baits work for that fish
       setViewMode('grouped');
     }

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { X, Clock, Search, Target, Trophy } from 'lucide-react';
+import MultiSelectFilter from './MultiSelectFilter.jsx';
 
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageChange, currentPage }) => {
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
-    return !!(filters.fish || filters.waterbody || filters.bait);
+    return !!(filters.fish && filters.fish.length > 0) || 
+           !!(filters.waterbody && filters.waterbody.length > 0) || 
+           !!(filters.bait && filters.bait.length > 0);
   };
 
   const handleInputChange = (field, value) => {
@@ -23,9 +26,6 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
     // Data age filter should not auto-submit, only submit on button press
   };
 
-  const clearFilter = (field) => {
-    onChange(field, '');
-  };
 
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevent actual form submission
@@ -61,97 +61,37 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onClear, onPageCha
           )}
           
           {/* Fish Filter */}
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fish</label>
-            <div className="relative">
-              <input
-                type="search"
-                list="fish-list"
-                placeholder="Search fish... (Press Enter to search)"
-                value={filters.fish}
-                onChange={e => handleInputChange('fish', e.target.value)}
-                onKeyPress={handleKeyPress}
-                autoComplete="off"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <datalist id="fish-list">
-                {uniqueValues.fish.map((fish, idx) => (
-                  <option key={idx} value={fish} />
-                ))}
-              </datalist>
-              {filters.fish && (
-                <button
-                  type="button"
-                  onClick={() => clearFilter('fish')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          <MultiSelectFilter
+            label="Fish"
+            placeholder="Type fish name... (Enter to search, Tab to add)"
+            values={uniqueValues.fish}
+            selectedValues={filters.fish}
+            onChange={(values) => handleInputChange('fish', values)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 min-w-[200px]"
+          />
 
           {/* Location Filter */}
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Location</label>
-            <div className="relative">
-              <input
-                type="search"
-                list="locations"
-                placeholder="Search location... (Press Enter to search)"
-                value={filters.waterbody}
-                onChange={e => handleInputChange('waterbody', e.target.value)}
-                onKeyPress={handleKeyPress}
-                autoComplete="off"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <datalist id="locations">
-                {uniqueValues.waterbody.map((loc, idx) => (
-                  <option key={idx} value={loc} />
-                ))}
-              </datalist>
-              {filters.waterbody && (
-                <button
-                  type="button"
-                  onClick={() => clearFilter('waterbody')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          <MultiSelectFilter
+            label="Location"
+            placeholder="Type location... (Enter to search, Tab to add)"
+            values={uniqueValues.waterbody}
+            selectedValues={filters.waterbody}
+            onChange={(values) => handleInputChange('waterbody', values)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 min-w-[200px]"
+          />
 
           {/* Bait Filter */}
-          <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Bait</label>
-            <div className="relative">
-              <input
-                type="search"
-                list="bait-list"
-                placeholder="Search bait... (Press Enter to search)"
-                value={filters.bait}
-                onChange={e => handleInputChange('bait', e.target.value)}
-                onKeyPress={handleKeyPress}
-                autoComplete="off"
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-              <datalist id="bait-list">
-                {uniqueValues.bait.map((bait, idx) => (
-                  <option key={idx} value={bait} />
-                ))}
-              </datalist>
-              {filters.bait && (
-                <button
-                  type="button"
-                  onClick={() => clearFilter('bait')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
+          <MultiSelectFilter
+            label="Bait"
+            placeholder="Type bait... (Enter to search, Tab to add)"
+            values={uniqueValues.bait}
+            selectedValues={filters.bait}
+            onChange={(values) => handleInputChange('bait', values)}
+            onKeyPress={handleKeyPress}
+            className="flex-1 min-w-[200px]"
+          />
 
           {/* Data Age Filter */}
           <div className="flex-1 min-w-[200px]">

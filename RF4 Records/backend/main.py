@@ -652,10 +652,15 @@ def get_filtered_records_endpoint(
     try:
         from simplified_records import get_filtered_records
         
+        # Parse comma-separated values for multi-select support
+        fish_list = fish.split(',') if fish else None
+        waterbody_list = waterbody.split(',') if waterbody else None
+        bait_list = bait.split(',') if bait else None
+        
         result = get_filtered_records(
-            fish=fish,
-            waterbody=waterbody,
-            bait=bait,
+            fish=fish_list,
+            waterbody=waterbody_list,
+            bait=bait_list,
             data_age=data_age,
             limit=limit,
             offset=offset

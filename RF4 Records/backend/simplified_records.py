@@ -515,21 +515,53 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
         # Start with base query
         query = db.query(Record)
         
-        # Apply fish filter
+        # Apply fish filter (support multiple values)
         if fish:
-            query = query.filter(Record.fish.ilike(f"%{fish}%"))
+            if isinstance(fish, list):
+                # Multiple fish - use OR condition
+                from sqlalchemy import or_
+                fish_conditions = [Record.fish.ilike(f"%{f.strip()}%") for f in fish if f.strip()]
+                if fish_conditions:
+                    query = query.filter(or_(*fish_conditions))
+            else:
+                # Single fish (backward compatibility)
+                query = query.filter(Record.fish.ilike(f"%{fish}%"))
         
-        # Apply waterbody filter
+        # Apply waterbody filter (support multiple values)
         if waterbody:
-            query = query.filter(Record.waterbody.ilike(f"%{waterbody}%"))
+            if isinstance(waterbody, list):
+                # Multiple waterbodies - use OR condition
+                from sqlalchemy import or_
+                waterbody_conditions = [Record.waterbody.ilike(f"%{w.strip()}%") for w in waterbody if w.strip()]
+                if waterbody_conditions:
+                    query = query.filter(or_(*waterbody_conditions))
+            else:
+                # Single waterbody (backward compatibility)
+                query = query.filter(Record.waterbody.ilike(f"%{waterbody}%"))
         
-        # Apply bait filter (check both bait1 and bait2)
+        # Apply bait filter (support multiple values, check both bait1 and bait2)
         if bait:
-            query = query.filter(
-                (Record.bait1.ilike(f"%{bait}%")) | 
-                (Record.bait2.ilike(f"%{bait}%")) |
-                (Record.bait.ilike(f"%{bait}%"))
-            )
+            if isinstance(bait, list):
+                # Multiple baits - use OR condition for each bait across all bait fields
+                from sqlalchemy import or_
+                all_bait_conditions = []
+                for b in bait:
+                    if b.strip():
+                        bait_conditions = [
+                            Record.bait1.ilike(f"%{b.strip()}%"),
+                            Record.bait2.ilike(f"%{b.strip()}%"),
+                            Record.bait.ilike(f"%{b.strip()}%")
+                        ]
+                        all_bait_conditions.append(or_(*bait_conditions))
+                if all_bait_conditions:
+                    query = query.filter(or_(*all_bait_conditions))
+            else:
+                # Single bait (backward compatibility)
+                query = query.filter(
+                    (Record.bait1.ilike(f"%{bait}%")) | 
+                    (Record.bait2.ilike(f"%{bait}%")) |
+                    (Record.bait.ilike(f"%{bait}%"))
+                )
         
         # Apply data age filter
         if data_age:
@@ -555,10 +587,22 @@ def get_filtered_records(fish=None, waterbody=None, bait=None, data_age=None,
             
             # Apply additional bait filtering for exact normalized matches
             if bait:
-                normalized_search = get_normalized_bait_for_filtering(bait)
-                # Check if the normalized bait_display contains the search term
-                if normalized_search.lower() not in bait_display.lower():
-                    continue
+                if isinstance(bait, list):
+                    # Multiple baits - check if any match
+                    bait_matches = False
+                    for b in bait:
+                        if b.strip():
+                            normalized_search = get_normalized_bait_for_filtering(b.strip())
+                            if normalized_search.lower() in bait_display.lower():
+                                bait_matches = True
+                                break
+                    if not bait_matches:
+                        continue
+                else:
+                    # Single bait (backward compatibility)
+                    normalized_search = get_normalized_bait_for_filtering(bait)
+                    if normalized_search.lower() not in bait_display.lower():
+                        continue
             
             # Parse combined categories
             if record.category and ';' in record.category:
