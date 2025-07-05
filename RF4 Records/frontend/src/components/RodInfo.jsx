@@ -153,7 +153,8 @@ const RodInfo = () => {
 
   const filteredAndSortedRods = useMemo(() => {
     let filtered = rods.filter(rod => {
-      const matchesSearch = rod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      const matchesSearch = !searchTerm || 
+                          rod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           rod.type.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === 'All' || rod.type === typeFilter;
       const matchesPower = powerFilter === 'All' || rod.power === powerFilter;
