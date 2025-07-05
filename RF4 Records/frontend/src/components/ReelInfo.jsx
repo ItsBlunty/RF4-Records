@@ -120,20 +120,20 @@ const ReelInfo = () => {
       const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
       
       // Listed Drag range filter with safe error handling
-      let matchesDragListedMin = true;
-      let matchesDragListedMax = true;
+      let reelMatchesDragListedMin = true;
+      let reelMatchesDragListedMax = true;
       try {
-        const listedDragRaw = parseDragValues(reel.Drag_Real).listed;
-        const listedDrag = listedDragRaw === '-' ? NaN : parseFloat(listedDragRaw);
-        const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
-        const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
-        matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
-        matchesDragListedMax = !dragListedMaxNum || (!isNaN(listedDrag) && listedDrag <= dragListedMaxNum);
+        const reelListedDragRaw = parseDragValues(reel.Drag_Real).listed;
+        const reelListedDrag = reelListedDragRaw === '-' ? NaN : parseFloat(reelListedDragRaw);
+        const reelDragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
+        const reelDragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
+        reelMatchesDragListedMin = !reelDragListedMinNum || (!isNaN(reelListedDrag) && reelListedDrag >= reelDragListedMinNum);
+        reelMatchesDragListedMax = !reelDragListedMaxNum || (!isNaN(reelListedDrag) && reelListedDrag <= reelDragListedMaxNum);
       } catch (error) {
         // If parsing fails, include the reel (don't filter it out due to bad data)
         console.warn('Drag parsing error for reel:', reel.Name, error);
-        matchesDragListedMin = true;
-        matchesDragListedMax = true;
+        reelMatchesDragListedMin = true;
+        reelMatchesDragListedMax = true;
       }
       
       // Price range filter
@@ -144,7 +144,7 @@ const ReelInfo = () => {
       const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
       
       return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
-             matchesDragListedMin && matchesDragListedMax &&
+             reelMatchesDragListedMin && reelMatchesDragListedMax &&
              matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
     });
     
