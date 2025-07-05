@@ -110,6 +110,17 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               Records
             </button>
 
+            <button
+              onClick={() => onPageChange && onPageChange('maps')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'maps' 
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Map className="w-4 h-4 mr-2" />
+              Maps
+            </button>
 
             {/* Game Info Dropdown */}
             <div className="relative" ref={gameInfoDropdownRef}>
@@ -281,18 +292,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                 </div>
               )}
             </div>
-
-            <button
-              onClick={() => onPageChange && onPageChange('maps')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'maps' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Map className="w-4 h-4 mr-2" />
-              Maps
-            </button>
 
             {onAboutClick && (
               <button
