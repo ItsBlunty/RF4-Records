@@ -112,36 +112,11 @@ const ReelInfo = () => {
       const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
       const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
       
-      // Listed Drag range filter
-      const listedDragRaw = parseDragValues(reel.Drag_Real).listed;
-      const listedDrag = listedDragRaw === '-' ? NaN : parseFloat(listedDragRaw);
-      const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
-      const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
-      const matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
-      const matchesDragListedMax = !dragListedMaxNum || (!isNaN(listedDrag) && listedDrag <= dragListedMaxNum);
-      
-      // Mechanism Weight range filter
-      const mechWeight = parseFloat(reel.Mechanism_Weight);
-      const mechWeightMinNum = mechWeightMin ? parseFloat(mechWeightMin) : null;
-      const mechWeightMaxNum = mechWeightMax ? parseFloat(mechWeightMax) : null;
-      const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
-      const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
-      
-      // Price range filter
-      const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
-      const priceMinNum = priceMin ? parseFloat(priceMin) : null;
-      const priceMaxNum = priceMax ? parseFloat(priceMax) : null;
-      const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
-      const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
-      
-      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
-             matchesDragListedMin && matchesDragListedMax &&
-             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
+      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, 
-      dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
