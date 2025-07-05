@@ -113,14 +113,16 @@ const ReelInfo = () => {
       const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
       
       // Tested Drag range filter
-      const testedDrag = parseFloat(parseDragValues(reel.Drag_Real).tested);
+      const testedDragRaw = parseDragValues(reel.Drag_Real).tested;
+      const testedDrag = testedDragRaw === '-' ? NaN : parseFloat(testedDragRaw);
       const dragTestedMinNum = dragTestedMin ? parseFloat(dragTestedMin) : null;
       const dragTestedMaxNum = dragTestedMax ? parseFloat(dragTestedMax) : null;
       const matchesDragTestedMin = !dragTestedMinNum || (!isNaN(testedDrag) && testedDrag >= dragTestedMinNum);
       const matchesDragTestedMax = !dragTestedMaxNum || (!isNaN(testedDrag) && testedDrag <= dragTestedMaxNum);
       
       // Listed Drag range filter
-      const listedDrag = parseFloat(parseDragValues(reel.Drag_Real).listed);
+      const listedDragRaw = parseDragValues(reel.Drag_Real).listed;
+      const listedDrag = listedDragRaw === '-' ? NaN : parseFloat(listedDragRaw);
       const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
       const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
       const matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
