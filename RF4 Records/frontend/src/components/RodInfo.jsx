@@ -387,6 +387,30 @@ const RodInfo = () => {
                     </div>
                   </div>
 
+                  {/* Length Range */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Length Range (m)
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Min"
+                        value={lengthMin}
+                        onChange={(e) => setLengthMin(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                      <input
+                        type="number"
+                        step="0.1"
+                        placeholder="Max"
+                        value={lengthMax}
+                        onChange={(e) => setLengthMax(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
