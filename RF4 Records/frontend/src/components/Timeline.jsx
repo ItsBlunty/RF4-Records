@@ -32,6 +32,7 @@ const Timeline = () => {
     const headers = lines[0].split(',').map(header => header.trim());
     
     console.log('CSV Headers:', headers); // Debug log
+    console.log('Raw CSV first line:', lines[0]); // Debug raw CSV
     
     const data = [];
     for (let i = 1; i < lines.length; i++) {
