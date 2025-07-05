@@ -112,11 +112,19 @@ const ReelInfo = () => {
       const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
       const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
       
-      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax;
+      // Mechanism Weight range filter
+      const mechWeight = parseFloat(reel.Mechanism_Weight);
+      const mechWeightMinNum = mechWeightMin ? parseFloat(mechWeightMin) : null;
+      const mechWeightMaxNum = mechWeightMax ? parseFloat(mechWeightMax) : null;
+      const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
+      const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
+      
+      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
+             matchesMechWeightMin && matchesMechWeightMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, mechWeightMin, mechWeightMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
