@@ -202,7 +202,7 @@ const RodInfo = () => {
       }
       return 0;
     });
-  }, [rods, searchTerm, typeFilter, sortConfig]);
+  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, levelMin, levelMax, sortConfig]);
 
   // Group rods by type
   const rodsByType = useMemo(() => {
