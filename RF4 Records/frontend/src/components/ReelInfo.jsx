@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Search, Filter, X } from 'lucide-react';
 
 const ReelInfo = () => {
   const [reels, setReels] = useState([]);
@@ -7,6 +7,18 @@ const ReelInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [saltwaterFilter, setSaltwaterFilter] = useState('All');
+  const [testWeightMin, setTestWeightMin] = useState('');
+  const [testWeightMax, setTestWeightMax] = useState('');
+  const [dragTestedMin, setDragTestedMin] = useState('');
+  const [dragTestedMax, setDragTestedMax] = useState('');
+  const [dragListedMin, setDragListedMin] = useState('');
+  const [dragListedMax, setDragListedMax] = useState('');
+  const [mechWeightMin, setMechWeightMin] = useState('');
+  const [mechWeightMax, setMechWeightMax] = useState('');
+  const [priceMin, setPriceMin] = useState('');
+  const [priceMax, setPriceMax] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Parse CSV data and extract reel information
   const parseCSVData = (text) => {
@@ -83,18 +95,66 @@ const ReelInfo = () => {
     loadReels();
   }, []);
 
+  // Advanced filtering with useMemo for performance
+  const filteredAndSortedReels = useMemo(() => {
+    let filtered = reels.filter(reel => {
+      // Search filter
+      const matchesSearch = !searchTerm || 
+                          reel.Name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Saltwater filter
+      const matchesSaltwater = saltwaterFilter === 'All' || 
+                              (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance === '💧') ||
+                              (saltwaterFilter === 'No' && reel.Saltwater_Resistance !== '💧');
+      
+      // Test Weight range filter
+      const testWeight = parseFloat(reel.Test_Weight?.replace('~', ''));
+      const testWeightMinNum = testWeightMin ? parseFloat(testWeightMin) : null;
+      const testWeightMaxNum = testWeightMax ? parseFloat(testWeightMax) : null;
+      const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
+      const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
+      
+      // Tested Drag range filter
+      const testedDrag = parseFloat(parseDragValues(reel.Drag_Real).tested);
+      const dragTestedMinNum = dragTestedMin ? parseFloat(dragTestedMin) : null;
+      const dragTestedMaxNum = dragTestedMax ? parseFloat(dragTestedMax) : null;
+      const matchesDragTestedMin = !dragTestedMinNum || (!isNaN(testedDrag) && testedDrag >= dragTestedMinNum);
+      const matchesDragTestedMax = !dragTestedMaxNum || (!isNaN(testedDrag) && testedDrag <= dragTestedMaxNum);
+      
+      // Listed Drag range filter
+      const listedDrag = parseFloat(parseDragValues(reel.Drag_Real).listed);
+      const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
+      const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
+      const matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
+      const matchesDragListedMax = !dragListedMaxNum || (!isNaN(listedDrag) && listedDrag <= dragListedMaxNum);
+      
+      // Mechanism Weight range filter
+      const mechWeight = parseFloat(reel.Mechanism_Weight);
+      const mechWeightMinNum = mechWeightMin ? parseFloat(mechWeightMin) : null;
+      const mechWeightMaxNum = mechWeightMax ? parseFloat(mechWeightMax) : null;
+      const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
+      const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
+      
+      // Price range filter
+      const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
+      const priceMinNum = priceMin ? parseFloat(priceMin) : null;
+      const priceMaxNum = priceMax ? parseFloat(priceMax) : null;
+      const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
+      const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
+      
+      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
+             matchesDragTestedMin && matchesDragTestedMax && matchesDragListedMin && matchesDragListedMax &&
+             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
+    });
+    
+    return filtered;
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragTestedMin, dragTestedMax, 
+      dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
+  
+  // Update filteredReels when the computed value changes
   useEffect(() => {
-    let filtered = reels;
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(reel => 
-        reel.Name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    setFilteredReels(filtered);
-  }, [reels, searchTerm]);
+    setFilteredReels(filteredAndSortedReels);
+  }, [filteredAndSortedReels]);
 
   const formatPrice = (price) => {
     if (!price || price === '-' || price === '') return '-';
@@ -161,9 +221,24 @@ const ReelInfo = () => {
   };
   
 
-  const clearFilters = () => {
+  const clearAllFilters = () => {
     setSearchTerm('');
+    setSaltwaterFilter('All');
+    setTestWeightMin('');
+    setTestWeightMax('');
+    setDragTestedMin('');
+    setDragTestedMax('');
+    setDragListedMin('');
+    setDragListedMax('');
+    setMechWeightMin('');
+    setMechWeightMax('');
+    setPriceMin('');
+    setPriceMax('');
   };
+  
+  const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || testWeightMin || testWeightMax ||
+                         dragTestedMin || dragTestedMax || dragListedMin || dragListedMax ||
+                         mechWeightMin || mechWeightMax || priceMin || priceMax;
 
   if (loading) {
     return (
@@ -208,7 +283,8 @@ const ReelInfo = () => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
+          {/* Basic Filters */}
+          <div className="flex flex-col lg:flex-row gap-4 mb-4">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
@@ -222,17 +298,171 @@ const ReelInfo = () => {
                 />
               </div>
             </div>
-
-            {/* Clear Filters */}
-            {searchTerm && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            
+            {/* Saltwater Filter */}
+            <div className="sm:w-48">
+              <select
+                value={saltwaterFilter}
+                onChange={(e) => setSaltwaterFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                Clear
+                <option value="All">All Reels</option>
+                <option value="Yes">Saltwater Only</option>
+                <option value="No">Freshwater Only</option>
+              </select>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${
+                  showAdvancedFilters || hasActiveFilters
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                <Filter className="w-4 h-4" />
+                Advanced
               </button>
-            )}
+              {hasActiveFilters && (
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
+                >
+                  <X className="w-4 h-4" />
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
+          
+          {/* Advanced Filters */}
+          {showAdvancedFilters && (
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {/* Test Weight Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Test Weight Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={testWeightMin}
+                      onChange={(e) => setTestWeightMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={testWeightMax}
+                      onChange={(e) => setTestWeightMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+                
+                {/* Tested Drag Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Tested Drag Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Min"
+                      value={dragTestedMin}
+                      onChange={(e) => setDragTestedMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Max"
+                      value={dragTestedMax}
+                      onChange={(e) => setDragTestedMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+                
+                {/* Listed Drag Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Listed Drag Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Min"
+                      value={dragListedMin}
+                      onChange={(e) => setDragListedMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Max"
+                      value={dragListedMax}
+                      onChange={(e) => setDragListedMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+                
+                {/* Mechanism Weight Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Mech Weight Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Min"
+                      value={mechWeightMin}
+                      onChange={(e) => setMechWeightMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Max"
+                      value={mechWeightMax}
+                      onChange={(e) => setMechWeightMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+                
+                {/* Price Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Price Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      value={priceMin}
+                      onChange={(e) => setPriceMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             Showing {filteredReels.length} of {reels.length} reels
