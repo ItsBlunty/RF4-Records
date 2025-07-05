@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
   const isDevelopment = window.location.hostname !== 'rf4records.com';
   
-  // Dropdown state for gear info and skill info
+  // Dropdown state for gear info, skill info, and game info
   const [gearDropdownOpen, setGearDropdownOpen] = useState(false);
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  const [gameInfoDropdownOpen, setGameInfoDropdownOpen] = useState(false);
   
   // Refs for dropdown containers
   const gearDropdownRef = useRef(null);
   const skillDropdownRef = useRef(null);
+  const gameInfoDropdownRef = useRef(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -21,6 +23,9 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
       }
       if (skillDropdownRef.current && !skillDropdownRef.current.contains(event.target)) {
         setSkillDropdownOpen(false);
+      }
+      if (gameInfoDropdownRef.current && !gameInfoDropdownRef.current.contains(event.target)) {
+        setGameInfoDropdownOpen(false);
       }
     };
 
@@ -106,17 +111,62 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             </button>
 
 
-            <button
-              onClick={() => onPageChange && onPageChange('waterbodyprices')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'waterbodyprices' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <DollarSign className="w-4 h-4 mr-2" />
-              Waterbody Prices
-            </button>
+            {/* Game Info Dropdown */}
+            <div className="relative" ref={gameInfoDropdownRef}>
+              <button
+                onClick={() => setGameInfoDropdownOpen(!gameInfoDropdownOpen)}
+                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                  ['waterbodyprices', 'timeline', 'alcohol'].includes(currentPage)
+                    ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                    : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+                }`}
+              >
+                <GamepadIcon className="w-4 h-4 mr-2" />
+                Game Info
+                <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${gameInfoDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {gameInfoDropdownOpen && (
+                <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('waterbodyprices');
+                      setGameInfoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-t-lg ${
+                      currentPage === 'waterbodyprices' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4 inline mr-2" />
+                    Waterbody Prices
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('timeline');
+                      setGameInfoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      currentPage === 'timeline' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4 inline mr-2" />
+                    Timeline
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('alcohol');
+                      setGameInfoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'alcohol' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Wine className="w-4 h-4 inline mr-2" />
+                    Alcohol
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Skill Info Dropdown */}
             <div className="relative" ref={skillDropdownRef}>
@@ -233,18 +283,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             </div>
 
             <button
-              onClick={() => onPageChange && onPageChange('alcohol')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'alcohol' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Wine className="w-4 h-4 mr-2" />
-              Alcohol
-            </button>
-
-            <button
               onClick={() => onPageChange && onPageChange('maps')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                 currentPage === 'maps' 
@@ -254,18 +292,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             >
               <Map className="w-4 h-4 mr-2" />
               Maps
-            </button>
-
-            <button
-              onClick={() => onPageChange && onPageChange('timeline')}
-              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'timeline' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
-                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
-              }`}
-            >
-              <Clock className="w-4 h-4 mr-2" />
-              Timeline
             </button>
 
             {onAboutClick && (
