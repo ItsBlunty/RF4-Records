@@ -95,11 +95,18 @@ const ReelInfo = () => {
     loadReels();
   }, []);
 
-  // Advanced filtering with useMemo for performance - simplified for debugging
+  // Advanced filtering with useMemo for performance
   const filteredAndSortedReels = useMemo(() => {
-    // Just return all reels for now to test if filtering logic is the issue
-    return reels;
-  }, [reels]);
+    let filtered = reels.filter(reel => {
+      // Search filter
+      const matchesSearch = !searchTerm || 
+                          reel.Name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      return matchesSearch;
+    });
+    
+    return filtered;
+  }, [reels, searchTerm]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
