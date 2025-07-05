@@ -16,6 +16,8 @@ const ReelInfo = () => {
   const [mechWeightMax, setMechWeightMax] = useState('');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [gearRatioMin, setGearRatioMin] = useState('');
+  const [gearRatioMax, setGearRatioMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Parse CSV data and extract reel information
@@ -141,13 +143,28 @@ const ReelInfo = () => {
       const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
       const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
       
+      // Gear Ratio range filter (extract number before :1)
+      let gearRatioValue = 0;
+      if (reel.Gear_Ratio_1 && reel.Gear_Ratio_1 !== '-') {
+        const ratioMatch = reel.Gear_Ratio_1.match(/^(\d+(?:\.\d+)?)/);
+        if (ratioMatch) {
+          gearRatioValue = parseFloat(ratioMatch[1]);
+        }
+      }
+      
+      const gearRatioMinNum = gearRatioMin ? parseFloat(gearRatioMin) : null;
+      const gearRatioMaxNum = gearRatioMax ? parseFloat(gearRatioMax) : null;
+      const matchesGearRatioMin = !gearRatioMinNum || (gearRatioValue >= gearRatioMinNum);
+      const matchesGearRatioMax = !gearRatioMaxNum || (gearRatioValue <= gearRatioMaxNum);
+      
       return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
              reelMatchesDragListedMin && reelMatchesDragListedMax &&
-             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
+             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax &&
+             matchesGearRatioMin && matchesGearRatioMax;
     });
     
     return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
+  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax, gearRatioMin, gearRatioMax]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
@@ -230,11 +247,14 @@ const ReelInfo = () => {
     setMechWeightMax('');
     setPriceMin('');
     setPriceMax('');
+    setGearRatioMin('');
+    setGearRatioMax('');
   };
   
   const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || testWeightMin || testWeightMax ||
                          dragListedMin || dragListedMax ||
-                         mechWeightMin || mechWeightMax || priceMin || priceMax;
+                         mechWeightMin || mechWeightMax || priceMin || priceMax ||
+                         gearRatioMin || gearRatioMax;
 
   if (loading) {
     return (
@@ -334,7 +354,7 @@ const ReelInfo = () => {
           {/* Advanced Filters */}
           {showAdvancedFilters && (
             <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                 {/* Test Weight Range */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -426,6 +446,31 @@ const ReelInfo = () => {
                       placeholder="Max"
                       value={priceMax}
                       onChange={(e) => setPriceMax(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                  </div>
+                </div>
+                
+                {/* Gear Ratio Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Gear Ratio Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Min"
+                      value={gearRatioMin}
+                      onChange={(e) => setGearRatioMin(e.target.value)}
+                      className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
+                    <input
+                      type="number"
+                      step="0.1"
+                      placeholder="Max"
+                      value={gearRatioMax}
+                      onChange={(e) => setGearRatioMax(e.target.value)}
                       className="w-16 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
                     />
                   </div>
