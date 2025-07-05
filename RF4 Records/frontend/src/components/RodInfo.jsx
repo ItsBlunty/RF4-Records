@@ -11,7 +11,6 @@ const RodInfo = () => {
   const [actionFilter, setActionFilter] = useState('All');
   const [stiffnessMin, setStiffnessMin] = useState('');
   const [stiffnessMax, setStiffnessMax] = useState('');
-  const [levelMin, setLevelMin] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
@@ -162,12 +161,8 @@ const RodInfo = () => {
       const matchesStiffnessMin = !stiffnessMinNum || rod.stiffness >= stiffnessMinNum;
       const matchesStiffnessMax = !stiffnessMaxNum || rod.stiffness <= stiffnessMaxNum;
       
-      // Level minimum filter
-      const levelMinNum = levelMin ? parseInt(levelMin) : null;
-      const matchesLevelMin = !levelMinNum || rod.level >= levelMinNum;
-      
       return matchesSearch && matchesType && matchesPower && matchesAction && 
-             matchesStiffnessMin && matchesStiffnessMax && matchesLevelMin;
+             matchesStiffnessMin && matchesStiffnessMax;
     });
 
     if (!sortConfig.key) return filtered;
@@ -196,7 +191,7 @@ const RodInfo = () => {
       }
       return 0;
     });
-  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, levelMin, sortConfig]);
+  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, sortConfig]);
 
   // Group rods by type
   const rodsByType = useMemo(() => {
@@ -237,12 +232,10 @@ const RodInfo = () => {
     setActionFilter('All');
     setStiffnessMin('');
     setStiffnessMax('');
-    setLevelMin('');
   };
   
   const hasActiveFilters = searchTerm || typeFilter !== 'All' || powerFilter !== 'All' || 
-                          actionFilter !== 'All' || stiffnessMin || stiffnessMax || 
-                          levelMin;
+                          actionFilter !== 'All' || stiffnessMin || stiffnessMax;
 
   if (loading) {
     return (
@@ -336,7 +329,7 @@ const RodInfo = () => {
             {/* Advanced Filters */}
             {showAdvancedFilters && (
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* Power Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -394,19 +387,6 @@ const RodInfo = () => {
                     </div>
                   </div>
 
-                  {/* Minimum Level */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Minimum Level
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Min Level"
-                      value={levelMin}
-                      onChange={(e) => setLevelMin(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                    />
-                  </div>
                 </div>
               </div>
             )}
@@ -426,40 +406,40 @@ const RodInfo = () => {
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{type}</h2>
                 
                 <div className="overflow-x-auto">
-                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-auto">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
-                        <th onClick={() => handleSort('name')} className={getColumnHeaderClass('name')}>
+                        <th onClick={() => handleSort('name')} className={`${getColumnHeaderClass('name')} whitespace-nowrap`}>
                           Rod Name {getSortIndicator('name')}
                         </th>
-                        <th onClick={() => handleSort('level')} className={getColumnHeaderClass('level')}>
+                        <th onClick={() => handleSort('level')} className={`${getColumnHeaderClass('level')} whitespace-nowrap`}>
                           Level {getSortIndicator('level')}
                         </th>
-                        <th onClick={() => handleSort('lowTest')} className={`${getColumnHeaderClass('lowTest')} px-3 py-3`}>
+                        <th onClick={() => handleSort('lowTest')} className={`${getColumnHeaderClass('lowTest')} px-3 py-3 whitespace-nowrap`}>
                           Low Test {getSortIndicator('lowTest')}
                         </th>
-                        <th onClick={() => handleSort('highTest')} className={`${getColumnHeaderClass('highTest')} px-3 py-3`}>
+                        <th onClick={() => handleSort('highTest')} className={`${getColumnHeaderClass('highTest')} px-3 py-3 whitespace-nowrap`}>
                           High Test {getSortIndicator('highTest')}
                         </th>
-                        <th onClick={() => handleSort('action')} className={getColumnHeaderClass('action')}>
+                        <th onClick={() => handleSort('action')} className={`${getColumnHeaderClass('action')} whitespace-nowrap`}>
                           Action {getSortIndicator('action')}
                         </th>
-                        <th onClick={() => handleSort('stiffness')} className={getColumnHeaderClass('stiffness')}>
+                        <th onClick={() => handleSort('stiffness')} className={`${getColumnHeaderClass('stiffness')} whitespace-nowrap`}>
                           Stiffness {getSortIndicator('stiffness')}
                         </th>
-                        <th onClick={() => handleSort('power')} className={getColumnHeaderClass('power')}>
+                        <th onClick={() => handleSort('power')} className={`${getColumnHeaderClass('power')} whitespace-nowrap`}>
                           Power {getSortIndicator('power')}
                         </th>
-                        <th onClick={() => handleSort('length')} className={getColumnHeaderClass('length')}>
+                        <th onClick={() => handleSort('length')} className={`${getColumnHeaderClass('length')} whitespace-nowrap`}>
                           Length {getSortIndicator('length')}
                         </th>
-                        <th onClick={() => handleSort('maxLoad')} className={getColumnHeaderClass('maxLoad')}>
+                        <th onClick={() => handleSort('maxLoad')} className={`${getColumnHeaderClass('maxLoad')} whitespace-nowrap`}>
                           Max Load {getSortIndicator('maxLoad')}
                         </th>
-                        <th onClick={() => handleSort('cost')} className={getColumnHeaderClass('cost')}>
+                        <th onClick={() => handleSort('cost')} className={`${getColumnHeaderClass('cost')} whitespace-nowrap`}>
                           Cost {getSortIndicator('cost')}
                         </th>
-                        <th onClick={() => handleSort('stars')} className={getColumnHeaderClass('stars')}>
+                        <th onClick={() => handleSort('stars')} className={`${getColumnHeaderClass('stars')} whitespace-nowrap`}>
                           Stars {getSortIndicator('stars')}
                         </th>
                       </tr>
