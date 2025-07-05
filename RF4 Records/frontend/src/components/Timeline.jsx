@@ -140,28 +140,32 @@ const Timeline = () => {
 
         <div className="relative">
           {/* Timeline line */}
-          <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></div>
+          <div className="absolute left-1/2 transform -translate-x-0.5 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></div>
           
           {timelineData.map((item, index) => {
             const isExpanded = expandedItems.has(index);
             const hasMajorFeatures = item['Major Features in Patch'] && item['Major Features in Patch'].trim();
             const hasChangeList = item['Change List'] && item['Change List'].trim();
             const hasLink = item['Link To Notes/Vid/etc'] && item['Link To Notes/Vid/etc'].trim();
+            const isLeftSide = item['Side'] === 'left';
             
             return (
-              <div key={index} className="relative mb-4">
+              <div key={index} className="relative mb-8">
                 {/* Timeline dot */}
-                <div className="absolute left-4 w-3 h-3 rounded-full bg-blue-600 border-2 border-blue-600 dark:border-gray-600"></div>
+                <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-blue-600 border-4 border-white dark:border-gray-900 shadow-lg z-10"></div>
                 
                 {/* Timeline content */}
-                <div className="ml-12">
+                <div className={`${isLeftSide ? 'pr-8 text-right' : 'pl-8'} w-1/2 ${isLeftSide ? 'mr-auto' : 'ml-auto'}`}>
                   <div 
-                    className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500"
+                    className="p-4 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-gray-300 dark:hover:border-gray-500 relative"
                     onClick={() => toggleExpand(index)}
                   >
+                    {/* Arrow pointing to center line */}
+                    <div className={`absolute top-4 ${isLeftSide ? '-right-2' : '-left-2'} w-4 h-4 transform rotate-45 bg-white dark:bg-gray-800 border ${isLeftSide ? 'border-l-0 border-b-0' : 'border-r-0 border-t-0'} border-gray-200 dark:border-gray-600`}></div>
+                    
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center mb-1">
+                        <div className={`flex items-center mb-1 ${isLeftSide ? 'justify-end' : ''}`}>
                           <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                             {formatDate(item.Date)}
                           </h3>
@@ -170,7 +174,7 @@ const Timeline = () => {
                               href={item['Link To Notes/Vid/etc']}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="ml-3 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200"
+                              className={`${isLeftSide ? 'mr-3' : 'ml-3'} text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200`}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <ExternalLink className="w-4 h-4" />
@@ -200,7 +204,7 @@ const Timeline = () => {
                         )}
                       </div>
                       
-                      <div className="ml-4 flex-shrink-0">
+                      <div className={`${isLeftSide ? 'mr-4' : 'ml-4'} flex-shrink-0`}>
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4 text-gray-400" />
                         ) : (
