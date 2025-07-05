@@ -102,10 +102,8 @@ const ReelInfo = () => {
       const matchesSearch = !searchTerm || 
                           reel.Name.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Saltwater filter
-      const matchesSaltwater = saltwaterFilter === 'All' || 
-                              (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('\ud83d\udca7')) ||
-                              (saltwaterFilter === 'No' && (!reel.Saltwater_Resistance || !reel.Saltwater_Resistance.includes('\ud83d\udca7')));
+      // Saltwater filter - temporarily disabled
+      const matchesSaltwater = true;
       
       // Test Weight range filter
       const testWeight = parseFloat(reel.Test_Weight?.replace('~', ''));
