@@ -119,9 +119,20 @@ const ReelInfo = () => {
       const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
       const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
       
-      // Temporarily disable drag filter due to JS scoping issues
-      const reelMatchesDragListedMin = true;
-      const reelMatchesDragListedMax = true;
+      // Listed Drag range filter - simplified approach
+      let listedDragValue = 0;
+      if (reel.Drag_Real && reel.Drag_Real !== '-') {
+        // Extract the last number from the drag string (this is usually the listed value)
+        const numbers = reel.Drag_Real.match(/\d+(\.\d+)?/g);
+        if (numbers && numbers.length > 0) {
+          listedDragValue = parseFloat(numbers[numbers.length - 1]);
+        }
+      }
+      
+      const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
+      const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
+      const reelMatchesDragListedMin = !dragListedMinNum || (listedDragValue >= dragListedMinNum);
+      const reelMatchesDragListedMax = !dragListedMaxNum || (listedDragValue <= dragListedMaxNum);
       
       // Price range filter
       const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
