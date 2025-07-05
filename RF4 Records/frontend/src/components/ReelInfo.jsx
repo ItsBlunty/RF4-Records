@@ -21,6 +21,7 @@ const ReelInfo = () => {
   const [gearRatioMin, setGearRatioMin] = useState('');
   const [gearRatioMax, setGearRatioMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   // Parse CSV data and extract reel information
   const parseCSVData = (text) => {
@@ -99,7 +100,31 @@ const ReelInfo = () => {
     loadReels();
   }, []);
 
-  // Advanced filtering with useMemo for performance
+  // Sorting functions
+  const handleSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIndicator = (columnKey) => {
+    if (sortConfig.key !== columnKey) return '↕';
+    if (sortConfig.direction === 'ascending') return '↑';
+    if (sortConfig.direction === 'descending') return '↓';
+    return '↕';
+  };
+
+  const getColumnHeaderClass = (columnKey, textAlign = 'center') => {
+    const baseClass = `px-4 py-2 text-${textAlign} text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-600`;
+    if (sortConfig.key === columnKey) {
+      return `${baseClass} bg-gray-100 dark:bg-gray-600`;
+    }
+    return baseClass;
+  };
+
+  // Advanced filtering and sorting with useMemo for performance
   const filteredAndSortedReels = useMemo(() => {
     let filtered = reels.filter(reel => {
       // Search filter
@@ -174,8 +199,71 @@ const ReelInfo = () => {
              matchesGearRatioMin && matchesGearRatioMax;
     });
     
-    return filtered;
-  }, [reels, searchTerm, saltwaterFilter, typeFilter, sizeFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax, gearRatioMin, gearRatioMax]);
+    // Apply sorting
+    if (!sortConfig.key) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let aValue = a[sortConfig.key];
+      let bValue = b[sortConfig.key];
+
+      // Handle numeric comparisons for specific columns
+      if (['Test_Weight', 'Size', 'Mechanism_Weight', 'Price', 'Line_Capacity', 'Retrieve_Speed_1'].includes(sortConfig.key)) {
+        // For Test_Weight, remove ~ symbol and convert to number
+        if (sortConfig.key === 'Test_Weight') {
+          aValue = parseFloat(String(aValue).replace('~', '')) || 0;
+          bValue = parseFloat(String(bValue).replace('~', '')) || 0;
+        }
+        // For Size, convert to number
+        else if (sortConfig.key === 'Size') {
+          aValue = parseInt(aValue) || 0;
+          bValue = parseInt(bValue) || 0;
+        }
+        // For Line_Capacity and Retrieve_Speed_1, handle numeric values
+        else if (sortConfig.key === 'Line_Capacity' || sortConfig.key === 'Retrieve_Speed_1') {
+          aValue = parseFloat(String(aValue)) || 0;
+          bValue = parseFloat(String(bValue)) || 0;
+        }
+        // For Price and Mechanism_Weight, handle various formats
+        else {
+          aValue = parseFloat(String(aValue).replace(/[^\d.-]/g, '')) || 0;
+          bValue = parseFloat(String(bValue).replace(/[^\d.-]/g, '')) || 0;
+        }
+      }
+      // Handle gear ratio comparison - extract first number before ":"
+      else if (sortConfig.key === 'Gear_Ratio_1') {
+        const ratioA = String(aValue).match(/^(\d+(?:\.\d+)?)/);
+        const ratioB = String(bValue).match(/^(\d+(?:\.\d+)?)/);
+        aValue = ratioA ? parseFloat(ratioA[1]) : 0;
+        bValue = ratioB ? parseFloat(ratioB[1]) : 0;
+      }
+      // Handle drag values - extract the last number for listed drag
+      else if (sortConfig.key === 'Drag_Real' || sortConfig.key === 'Drag_Claimed') {
+        const extractDrag = (str) => {
+          if (!str || str === '-') return 0;
+          const numbers = String(str).match(/\d+(\.\d+)?/g);
+          if (!numbers) return 0;
+          // For Drag_Real, get the last number (listed value)
+          // For Drag_Claimed, just get the first number
+          return parseFloat(numbers[numbers.length - 1]) || 0;
+        };
+        aValue = extractDrag(aValue);
+        bValue = extractDrag(bValue);
+      }
+      // Handle string comparisons
+      else if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+      }
+      return 0;
+    });
+  }, [reels, searchTerm, saltwaterFilter, typeFilter, sizeFilter, testWeightMin, testWeightMax, dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax, gearRatioMin, gearRatioMax, sortConfig]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
@@ -262,12 +350,13 @@ const ReelInfo = () => {
     setPriceMax('');
     setGearRatioMin('');
     setGearRatioMax('');
+    setSortConfig({ key: null, direction: 'ascending' });
   };
   
   const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || typeFilter !== 'All' || sizeFilter !== 'All' ||
                          testWeightMin || testWeightMax || dragListedMin || dragListedMax ||
                          mechWeightMin || mechWeightMax || priceMin || priceMax ||
-                         gearRatioMin || gearRatioMax;
+                         gearRatioMin || gearRatioMax || sortConfig.key;
 
   if (loading) {
     return (
@@ -544,38 +633,38 @@ const ReelInfo = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Reel Name
+                  <th onClick={() => handleSort('Name')} className={getColumnHeaderClass('Name', 'left')}>
+                    Reel Name {getSortIndicator('Name')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Type
+                  <th onClick={() => handleSort('Type')} className={getColumnHeaderClass('Type')}>
+                    Type {getSortIndicator('Type')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Size
+                  <th onClick={() => handleSort('Size')} className={getColumnHeaderClass('Size')}>
+                    Size {getSortIndicator('Size')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Test Weight
+                  <th onClick={() => handleSort('Test_Weight')} className={getColumnHeaderClass('Test_Weight')}>
+                    Test Weight {getSortIndicator('Test_Weight')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Gear Ratio
+                  <th onClick={() => handleSort('Gear_Ratio_1')} className={getColumnHeaderClass('Gear_Ratio_1')}>
+                    Gear Ratio {getSortIndicator('Gear_Ratio_1')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Line Capacity (m)
+                  <th onClick={() => handleSort('Line_Capacity')} className={getColumnHeaderClass('Line_Capacity')}>
+                    Line Capacity (m) {getSortIndicator('Line_Capacity')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Retrieve Speed
+                  <th onClick={() => handleSort('Retrieve_Speed_1')} className={getColumnHeaderClass('Retrieve_Speed_1')}>
+                    Retrieve Speed {getSortIndicator('Retrieve_Speed_1')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Tested Drag (kg)
+                  <th onClick={() => handleSort('Drag_Real')} className={getColumnHeaderClass('Drag_Real')}>
+                    Tested Drag (kg) {getSortIndicator('Drag_Real')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Listed Drag (kg)
+                  <th onClick={() => handleSort('Drag_Claimed')} className={getColumnHeaderClass('Drag_Claimed')}>
+                    Listed Drag (kg) {getSortIndicator('Drag_Claimed')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Mech Weight (kg)
+                  <th onClick={() => handleSort('Mechanism_Weight')} className={getColumnHeaderClass('Mechanism_Weight')}>
+                    Mech Weight (kg) {getSortIndicator('Mechanism_Weight')}
                   </th>
-                  <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    Price
+                  <th onClick={() => handleSort('Price')} className={getColumnHeaderClass('Price')}>
+                    Price {getSortIndicator('Price')}
                   </th>
                 </tr>
               </thead>
