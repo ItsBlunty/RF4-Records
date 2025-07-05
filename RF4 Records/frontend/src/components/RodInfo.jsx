@@ -193,7 +193,7 @@ const RodInfo = () => {
       }
       return 0;
     });
-  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, sortConfig]);
+  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, lengthMin, lengthMax, sortConfig]);
 
   // Group rods by type
   const rodsByType = useMemo(() => {
