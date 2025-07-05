@@ -102,11 +102,16 @@ const ReelInfo = () => {
       const matchesSearch = !searchTerm || 
                           reel.Name.toLowerCase().includes(searchTerm.toLowerCase());
       
-      return matchesSearch;
+      // Saltwater filter with safe handling
+      const matchesSaltwater = saltwaterFilter === 'All' || 
+                              (saltwaterFilter === 'Yes' && reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('💧')) ||
+                              (saltwaterFilter === 'No' && (!reel.Saltwater_Resistance || !reel.Saltwater_Resistance.includes('💧')));
+      
+      return matchesSearch && matchesSaltwater;
     });
     
     return filtered;
-  }, [reels, searchTerm]);
+  }, [reels, searchTerm, saltwaterFilter]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
