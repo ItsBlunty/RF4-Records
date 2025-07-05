@@ -12,7 +12,6 @@ const RodInfo = () => {
   const [stiffnessMin, setStiffnessMin] = useState('');
   const [stiffnessMax, setStiffnessMax] = useState('');
   const [levelMin, setLevelMin] = useState('');
-  const [levelMax, setLevelMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
@@ -124,9 +123,6 @@ const RodInfo = () => {
     );
   };
 
-  const formatTestRange = (low, high) => {
-    return `${low}-${high}`;
-  };
 
   const handleSort = (key) => {
     let direction = 'ascending';
@@ -166,14 +162,12 @@ const RodInfo = () => {
       const matchesStiffnessMin = !stiffnessMinNum || rod.stiffness >= stiffnessMinNum;
       const matchesStiffnessMax = !stiffnessMaxNum || rod.stiffness <= stiffnessMaxNum;
       
-      // Level range filter
+      // Level minimum filter
       const levelMinNum = levelMin ? parseInt(levelMin) : null;
-      const levelMaxNum = levelMax ? parseInt(levelMax) : null;
       const matchesLevelMin = !levelMinNum || rod.level >= levelMinNum;
-      const matchesLevelMax = !levelMaxNum || rod.level <= levelMaxNum;
       
       return matchesSearch && matchesType && matchesPower && matchesAction && 
-             matchesStiffnessMin && matchesStiffnessMax && matchesLevelMin && matchesLevelMax;
+             matchesStiffnessMin && matchesStiffnessMax && matchesLevelMin;
     });
 
     if (!sortConfig.key) return filtered;
@@ -202,7 +196,7 @@ const RodInfo = () => {
       }
       return 0;
     });
-  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, levelMin, levelMax, sortConfig]);
+  }, [rods, searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, levelMin, sortConfig]);
 
   // Group rods by type
   const rodsByType = useMemo(() => {
@@ -228,12 +222,11 @@ const RodInfo = () => {
     setStiffnessMin('');
     setStiffnessMax('');
     setLevelMin('');
-    setLevelMax('');
   };
   
   const hasActiveFilters = searchTerm || typeFilter !== 'All' || powerFilter !== 'All' || 
                           actionFilter !== 'All' || stiffnessMin || stiffnessMax || 
-                          levelMin || levelMax;
+                          levelMin;
 
   if (loading) {
     return (
@@ -385,27 +378,18 @@ const RodInfo = () => {
                     </div>
                   </div>
 
-                  {/* Level Range */}
+                  {/* Minimum Level */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Level Range
+                      Minimum Level
                     </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={levelMin}
-                        onChange={(e) => setLevelMin(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={levelMax}
-                        onChange={(e) => setLevelMax(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
-                      />
-                    </div>
+                    <input
+                      type="number"
+                      placeholder="Min Level"
+                      value={levelMin}
+                      onChange={(e) => setLevelMin(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                    />
                   </div>
                 </div>
               </div>
@@ -435,8 +419,11 @@ const RodInfo = () => {
                         <th onClick={() => handleSort('level')} className={getColumnHeaderClass('level')}>
                           Level {getSortIndicator('level')}
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                          Test
+                        <th onClick={() => handleSort('lowTest')} className={`${getColumnHeaderClass('lowTest')} px-3 py-3`}>
+                          Low Test {getSortIndicator('lowTest')}
+                        </th>
+                        <th onClick={() => handleSort('highTest')} className={`${getColumnHeaderClass('highTest')} px-3 py-3`}>
+                          High Test {getSortIndicator('highTest')}
                         </th>
                         <th onClick={() => handleSort('action')} className={getColumnHeaderClass('action')}>
                           Action {getSortIndicator('action')}
@@ -484,8 +471,11 @@ const RodInfo = () => {
                           <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.level}
                           </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {formatTestRange(rod.lowTest, rod.highTest)}
+                          <td className="px-3 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {rod.lowTest}
+                          </td>
+                          <td className="px-3 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {rod.highTest}
                           </td>
                           <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {rod.action}
