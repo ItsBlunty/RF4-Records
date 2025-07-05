@@ -211,7 +211,23 @@ const RodInfo = () => {
   }, [filteredAndSortedRods]);
 
   const uniqueTypes = [...new Set(rods.map(rod => rod.type))].sort();
-  const uniquePowers = [...new Set(rods.map(rod => rod.power))].sort();
+  // Organize powers from heaviest to lightest, with marine variants at bottom
+  const powerOrder = [
+    'Extra Heavy',
+    'Heavy', 
+    'Medium Heavy',
+    'Medium',
+    'Medium Light',
+    'Light',
+    'Ultra Light',
+    // Marine variants grouped at bottom
+    'Heavy Marine',
+    'Medium Marine', 
+    'Light Marine'
+  ];
+  
+  const allPowers = [...new Set(rods.map(rod => rod.power))];
+  const uniquePowers = powerOrder.filter(power => allPowers.includes(power));
   const uniqueActions = [...new Set(rods.map(rod => rod.action))].sort();
   
   const clearAllFilters = () => {
