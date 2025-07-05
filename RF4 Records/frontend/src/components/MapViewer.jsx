@@ -486,7 +486,7 @@ const MapViewer = () => {
   }
 
   return (
-    <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden" style={{ top: '85px' }}>
+    <div className="fixed inset-0 bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden" style={{ top: '65px' }}>
 
       {/* Top Controls Bar */}
       <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 p-4 z-30">
