@@ -43,3 +43,31 @@ The application is designed for Railway deployment. Everything should be committ
 - Filename format: `MapName-minX-minY-maxX-maxY.png` (supports decimal coordinates)
 - URL format: `/maps/mapname` (lowercase)
 - Always verify image files exist before committing map viewer changes
+
+### React Component Development - Critical Debugging Checklist
+**ALWAYS verify these before committing React component changes to prevent white page crashes:**
+
+1. **State Variables Declaration Check:**
+   - Ensure ALL state variables used in JSX/logic are properly declared with `useState()`
+   - Check that variable names in `useState()` exactly match those used in the component
+   - Example: If using `saltwaterFilter` in logic, must have `const [saltwaterFilter, setSaltwaterFilter] = useState('All');`
+
+2. **useMemo Dependencies Check:**
+   - Verify ALL state variables used inside `useMemo()` are included in the dependency array
+   - Missing dependencies cause stale closures and broken filtering/sorting
+   - Example: `useMemo(() => {...}, [var1, var2, var3])` must include ALL vars used inside
+
+3. **Unicode/Special Character Safety:**
+   - Use `.includes()` instead of direct `===` comparison for emojis/unicode
+   - Example: Use `reel.Saltwater_Resistance.includes('💧')` not `reel.Saltwater_Resistance === '💧'`
+
+4. **Import Statement Completeness:**
+   - Verify all imported React hooks are included: `useState`, `useEffect`, `useMemo`, etc.
+   - Check that all Lucide icons used in JSX are imported
+
+5. **Quick Syntax Validation:**
+   - Check for missing commas in object/array definitions
+   - Verify proper JSX closing tags and parentheses matching
+   - Ensure proper string quotes and template literal backticks
+
+**White page = JavaScript error. These checks prevent 95% of component crashes.**

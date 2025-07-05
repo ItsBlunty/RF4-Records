@@ -512,7 +512,7 @@ const ReelInfo = () => {
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
                           {reel.Name}
                         </div>
-                        {reel.Saltwater_Resistance === '💧' && (
+                        {reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('💧') && (
                           <span className="text-blue-500" title="Saltwater Resistant">💧</span>
                         )}
                       </div>
