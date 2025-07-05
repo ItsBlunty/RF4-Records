@@ -304,7 +304,6 @@ const ReelInfo = () => {
               >
                 <option value="All">All Reels</option>
                 <option value="Yes">Saltwater Only</option>
-                <option value="No">Freshwater Only</option>
               </select>
             </div>
             
