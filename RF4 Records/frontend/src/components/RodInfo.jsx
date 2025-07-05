@@ -13,6 +13,10 @@ const RodInfo = () => {
   const [stiffnessMax, setStiffnessMax] = useState('');
   const [lengthMin, setLengthMin] = useState('');
   const [lengthMax, setLengthMax] = useState('');
+  const [lowTestMin, setLowTestMin] = useState('');
+  const [lowTestMax, setLowTestMax] = useState('');
+  const [highTestMin, setHighTestMin] = useState('');
+  const [highTestMax, setHighTestMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
