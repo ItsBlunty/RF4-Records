@@ -357,6 +357,15 @@ const ReelInfo = () => {
                 <option value="8000">8000</option>
                 <option value="6000">6000</option>
                 <option value="4000">4000</option>
+                <option value="80">80</option>
+                <option value="70">70</option>
+                <option value="60">60</option>
+                <option value="50">50</option>
+                <option value="40">40</option>
+                <option value="30">30</option>
+                <option value="20">20</option>
+                <option value="19">19</option>
+                <option value="10">10</option>
               </select>
             </div>
             
