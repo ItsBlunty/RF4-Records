@@ -95,61 +95,11 @@ const ReelInfo = () => {
     loadReels();
   }, []);
 
-  // Advanced filtering with useMemo for performance
+  // Advanced filtering with useMemo for performance - simplified for debugging
   const filteredAndSortedReels = useMemo(() => {
-    let filtered = reels.filter(reel => {
-      // Search filter
-      const matchesSearch = !searchTerm || 
-                          reel.Name.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      // Saltwater filter - temporarily disabled
-      const matchesSaltwater = true;
-      
-      // Test Weight range filter
-      const testWeight = parseFloat(reel.Test_Weight?.replace('~', ''));
-      const testWeightMinNum = testWeightMin ? parseFloat(testWeightMin) : null;
-      const testWeightMaxNum = testWeightMax ? parseFloat(testWeightMax) : null;
-      const matchesTestWeightMin = !testWeightMinNum || (!isNaN(testWeight) && testWeight >= testWeightMinNum);
-      const matchesTestWeightMax = !testWeightMaxNum || (!isNaN(testWeight) && testWeight <= testWeightMaxNum);
-      
-      // Tested Drag range filter
-      const testedDragRaw = parseDragValues(reel.Drag_Real).tested;
-      const testedDrag = testedDragRaw === '-' ? NaN : parseFloat(testedDragRaw);
-      const dragTestedMinNum = dragTestedMin ? parseFloat(dragTestedMin) : null;
-      const dragTestedMaxNum = dragTestedMax ? parseFloat(dragTestedMax) : null;
-      const matchesDragTestedMin = !dragTestedMinNum || (!isNaN(testedDrag) && testedDrag >= dragTestedMinNum);
-      const matchesDragTestedMax = !dragTestedMaxNum || (!isNaN(testedDrag) && testedDrag <= dragTestedMaxNum);
-      
-      // Listed Drag range filter
-      const listedDragRaw = parseDragValues(reel.Drag_Real).listed;
-      const listedDrag = listedDragRaw === '-' ? NaN : parseFloat(listedDragRaw);
-      const dragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
-      const dragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
-      const matchesDragListedMin = !dragListedMinNum || (!isNaN(listedDrag) && listedDrag >= dragListedMinNum);
-      const matchesDragListedMax = !dragListedMaxNum || (!isNaN(listedDrag) && listedDrag <= dragListedMaxNum);
-      
-      // Mechanism Weight range filter
-      const mechWeight = parseFloat(reel.Mechanism_Weight);
-      const mechWeightMinNum = mechWeightMin ? parseFloat(mechWeightMin) : null;
-      const mechWeightMaxNum = mechWeightMax ? parseFloat(mechWeightMax) : null;
-      const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
-      const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
-      
-      // Price range filter
-      const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
-      const priceMinNum = priceMin ? parseFloat(priceMin) : null;
-      const priceMaxNum = priceMax ? parseFloat(priceMax) : null;
-      const matchesPriceMin = !priceMinNum || (!isNaN(price) && price >= priceMinNum);
-      const matchesPriceMax = !priceMaxNum || (!isNaN(price) && price <= priceMaxNum);
-      
-      return matchesSearch && matchesSaltwater && matchesTestWeightMin && matchesTestWeightMax &&
-             matchesDragTestedMin && matchesDragTestedMax && matchesDragListedMin && matchesDragListedMax &&
-             matchesMechWeightMin && matchesMechWeightMax && matchesPriceMin && matchesPriceMax;
-    });
-    
-    return filtered;
-  }, [reels, searchTerm, saltwaterFilter, testWeightMin, testWeightMax, dragTestedMin, dragTestedMax, 
-      dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax]);
+    // Just return all reels for now to test if filtering logic is the issue
+    return reels;
+  }, [reels]);
   
   // Update filteredReels when the computed value changes
   useEffect(() => {
