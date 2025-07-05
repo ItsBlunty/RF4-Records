@@ -119,22 +119,9 @@ const ReelInfo = () => {
       const matchesMechWeightMin = !mechWeightMinNum || (!isNaN(mechWeight) && mechWeight >= mechWeightMinNum);
       const matchesMechWeightMax = !mechWeightMaxNum || (!isNaN(mechWeight) && mechWeight <= mechWeightMaxNum);
       
-      // Listed Drag range filter with safe error handling
-      let reelMatchesDragListedMin = true;
-      let reelMatchesDragListedMax = true;
-      try {
-        const reelListedDragRaw = parseDragValues(reel.Drag_Real).listed;
-        const reelListedDrag = reelListedDragRaw === '-' ? NaN : parseFloat(reelListedDragRaw);
-        const reelDragListedMinNum = dragListedMin ? parseFloat(dragListedMin) : null;
-        const reelDragListedMaxNum = dragListedMax ? parseFloat(dragListedMax) : null;
-        reelMatchesDragListedMin = !reelDragListedMinNum || (!isNaN(reelListedDrag) && reelListedDrag >= reelDragListedMinNum);
-        reelMatchesDragListedMax = !reelDragListedMaxNum || (!isNaN(reelListedDrag) && reelListedDrag <= reelDragListedMaxNum);
-      } catch (error) {
-        // If parsing fails, include the reel (don't filter it out due to bad data)
-        console.warn('Drag parsing error for reel:', reel.Name, error);
-        reelMatchesDragListedMin = true;
-        reelMatchesDragListedMax = true;
-      }
+      // Temporarily disable drag filter due to JS scoping issues
+      const reelMatchesDragListedMin = true;
+      const reelMatchesDragListedMax = true;
       
       // Price range filter
       const price = parseFloat(reel.Price?.replace(/\s/g, '').replace(',', '.'));
