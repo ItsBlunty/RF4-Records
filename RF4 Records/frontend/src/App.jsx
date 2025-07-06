@@ -20,6 +20,7 @@ import RodInfo from './components/RodInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
+import QAPage from './components/QAPage.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
@@ -63,6 +64,7 @@ function AppContent() {
     if (location.pathname === '/reelinfo') return 'reelinfo';
     if (location.pathname === '/rodinfo') return 'rodinfo';
     if (location.pathname === '/timeline') return 'timeline';
+    if (location.pathname === '/qa') return 'qa';
     if (location.pathname.startsWith('/maps')) return 'maps';
     return 'records';
   };
@@ -165,6 +167,8 @@ function AppContent() {
       navigate('/rodinfo');
     } else if (page === 'timeline') {
       navigate('/timeline');
+    } else if (page === 'qa') {
+      navigate('/qa');
     } else if (page === 'maps') {
       // Navigate to first map in the availableMaps list dynamically
       const firstMapKey = Object.keys(availableMaps)[0];
@@ -667,6 +671,8 @@ function AppContent() {
         <LureCraftingRecipes />
       ) : getCurrentPage() === 'timeline' ? (
         <Timeline />
+      ) : getCurrentPage() === 'qa' ? (
+        <QAPage darkMode={darkMode} />
       ) : null}
       
       {/* About Modal */}
@@ -696,6 +702,7 @@ function App() {
         <Route path="/maps/:mapName" element={<AppContent />} />
         <Route path="/lurecrafting" element={<AppContent />} />
         <Route path="/timeline" element={<AppContent />} />
+        <Route path="/qa" element={<AppContent />} />
       </Routes>
     </Router>
   );

@@ -5,7 +5,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from database import SessionLocal, Record, create_tables
+from database import SessionLocal, Record, QADataset, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
@@ -48,6 +48,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
+    
+    # Initialize Q&A dataset with initial data (database is ready at this point)
+    try:
+        from init_qa_data import init_qa_data
+        print("📝 Initializing Q&A dataset on startup...", flush=True)
+        success = init_qa_data()
+        if success:
+            print("✅ Q&A dataset initialized successfully", flush=True)
+        else:
+            print("⚠️ Q&A dataset initialization completed (may already exist)", flush=True)
+    except Exception as e:
+        logger.error(f"Error initializing Q&A dataset on startup: {e}")
     
     # Generate top baits cache on startup (database is ready at this point)
     try:
@@ -2134,7 +2146,326 @@ def analyze_volume_usage():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+# Q&A Dataset API endpoints
+@app.get("/api/qa")
+def get_qa_dataset():
+    """Get all Q&A pairs"""
+    try:
+        # First, ensure table exists
+        from database import create_tables
+        create_tables()
+        
+        db = SessionLocal()
+        
+        # Check if table exists by trying to query it
+        try:
+            qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+        except Exception as table_error:
+            logger.error(f"Q&A table access error: {table_error}")
+            # Try to initialize the data
+            try:
+                from init_qa_data import init_qa_data
+                init_qa_data()
+                qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+            except Exception as init_error:
+                logger.error(f"Q&A initialization error: {init_error}")
+                db.close()
+                return {
+                    "error": f"Q&A system not available: {str(table_error)}",
+                    "details": f"Initialization failed: {str(init_error)}",
+                    "qa_items": [],
+                    "total_count": 0
+                }
+        
+        db.close()
+        
+        return {
+            "qa_items": [
+                {
+                    "id": item.id,
+                    "question": item.question,
+                    "answer": item.answer,
+                    "topic": item.topic,
+                    "tags": item.tags.split(',') if item.tags else [],
+                    "source": item.source,
+                    "original_poster": item.original_poster,
+                    "post_link": item.post_link,
+                    "date_added": item.date_added.isoformat(),
+                    "created_at": item.created_at.isoformat()
+                }
+                for item in qa_items
+            ],
+            "total_count": len(qa_items)
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving Q&A dataset: {e}")
+        return {
+            "error": f"Failed to retrieve Q&A dataset: {str(e)}",
+            "qa_items": [],
+            "total_count": 0
+        }
 
+@app.get("/api/qa/search")
+def search_qa_dataset(q: str = None, topic: str = None):
+    """Search Q&A dataset by text or topic"""
+    try:
+        db = SessionLocal()
+        query = db.query(QADataset)
+        
+        if q:
+            # PostgreSQL text search
+            search_text = f"%{q}%"
+            query = query.filter(
+                (QADataset.question.ilike(search_text)) |
+                (QADataset.answer.ilike(search_text))
+            )
+        
+        if topic:
+            query = query.filter(QADataset.topic.ilike(f"%{topic}%"))
+        
+        results = query.order_by(QADataset.date_added.desc()).all()
+        db.close()
+        
+        return {
+            "results": [
+                {
+                    "id": item.id,
+                    "question": item.question,
+                    "answer": item.answer,
+                    "topic": item.topic,
+                    "tags": item.tags.split(',') if item.tags else [],
+                    "source": item.source,
+                    "original_poster": item.original_poster,
+                    "post_link": item.post_link,
+                    "date_added": item.date_added.isoformat(),
+                    "created_at": item.created_at.isoformat()
+                }
+                for item in results
+            ],
+            "total_results": len(results),
+            "search_query": q,
+            "topic_filter": topic
+        }
+    except Exception as e:
+        logger.error(f"Error searching Q&A dataset: {e}")
+        return {"error": "Failed to search Q&A dataset"}
+
+@app.post("/api/qa")
+def add_qa_item(qa_data: dict):
+    """Add a new Q&A item"""
+    try:
+        db = SessionLocal()
+        
+        # Parse the date
+        date_added = datetime.fromisoformat(qa_data['date_added'].replace('Z', '+00:00'))
+        
+        new_item = QADataset(
+            question=qa_data['question'],
+            answer=qa_data['answer'],
+            topic=qa_data.get('topic', 'Dev FAQ'),
+            tags=','.join(qa_data.get('tags', [])),
+            source=qa_data.get('source', 'RF4 Forum'),
+            original_poster=qa_data.get('original_poster'),
+            post_link=qa_data.get('post_link'),
+            date_added=date_added
+        )
+        
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        db.close()
+        
+        return {
+            "message": "Q&A item added successfully",
+            "id": new_item.id,
+            "question": new_item.question[:100] + "..." if len(new_item.question) > 100 else new_item.question
+        }
+    except Exception as e:
+        logger.error(f"Error adding Q&A item: {e}")
+        return {"error": "Failed to add Q&A item"}
+
+@app.post("/admin/add-more-qa-entries")
+def add_more_qa_entries():
+    """Add 6 more Q&A entries from Dev FAQ 2024"""
+    try:
+        db = SessionLocal()
+        
+        # Check if these entries already exist (to prevent duplicates)
+        existing_count = db.query(QADataset).count()
+        if existing_count >= 9:
+            db.close()
+            return {
+                "message": "Additional Q&A entries already exist",
+                "total_count": existing_count,
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
+        
+        # New Q&A pairs from Dev FAQ 2024 - December 2, 2024
+        qa_pairs = [
+            {
+                'question': 'I have written many times in the suggestions about adding a technoplankton rig to float fishing for catching Bighead Carp, Buffalo and other fish with similar preferences. As for realism, it\'s only a plus, in addition it will revive heavy match tackle, which is now of little use and float fishing in general. And yes, here too, RF4 lags behind other games where such rigs are present. Are there any plans to add such rigs?',
+                'answer': 'We have no plans to add this kind of float fishing rig at the moment, especially since this kind of rig, due to its narrow specialization, is expected to cause a game balance disorder, but we are constantly looking for ideas for the development of the project. Thank you for your idea.',
+                'topic': 'Fishing Equipment',
+                'tags': 'technoplankton,float fishing,match tackle,bighead carp,buffalo',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            },
+            {
+                'question': 'When fishing on droppers (dropshots), only two of the baits used are displayed in the upper left corner of the screen. Are there plans to increase the number of boxes to display all the baits included in the assembly?',
+                'answer': 'This problem we will try to solve.',
+                'topic': 'UI/Interface',
+                'tags': 'droppers,dropshots,UI,bait display,interface',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            },
+            {
+                'question': 'Are there plans to implement spring, autumn water bodies? (season changes)',
+                'answer': 'Definitely! Stay tuned.',
+                'topic': 'Game Features',
+                'tags': 'seasons,spring,autumn,waterbodies,seasonal changes',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            },
+            {
+                'question': 'Are there plans to redesign the chat room, in particular we really miss the "Friends" function, where you could add your friends, and in this tab see only messages from them, quickly switch between profiles, etc. Now the "Messages" tab is very quickly clogged with beggars and other strange people.',
+                'answer': 'Yes, we will improve the chat and messages, including the introduction of "Friends" and related functionality.',
+                'topic': 'Social Features',
+                'tags': 'chat,friends,messages,social,communication',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            },
+            {
+                'question': 'Are there plans to introduce new lures for spin fishing? For example, tail spinners, swim baits, and other modern things.',
+                'answer': 'We plan to develop spin fishing further and add new lures and rigs. We can\'t say yet what exactly will be added first.',
+                'topic': 'Fishing Equipment',
+                'tags': 'lures,spin fishing,tail spinners,swim baits,tackle',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            },
+            {
+                'question': 'Are there any improvements planned for the houses? 1)Many nice, interesting fish have appeared. I would like to hang their trophies on the walls, but there is not enough space. Can we add the possibility of buying a room for trophies? There is the door for it on Norwegian Sea already..... 2)Expand the functionality of the house: an aquarium for storing bait fish, a kitchen for cooking new dishes, etc. 3) There is no place to put/store/hang medals/cups etc. Additional shelves/boards would be nice. 4)Add a team house, at least for lures/baits storage.',
+                'answer': 'Since there is such a request, yes, we will work on further development of the houses.',
+                'topic': 'Game Features',
+                'tags': 'houses,trophies,aquarium,kitchen,medals,team house,storage',
+                'source': 'RF4 Dev FAQ 2024',
+                'original_poster': 'TpCatch - RF4',
+                'post_link': 'https://rf4game.com/forum/index.php?/topic/32605-dev-faq-2024/',
+                'date_added': datetime(2024, 12, 2, tzinfo=timezone.utc)
+            }
+        ]
+        
+        # Add all Q&A pairs
+        for qa_data in qa_pairs:
+            new_item = QADataset(
+                question=qa_data['question'],
+                answer=qa_data['answer'],
+                topic=qa_data['topic'],
+                tags=qa_data['tags'],
+                source=qa_data['source'],
+                original_poster=qa_data['original_poster'],
+                post_link=qa_data['post_link'],
+                date_added=qa_data['date_added']
+            )
+            db.add(new_item)
+        
+        db.commit()
+        
+        # Get final count
+        final_count = db.query(QADataset).count()
+        db.close()
+        
+        return {
+            "message": f"Successfully added {len(qa_pairs)} more Q&A entries",
+            "entries_added": len(qa_pairs),
+            "total_count": final_count,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error adding more Q&A entries: {e}")
+        return {
+            "error": f"Failed to add more Q&A entries: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+@app.post("/admin/create-qa-table")
+def create_qa_table():
+    """Manually create the Q&A table for troubleshooting"""
+    try:
+        from database import create_tables, get_database_url
+        from sqlalchemy import create_engine, text
+        
+        # Get database info
+        database_url = get_database_url()
+        
+        # Create engine and check table existence
+        engine = create_engine(database_url)
+        
+        # Try to create all tables
+        create_tables()
+        
+        # Check if qa_dataset table now exists
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'qa_dataset'
+            """))
+            
+            table_exists = result.fetchone() is not None
+            
+            if table_exists:
+                # Count records
+                result = conn.execute(text("SELECT COUNT(*) FROM qa_dataset"))
+                record_count = result.scalar()
+                
+                # Initialize data if empty
+                if record_count == 0:
+                    from init_qa_data import init_qa_data
+                    init_success = init_qa_data()
+                    
+                    # Recount after initialization
+                    result = conn.execute(text("SELECT COUNT(*) FROM qa_dataset"))
+                    record_count = result.scalar()
+                    
+                    return {
+                        "message": "Q&A table created and initialized successfully",
+                        "table_exists": True,
+                        "record_count": record_count,
+                        "initialization_success": init_success,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    return {
+                        "message": "Q&A table already exists with data",
+                        "table_exists": True,
+                        "record_count": record_count,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+            else:
+                return {
+                    "error": "Failed to create Q&A table",
+                    "table_exists": False,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                
+    except Exception as e:
+        logger.error(f"Error creating Q&A table: {e}")
+        return {
+            "error": f"Failed to create Q&A table: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
 
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")

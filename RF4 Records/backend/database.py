@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Index
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, func, Index, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timezone
@@ -28,6 +28,25 @@ class Record(Base):
         Index('idx_waterbody_fish', 'waterbody', 'fish'),    # Location-specific records
         Index('idx_region_fish', 'region', 'fish'),          # Region-specific records
         Index('idx_created_desc', 'created_at', postgresql_using='btree'), # Recent records
+    )
+
+class QADataset(Base):
+    __tablename__ = 'qa_dataset'
+    id = Column(Integer, primary_key=True)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    topic = Column(String, index=True)
+    tags = Column(String)  # Comma-separated tags
+    source = Column(String)
+    original_poster = Column(String)  # Who posted the question/answer
+    post_link = Column(String)  # Link to the original post
+    date_added = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    
+    # Simple indexes that work on all databases
+    __table_args__ = (
+        Index('idx_qa_topic', 'topic'),
+        Index('idx_qa_date', 'date_added'),
     )
 
 # Database configuration
