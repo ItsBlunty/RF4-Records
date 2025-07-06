@@ -161,7 +161,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                     }`}
                   >
                     <Clock className="w-4 h-4 inline mr-2" />
-                    Timeline
+                    Update History
                   </button>
                   <button
                     onClick={() => {
