@@ -2257,8 +2257,32 @@ def force_reclassify_trophies():
 def get_qa_dataset():
     """Get all Q&A pairs"""
     try:
+        # First, ensure table exists
+        from database import create_tables
+        create_tables()
+        
         db = SessionLocal()
-        qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+        
+        # Check if table exists by trying to query it
+        try:
+            qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+        except Exception as table_error:
+            logger.error(f"Q&A table access error: {table_error}")
+            # Try to initialize the data
+            try:
+                from init_qa_data import init_qa_data
+                init_qa_data()
+                qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+            except Exception as init_error:
+                logger.error(f"Q&A initialization error: {init_error}")
+                db.close()
+                return {
+                    "error": f"Q&A system not available: {str(table_error)}",
+                    "details": f"Initialization failed: {str(init_error)}",
+                    "qa_items": [],
+                    "total_count": 0
+                }
+        
         db.close()
         
         return {
@@ -2281,7 +2305,11 @@ def get_qa_dataset():
         }
     except Exception as e:
         logger.error(f"Error retrieving Q&A dataset: {e}")
-        return {"error": "Failed to retrieve Q&A dataset"}
+        return {
+            "error": f"Failed to retrieve Q&A dataset: {str(e)}",
+            "qa_items": [],
+            "total_count": 0
+        }
 
 @app.get("/qa/search")
 @app.get("/api/qa/search")

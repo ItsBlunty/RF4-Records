@@ -21,15 +21,18 @@ const QAPage = ({ darkMode }) => {
       const response = await fetch('/api/qa');
       
       if (!response.ok) {
-        throw new Error('Failed to fetch Q&A data');
+        const errorText = await response.text();
+        console.error('API Error Response:', response.status, errorText);
+        throw new Error(`Failed to fetch Q&A data (${response.status}): ${errorText}`);
       }
       
       const data = await response.json();
+      console.log('Q&A API Response:', data);
       setQaItems(data.qa_items || []);
       setError(null);
     } catch (err) {
-      setError(err.message);
       console.error('Error fetching Q&A data:', err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
