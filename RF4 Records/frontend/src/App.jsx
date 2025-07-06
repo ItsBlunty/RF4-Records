@@ -64,6 +64,7 @@ function AppContent() {
     if (location.pathname === '/reelinfo') return 'reelinfo';
     if (location.pathname === '/rodinfo') return 'rodinfo';
     if (location.pathname === '/timeline') return 'timeline';
+    if (location.pathname === '/qa') return 'qa';
     if (location.pathname.startsWith('/maps')) return 'maps';
     return 'records';
   };
