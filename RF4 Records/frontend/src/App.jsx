@@ -20,6 +20,7 @@ import RodInfo from './components/RodInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
+import QAPage from './components/QAPage.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
@@ -667,6 +668,8 @@ function AppContent() {
         <LureCraftingRecipes />
       ) : getCurrentPage() === 'timeline' ? (
         <Timeline />
+      ) : getCurrentPage() === 'qa' ? (
+        <QAPage darkMode={darkMode} />
       ) : null}
       
       {/* About Modal */}
@@ -696,6 +699,7 @@ function App() {
         <Route path="/maps/:mapName" element={<AppContent />} />
         <Route path="/lurecrafting" element={<AppContent />} />
         <Route path="/timeline" element={<AppContent />} />
+        <Route path="/qa" element={<AppContent />} />
       </Routes>
     </Router>
   );
