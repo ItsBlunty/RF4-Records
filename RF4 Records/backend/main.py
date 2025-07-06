@@ -5,7 +5,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from database import SessionLocal, Record, create_tables
+from database import SessionLocal, Record, QADataset, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
@@ -2238,6 +2238,119 @@ def force_reclassify_trophies():
             "details": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
+
+# Q&A Dataset API endpoints
+@app.get("/qa")
+@app.get("/api/qa")
+def get_qa_dataset():
+    """Get all Q&A pairs"""
+    try:
+        db = SessionLocal()
+        qa_items = db.query(QADataset).order_by(QADataset.date_added.desc()).all()
+        db.close()
+        
+        return {
+            "qa_items": [
+                {
+                    "id": item.id,
+                    "question": item.question,
+                    "answer": item.answer,
+                    "topic": item.topic,
+                    "tags": item.tags.split(',') if item.tags else [],
+                    "source": item.source,
+                    "original_poster": item.original_poster,
+                    "post_link": item.post_link,
+                    "date_added": item.date_added.isoformat(),
+                    "created_at": item.created_at.isoformat()
+                }
+                for item in qa_items
+            ],
+            "total_count": len(qa_items)
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving Q&A dataset: {e}")
+        return {"error": "Failed to retrieve Q&A dataset"}
+
+@app.get("/qa/search")
+@app.get("/api/qa/search")
+def search_qa_dataset(q: str = None, topic: str = None):
+    """Search Q&A dataset by text or topic"""
+    try:
+        db = SessionLocal()
+        query = db.query(QADataset)
+        
+        if q:
+            # PostgreSQL text search
+            search_text = f"%{q}%"
+            query = query.filter(
+                (QADataset.question.ilike(search_text)) |
+                (QADataset.answer.ilike(search_text))
+            )
+        
+        if topic:
+            query = query.filter(QADataset.topic.ilike(f"%{topic}%"))
+        
+        results = query.order_by(QADataset.date_added.desc()).all()
+        db.close()
+        
+        return {
+            "results": [
+                {
+                    "id": item.id,
+                    "question": item.question,
+                    "answer": item.answer,
+                    "topic": item.topic,
+                    "tags": item.tags.split(',') if item.tags else [],
+                    "source": item.source,
+                    "original_poster": item.original_poster,
+                    "post_link": item.post_link,
+                    "date_added": item.date_added.isoformat(),
+                    "created_at": item.created_at.isoformat()
+                }
+                for item in results
+            ],
+            "total_results": len(results),
+            "search_query": q,
+            "topic_filter": topic
+        }
+    except Exception as e:
+        logger.error(f"Error searching Q&A dataset: {e}")
+        return {"error": "Failed to search Q&A dataset"}
+
+@app.post("/qa")
+@app.post("/api/qa")
+def add_qa_item(qa_data: dict):
+    """Add a new Q&A item"""
+    try:
+        db = SessionLocal()
+        
+        # Parse the date
+        date_added = datetime.fromisoformat(qa_data['date_added'].replace('Z', '+00:00'))
+        
+        new_item = QADataset(
+            question=qa_data['question'],
+            answer=qa_data['answer'],
+            topic=qa_data.get('topic', 'Dev FAQ'),
+            tags=','.join(qa_data.get('tags', [])),
+            source=qa_data.get('source', 'RF4 Forum'),
+            original_poster=qa_data.get('original_poster'),
+            post_link=qa_data.get('post_link'),
+            date_added=date_added
+        )
+        
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        db.close()
+        
+        return {
+            "message": "Q&A item added successfully",
+            "id": new_item.id,
+            "question": new_item.question[:100] + "..." if len(new_item.question) > 100 else new_item.question
+        }
+    except Exception as e:
+        logger.error(f"Error adding Q&A item: {e}")
+        return {"error": "Failed to add Q&A item"}
 
 @app.get("/check-fish-name-matches")
 def check_fish_name_matches():
