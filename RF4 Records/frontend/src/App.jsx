@@ -166,6 +166,8 @@ function AppContent() {
       navigate('/rodinfo');
     } else if (page === 'timeline') {
       navigate('/timeline');
+    } else if (page === 'qa') {
+      navigate('/qa');
     } else if (page === 'maps') {
       // Navigate to first map in the availableMaps list dynamically
       const firstMapKey = Object.keys(availableMaps)[0];
