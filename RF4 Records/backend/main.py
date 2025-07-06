@@ -2284,6 +2284,31 @@ def add_qa_item(qa_data: dict):
         logger.error(f"Error adding Q&A item: {e}")
         return {"error": "Failed to add Q&A item"}
 
+@app.delete("/admin/qa/{item_id}")
+def delete_qa_item(item_id: int):
+    """Delete a Q&A item by ID (admin only)"""
+    try:
+        db = SessionLocal()
+        
+        # Find the item
+        item = db.query(QADataset).filter(QADataset.id == item_id).first()
+        if not item:
+            db.close()
+            return {"error": "Q&A item not found"}
+        
+        # Delete the item
+        db.delete(item)
+        db.commit()
+        db.close()
+        
+        return {
+            "message": "Q&A item deleted successfully",
+            "id": item_id
+        }
+    except Exception as e:
+        logger.error(f"Error deleting Q&A item: {e}")
+        return {"error": "Failed to delete Q&A item"}
+
 @app.post("/admin/add-more-qa-entries")
 def add_more_qa_entries():
     """Add 6 more Q&A entries from Dev FAQ 2024"""
