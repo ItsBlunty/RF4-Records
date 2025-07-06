@@ -43,9 +43,8 @@ class QADataset(Base):
     date_added = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, server_default=func.now())
     
-    # Full-text search index for PostgreSQL
+    # Simple indexes that work on all databases
     __table_args__ = (
-        Index('idx_qa_search', 'question', 'answer', postgresql_using='gin', postgresql_ops={'question': 'gin_trgm_ops', 'answer': 'gin_trgm_ops'}),
         Index('idx_qa_topic', 'topic'),
         Index('idx_qa_date', 'date_added'),
     )

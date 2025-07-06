@@ -2392,6 +2392,75 @@ def add_qa_item(qa_data: dict):
         logger.error(f"Error adding Q&A item: {e}")
         return {"error": "Failed to add Q&A item"}
 
+@app.post("/admin/create-qa-table")
+def create_qa_table():
+    """Manually create the Q&A table for troubleshooting"""
+    try:
+        from database import create_tables, get_database_url
+        from sqlalchemy import create_engine, text
+        
+        # Get database info
+        database_url = get_database_url()
+        
+        # Create engine and check table existence
+        engine = create_engine(database_url)
+        
+        # Try to create all tables
+        create_tables()
+        
+        # Check if qa_dataset table now exists
+        with engine.connect() as conn:
+            result = conn.execute(text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'qa_dataset'
+            """))
+            
+            table_exists = result.fetchone() is not None
+            
+            if table_exists:
+                # Count records
+                result = conn.execute(text("SELECT COUNT(*) FROM qa_dataset"))
+                record_count = result.scalar()
+                
+                # Initialize data if empty
+                if record_count == 0:
+                    from init_qa_data import init_qa_data
+                    init_success = init_qa_data()
+                    
+                    # Recount after initialization
+                    result = conn.execute(text("SELECT COUNT(*) FROM qa_dataset"))
+                    record_count = result.scalar()
+                    
+                    return {
+                        "message": "Q&A table created and initialized successfully",
+                        "table_exists": True,
+                        "record_count": record_count,
+                        "initialization_success": init_success,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+                else:
+                    return {
+                        "message": "Q&A table already exists with data",
+                        "table_exists": True,
+                        "record_count": record_count,
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    }
+            else:
+                return {
+                    "error": "Failed to create Q&A table",
+                    "table_exists": False,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                }
+                
+    except Exception as e:
+        logger.error(f"Error creating Q&A table: {e}")
+        return {
+            "error": f"Failed to create Q&A table: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
 @app.get("/check-fish-name-matches")
 def check_fish_name_matches():
     """Check for mismatches between database fish names and trophy weights"""
