@@ -49,6 +49,18 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
     
+    # Initialize Q&A dataset with initial data (database is ready at this point)
+    try:
+        from init_qa_data import init_qa_data
+        print("📝 Initializing Q&A dataset on startup...", flush=True)
+        success = init_qa_data()
+        if success:
+            print("✅ Q&A dataset initialized successfully", flush=True)
+        else:
+            print("⚠️ Q&A dataset initialization completed (may already exist)", flush=True)
+    except Exception as e:
+        logger.error(f"Error initializing Q&A dataset on startup: {e}")
+    
     # Generate top baits cache on startup (database is ready at this point)
     try:
         from top_baits_cache import generate_top_baits_cache
