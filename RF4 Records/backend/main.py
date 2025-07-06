@@ -2146,111 +2146,6 @@ def analyze_volume_usage():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
-
-
-# Serve the frontend for all other routes (SPA routing)
-@app.get("/{path:path}")
-def serve_frontend(path: str):
-    """Serve the frontend application for all non-API routes"""
-    # Don't serve frontend for API paths and endpoints
-    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records"]
-    if path.startswith("api") or path in api_endpoints:
-        raise HTTPException(status_code=404, detail="Not found")
-    
-    frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
-    index_path = os.path.join(frontend_dist_path, "index.html")
-    
-    # If the frontend build exists, serve it
-    if os.path.exists(index_path):
-        # Check if the requested path is a file that exists
-        requested_file = os.path.join(frontend_dist_path, path)
-        if os.path.isfile(requested_file):
-            return FileResponse(requested_file)
-        else:
-            # For SPA routing, serve index.html for all other paths
-            return FileResponse(index_path)
-    else:
-        # Fallback if frontend is not built
-        return {"message": "Frontend not available - API only mode", "path": path}
-
-@app.post("/test-trophy-classification")
-def test_trophy_classification(fish_name: str, weight: int):
-    """Test the trophy classification system"""
-    try:
-        from trophy_classifier import classify_trophy
-        result = classify_trophy(fish_name, weight)
-        return {
-            "fish_name": fish_name,
-            "weight": weight,
-            "classification": result,
-            "case_test": {
-                "original": classify_trophy(fish_name, weight),
-                "lowercase": classify_trophy(fish_name.lower(), weight),
-                "uppercase": classify_trophy(fish_name.upper(), weight),
-                "title_case": classify_trophy(fish_name.title(), weight)
-            }
-        }
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.post("/force-reclassify-trophies")
-def force_reclassify_trophies():
-    """Force reclassification of all trophy records (ignores current classification)"""
-    try:
-        import time
-        from database import SessionLocal, Record
-        from trophy_classifier import classify_trophy
-        
-        start_time = time.time()
-        db = SessionLocal()
-        
-        # Get all records with weights
-        all_records = db.query(Record).filter(
-            Record.weight.isnot(None),
-            Record.weight > 0
-        ).all()
-        
-        total_records = len(all_records)
-        updated_count = 0
-        
-        logger.info(f"🔄 Force reclassifying {total_records} records...")
-        
-        for i, record in enumerate(all_records):
-            if i % 1000 == 0:
-                logger.info(f"  Processed {i}/{total_records} records...")
-            
-            old_class = record.trophy_class
-            new_class = classify_trophy(record.fish, record.weight)
-            
-            if old_class != new_class:
-                record.trophy_class = new_class
-                updated_count += 1
-        
-        # Commit all changes
-        db.commit()
-        db.close()
-        
-        elapsed_time = time.time() - start_time
-        
-        logger.info(f"✅ Force reclassification completed: {updated_count} records updated")
-        
-        return {
-            "message": "Force reclassification completed successfully",
-            "success": True,
-            "total_records": total_records,
-            "updated_records": updated_count,
-            "elapsed_time": f"{elapsed_time:.2f}s",
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        
-    except Exception as e:
-        logger.error(f"Force reclassification failed: {e}")
-        return {
-            "error": "Force reclassification failed",
-            "details": str(e),
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-
 # Q&A Dataset API endpoints
 @app.get("/qa")
 @app.get("/api/qa")
@@ -2458,6 +2353,109 @@ def create_qa_table():
         logger.error(f"Error creating Q&A table: {e}")
         return {
             "error": f"Failed to create Q&A table: {str(e)}",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+
+# Serve the frontend for all other routes (SPA routing)
+@app.get("/{path:path}")
+def serve_frontend(path: str):
+    """Serve the frontend application for all non-API routes"""
+    # Don't serve frontend for API paths and endpoints
+    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records"]
+    if path.startswith("api") or path in api_endpoints:
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
+    index_path = os.path.join(frontend_dist_path, "index.html")
+    
+    # If the frontend build exists, serve it
+    if os.path.exists(index_path):
+        # Check if the requested path is a file that exists
+        requested_file = os.path.join(frontend_dist_path, path)
+        if os.path.isfile(requested_file):
+            return FileResponse(requested_file)
+        else:
+            # For SPA routing, serve index.html for all other paths
+            return FileResponse(index_path)
+    else:
+        # Fallback if frontend is not built
+        return {"message": "Frontend not available - API only mode", "path": path}
+
+@app.post("/test-trophy-classification")
+def test_trophy_classification(fish_name: str, weight: int):
+    """Test the trophy classification system"""
+    try:
+        from trophy_classifier import classify_trophy
+        result = classify_trophy(fish_name, weight)
+        return {
+            "fish_name": fish_name,
+            "weight": weight,
+            "classification": result,
+            "case_test": {
+                "original": classify_trophy(fish_name, weight),
+                "lowercase": classify_trophy(fish_name.lower(), weight),
+                "uppercase": classify_trophy(fish_name.upper(), weight),
+                "title_case": classify_trophy(fish_name.title(), weight)
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/force-reclassify-trophies")
+def force_reclassify_trophies():
+    """Force reclassification of all trophy records (ignores current classification)"""
+    try:
+        import time
+        from database import SessionLocal, Record
+        from trophy_classifier import classify_trophy
+        
+        start_time = time.time()
+        db = SessionLocal()
+        
+        # Get all records with weights
+        all_records = db.query(Record).filter(
+            Record.weight.isnot(None),
+            Record.weight > 0
+        ).all()
+        
+        total_records = len(all_records)
+        updated_count = 0
+        
+        logger.info(f"🔄 Force reclassifying {total_records} records...")
+        
+        for i, record in enumerate(all_records):
+            if i % 1000 == 0:
+                logger.info(f"  Processed {i}/{total_records} records...")
+            
+            old_class = record.trophy_class
+            new_class = classify_trophy(record.fish, record.weight)
+            
+            if old_class != new_class:
+                record.trophy_class = new_class
+                updated_count += 1
+        
+        # Commit all changes
+        db.commit()
+        db.close()
+        
+        elapsed_time = time.time() - start_time
+        
+        logger.info(f"✅ Force reclassification completed: {updated_count} records updated")
+        
+        return {
+            "message": "Force reclassification completed successfully",
+            "success": True,
+            "total_records": total_records,
+            "updated_records": updated_count,
+            "elapsed_time": f"{elapsed_time:.2f}s",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Force reclassification failed: {e}")
+        return {
+            "error": "Force reclassification failed",
+            "details": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
