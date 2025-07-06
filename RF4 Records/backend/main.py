@@ -2147,7 +2147,6 @@ def analyze_volume_usage():
         }
 
 # Q&A Dataset API endpoints
-@app.get("/qa")
 @app.get("/api/qa")
 def get_qa_dataset():
     """Get all Q&A pairs"""
@@ -2206,7 +2205,6 @@ def get_qa_dataset():
             "total_count": 0
         }
 
-@app.get("/qa/search")
 @app.get("/api/qa/search")
 def search_qa_dataset(q: str = None, topic: str = None):
     """Search Q&A dataset by text or topic"""
@@ -2252,7 +2250,6 @@ def search_qa_dataset(q: str = None, topic: str = None):
         logger.error(f"Error searching Q&A dataset: {e}")
         return {"error": "Failed to search Q&A dataset"}
 
-@app.post("/qa")
 @app.post("/api/qa")
 def add_qa_item(qa_data: dict):
     """Add a new Q&A item"""
