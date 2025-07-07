@@ -120,6 +120,18 @@ async def lifespan(app: FastAPI):
     print(f"📅 Next schedule change: {next_change.strftime('%Y-%m-%d %H:%M UTC')} -> {next_frequency}", flush=True)
     print("🛑 Press Ctrl+C to gracefully shut down the server", flush=True)
     
+    # Start memory monitoring
+    try:
+        from memory_tracker import memory_tracker
+        success = memory_tracker.start_monitoring()
+        if success:
+            print("🔍 Memory monitoring started - taking snapshots every minute", flush=True)
+        else:
+            print("⚠️ Memory monitoring failed to start", flush=True)
+    except Exception as e:
+        logger.error(f"Error starting memory monitoring: {e}")
+        print(f"⚠️ Memory monitoring error: {e}", flush=True)
+    
     print("Server started successfully - dynamic scheduled scraping active", flush=True)
     
     yield  # Server is running
@@ -128,6 +140,15 @@ async def lifespan(app: FastAPI):
     logger.info("=== SERVER SHUTDOWN ===")
     scheduler.shutdown()
     logger.info("Scheduler shutdown complete")
+    
+    # Stop memory monitoring
+    try:
+        from memory_tracker import memory_tracker
+        if memory_tracker.is_running():
+            memory_tracker.stop_monitoring()
+            logger.info("Memory monitoring stopped")
+    except Exception as e:
+        logger.error(f"Error stopping memory monitoring: {e}")
 
 # Create FastAPI app with lifespan handler
 app = FastAPI(
@@ -2492,13 +2513,108 @@ def create_qa_table():
             "timestamp": datetime.now(timezone.utc).isoformat()
         }
 
+# Memory monitoring endpoints
+@app.get("/admin/memory/start")
+def start_memory_monitoring():
+    """Start memory monitoring"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        if memory_tracker.is_running():
+            return {"message": "Memory monitoring already running", "status": "already_running"}
+        
+        success = memory_tracker.start_monitoring()
+        if success:
+            return {"message": "Memory monitoring started successfully", "status": "started"}
+        else:
+            return {"error": "Failed to start memory monitoring", "status": "failed"}
+    except Exception as e:
+        logger.error(f"Error starting memory monitoring: {e}")
+        return {"error": str(e), "status": "error"}
+
+@app.get("/admin/memory/stop")
+def stop_memory_monitoring():
+    """Stop memory monitoring"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        if not memory_tracker.is_running():
+            return {"message": "Memory monitoring not running", "status": "not_running"}
+        
+        success = memory_tracker.stop_monitoring()
+        if success:
+            return {"message": "Memory monitoring stopped successfully", "status": "stopped"}
+        else:
+            return {"error": "Failed to stop memory monitoring", "status": "failed"}
+    except Exception as e:
+        logger.error(f"Error stopping memory monitoring: {e}")
+        return {"error": str(e), "status": "error"}
+
+@app.get("/admin/memory/status")
+def get_memory_monitoring_status():
+    """Get memory monitoring status"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        return {
+            "running": memory_tracker.is_running(),
+            "total_snapshots": len(memory_tracker.load_snapshots()),
+            "current_snapshot": memory_tracker.get_memory_snapshot()
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory monitoring status: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/stats")
+def get_memory_stats():
+    """Get memory usage statistics"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        stats = memory_tracker.get_memory_stats()
+        return {"memory_stats": stats}
+    except Exception as e:
+        logger.error(f"Error getting memory stats: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/recent")
+def get_recent_memory_snapshots(minutes: int = 60):
+    """Get recent memory snapshots"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        snapshots = memory_tracker.get_recent_snapshots(minutes)
+        return {
+            "snapshots": snapshots,
+            "count": len(snapshots),
+            "period_minutes": minutes
+        }
+    except Exception as e:
+        logger.error(f"Error getting recent memory snapshots: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/all")
+def get_all_memory_snapshots():
+    """Get all memory snapshots"""
+    try:
+        from memory_tracker import memory_tracker
+        
+        snapshots = memory_tracker.load_snapshots()
+        return {
+            "snapshots": snapshots,
+            "count": len(snapshots)
+        }
+    except Exception as e:
+        logger.error(f"Error getting all memory snapshots: {e}")
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
     """Serve the frontend application for all non-API routes"""
     # Don't serve frontend for API paths and endpoints
-    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records"]
-    if path.startswith("api") or path in api_endpoints:
+    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records", "admin"]
+    if path.startswith("api") or path.startswith("admin") or path in api_endpoints:
         raise HTTPException(status_code=404, detail="Not found")
     
     frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
