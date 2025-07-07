@@ -2608,6 +2608,80 @@ def get_all_memory_snapshots():
         logger.error(f"Error getting all memory snapshots: {e}")
         return {"error": str(e)}
 
+# Enhanced memory profiling endpoints
+@app.post("/admin/memory/profile/start")
+def start_memory_profiling():
+    """Start detailed memory profiling with tracemalloc"""
+    try:
+        from memory_profiler import memory_profiler
+        
+        success = memory_profiler.start_tracing()
+        if success:
+            return {"message": "Memory profiling started", "status": "started"}
+        else:
+            return {"message": "Memory profiling already running", "status": "already_running"}
+    except Exception as e:
+        logger.error(f"Error starting memory profiling: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/profile/current")
+def get_current_memory_profile():
+    """Get detailed current memory profile"""
+    try:
+        from memory_profiler import memory_profiler
+        
+        profile = memory_profiler.get_detailed_profile()
+        memory_profiler.save_profile(profile)
+        
+        return {"profile": profile}
+    except Exception as e:
+        logger.error(f"Error getting memory profile: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/profile/types")
+def get_memory_by_type():
+    """Get memory usage broken down by object type"""
+    try:
+        from memory_profiler import memory_profiler
+        
+        types = memory_profiler.get_memory_by_type()
+        return {"memory_by_type": types}
+    except Exception as e:
+        logger.error(f"Error getting memory by type: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/profile/sqlalchemy")
+def get_sqlalchemy_analysis():
+    """Analyze SQLAlchemy sessions and connections"""
+    try:
+        from memory_profiler import memory_profiler
+        
+        analysis = memory_profiler.analyze_sqlalchemy_sessions()
+        return {"sqlalchemy_analysis": analysis}
+    except Exception as e:
+        logger.error(f"Error analyzing SQLAlchemy: {e}")
+        return {"error": str(e)}
+
+@app.post("/admin/memory/profile/gc-collect")
+def force_gc_collect():
+    """Force garbage collection and return stats"""
+    try:
+        import gc
+        
+        before = gc.get_count()
+        collected = gc.collect()
+        after = gc.get_count()
+        
+        return {
+            "collected": collected,
+            "before": before,
+            "after": after,
+            "garbage": len(gc.garbage)
+        }
+    except Exception as e:
+        logger.error(f"Error during GC collect: {e}")
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
