@@ -1024,6 +1024,12 @@ def refresh():
     finally:
         with scraping_lock:
             is_scraping = False
+        
+        # Schedule the next scrape after manual scrape completes
+        try:
+            schedule_next_scrape()
+        except Exception as e:
+            logger.error(f"Error scheduling next scrape after manual refresh: {e}")
 
 @app.post("/optimize")
 def run_database_optimizations():
