@@ -97,6 +97,18 @@ def get_memory_usage() -> float:
     except Exception:
         return 0.0
 
+def clear_beautifulsoup_cache():
+    """Clear BeautifulSoup parser cache that can accumulate HTML objects"""
+    try:
+        import bs4
+        if hasattr(bs4, 'BeautifulSoup') and hasattr(bs4.BeautifulSoup, '_parser_cache'):
+            cache_size = len(bs4.BeautifulSoup._parser_cache)
+            bs4.BeautifulSoup._parser_cache.clear()
+            if cache_size > 0:
+                logger.debug(f"Cleared BeautifulSoup cache ({cache_size} parsers)")
+    except (ImportError, AttributeError):
+        pass
+
 def periodic_cleanup() -> Tuple[bool, float]:
     """Light cleanup for periodic maintenance - safe during scraping"""
     memory_before = get_memory_usage()
@@ -104,6 +116,9 @@ def periodic_cleanup() -> Tuple[bool, float]:
     try:
         # Always clean zombies
         zombies_cleaned = cleanup_zombie_processes()
+        
+        # Clear BeautifulSoup cache (major memory leak source!)
+        clear_beautifulsoup_cache()
         
         # Light Python memory cleanup
         collected = gc.collect()

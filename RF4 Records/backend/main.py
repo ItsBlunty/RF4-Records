@@ -2726,6 +2726,33 @@ def compare_with_railway(railway_mb: float):
         logger.error(f"Error comparing with Railway: {e}")
         return {"error": str(e)}
 
+@app.post("/admin/memory/cleanup/beautifulsoup")
+def force_beautifulsoup_cleanup():
+    """Force clear BeautifulSoup cache to free memory"""
+    try:
+        from unified_cleanup import clear_beautifulsoup_cache, get_memory_usage
+        
+        memory_before = get_memory_usage()
+        clear_beautifulsoup_cache()
+        
+        # Force garbage collection to clean up the objects
+        import gc
+        collected = gc.collect()
+        
+        memory_after = get_memory_usage()
+        memory_freed = memory_before - memory_after
+        
+        return {
+            "message": "BeautifulSoup cache cleared",
+            "memory_before_mb": memory_before,
+            "memory_after_mb": memory_after,
+            "memory_freed_mb": memory_freed,
+            "objects_collected": collected
+        }
+    except Exception as e:
+        logger.error(f"Error clearing BeautifulSoup cache: {e}")
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
