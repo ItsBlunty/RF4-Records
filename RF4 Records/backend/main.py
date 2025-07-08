@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, QADataset, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
-from unified_cleanup import periodic_cleanup, pre_scrape_cleanup, error_recovery_cleanup, get_memory_usage, kill_chrome_processes, CLEANUP_AGGRESSIVE, unified_cleanup
+from unified_cleanup import periodic_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import get_current_schedule_period, get_next_schedule_change

@@ -19,14 +19,10 @@ import os
 import signal
 import sys
 from unified_cleanup import (
-    set_scraping_state,
-    pre_scrape_cleanup,
-    post_scrape_cleanup,
-    during_scrape_cleanup,
-    error_recovery_cleanup,
+    periodic_cleanup,
+    cleanup_zombie_processes,
     get_memory_usage,
-    kill_chrome_processes,
-    safe_driver_quit
+    clear_beautifulsoup_cache
 )
 
 # Built-in functions should be available naturally
@@ -924,8 +920,8 @@ def scrape_and_update_records():
     should_stop_scraping = False
     _scraping_finished = False
     
-    # Set scraping state to prevent Chrome cleanup during active scraping
-    set_scraping_state(True)
+    # Clean up zombie processes before starting scraping
+    cleanup_zombie_processes()
     
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
@@ -1298,11 +1294,14 @@ def scrape_and_update_records():
                     if consecutive_region_failures == 1:
                         # Try to refresh the WebDriver session after first failure
                         try:
-                            # Use unified error recovery cleanup
-                            success, memory_freed = error_recovery_cleanup(driver=driver)
-                            if not success:
-                                failed_cleanups += 1
-                                logger.warning("Error recovery cleanup failed")
+                            # Clean up memory and zombies during error recovery
+                            cleanup_zombie_processes()
+                            clear_beautifulsoup_cache()
+                            if driver:
+                                try:
+                                    driver.quit()
+                                except:
+                                    pass
                             driver = get_driver()
                         except Exception:
                             logger.error("Failed to refresh WebDriver session")
@@ -1450,9 +1449,8 @@ def scrape_and_update_records():
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
     finally:
-        # CRITICAL: Mark scraping as finished and reset scraping state
+        # CRITICAL: Mark scraping as finished
         _scraping_finished = True
-        set_scraping_state(False)
         
         # Cleanup to prevent memory leaks
         try:
