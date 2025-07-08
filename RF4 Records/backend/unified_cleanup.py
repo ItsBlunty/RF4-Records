@@ -205,10 +205,37 @@ def post_scrape_cleanup() -> Tuple[bool, float]:
         for _ in range(3):  # Multiple passes to catch circular references
             collected += gc.collect()
         
+        # Force system-level memory release to combat container memory growth
+        try:
+            # Drop filesystem caches (requires elevated privileges, may fail)
+            import subprocess
+            subprocess.run(['sync'], check=False, capture_output=True)
+            
+            # Force malloc to return memory to OS
+            import ctypes
+            try:
+                libc = ctypes.CDLL("libc.so.6")
+                libc.malloc_trim(0)  # Force malloc to release memory back to OS
+                logger.debug("Forced malloc trim to release system memory")
+            except:
+                pass
+                
+            # Python-specific memory release
+            try:
+                import sys
+                if hasattr(sys, '_clear_type_cache'):
+                    sys._clear_type_cache()  # Clear type cache
+            except:
+                pass
+                
+        except Exception as e:
+            logger.debug(f"System memory release attempt failed: {e}")
+        
         memory_after = get_memory_usage()
         memory_freed = memory_before - memory_after
         
         logger.info(f"Post-scrape cleanup: {zombies_cleaned} zombies, {collected} objects collected, {memory_freed:.1f}MB freed")
+        logger.info(f"🔧 Attempted system-level memory release to combat container memory growth")
         
         return True, memory_freed
         

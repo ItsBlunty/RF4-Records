@@ -2754,6 +2754,32 @@ def force_beautifulsoup_cleanup():
         logger.error(f"Error clearing BeautifulSoup cache: {e}")
         return {"error": str(e)}
 
+@app.post("/admin/memory/system/release")
+def force_system_memory_release():
+    """Force system-level memory release to combat container memory growth"""
+    try:
+        from unified_cleanup import post_scrape_cleanup
+        
+        memory_before = get_memory_usage()
+        
+        # Run comprehensive cleanup including system memory release
+        success, memory_freed = post_scrape_cleanup()
+        
+        memory_after = get_memory_usage()
+        
+        return {
+            "status": "system_memory_release_completed",
+            "success": success,
+            "memory_before_mb": memory_before,
+            "memory_after_mb": memory_after,
+            "memory_freed_mb": memory_freed,
+            "message": "Attempted aggressive system-level memory release to combat Railway container memory growth",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Error in system memory release: {e}")
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
