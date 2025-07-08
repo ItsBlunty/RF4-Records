@@ -18,6 +18,16 @@ from bulk_operations import BulkRecordInserter, OptimizedRecordChecker
 import os
 import signal
 import sys
+from unified_cleanup import (
+    set_scraping_state,
+    pre_scrape_cleanup,
+    post_scrape_cleanup,
+    during_scrape_cleanup,
+    error_recovery_cleanup,
+    get_memory_usage,
+    kill_chrome_processes,
+    safe_driver_quit
+)
 
 # Built-in functions should be available naturally
 
@@ -240,7 +250,7 @@ def get_driver():
     chrome_count = count_chrome_processes()
     if chrome_count > 0:
         logger.info(f"Found {chrome_count} existing Chrome processes - cleaning up before creating new driver")
-        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+        kill_chrome_processes(aggressive=True)
         time.sleep(2)  # Wait for cleanup
     
     # IMPROVED MEMORY MANAGEMENT - Check memory before creating new driver
@@ -255,50 +265,31 @@ def get_driver():
     if current_memory > 1000:  # Realistic threshold for Railway with Chrome children
         logger.info(f"High memory usage ({current_memory}MB) detected - performing enhanced cleanup")
         
-        # Check if there are actually Chrome processes to clean up
-        chrome_process_count = count_chrome_processes()
+        # Use unified cleanup system
+        success, memory_freed = pre_scrape_cleanup()
+        memory_after = get_memory_usage()
         
-        if chrome_process_count == 0:
-            # No Chrome processes - memory is held by Python process
-            logger.warning(f"High memory ({current_memory}MB) but no Chrome processes found - performing Python memory cleanup")
-            enhanced_python_memory_cleanup()
-            time.sleep(3)  # Allow cleanup to take effect
+        logger.info(f"Memory cleanup completed: {memory_after}MB (freed {memory_freed:.1f}MB)")
+        
+        # CIRCUIT BREAKER: Allow Chrome creation even if memory is still high
+        # This prevents infinite loops when memory is held by Python process
+        if memory_after > 1200:  # Still very high - one more attempt
+            logger.warning(f"Memory still very high ({memory_after}MB) - forcing aggressive cleanup")
             
-            # Check memory after Python cleanup
-            memory_after = get_memory_usage()
-            memory_freed = current_memory - memory_after
-            logger.info(f"Python memory cleanup: {memory_after}MB (freed {memory_freed:.1f}MB)")
+            # Use aggressive cleanup
+            from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
+            success, extra_freed = unified_cleanup(CLEANUP_AGGRESSIVE)
             
-            # CIRCUIT BREAKER: Allow Chrome creation even if memory is still high
-            # This prevents infinite loops when memory is held by Python process
-            if memory_after > 1200:  # Still very high - one more attempt
-                logger.warning(f"Memory still very high ({memory_after}MB) - forcing aggressive cleanup")
-                enhanced_python_memory_cleanup()
-                force_system_memory_release()
-                time.sleep(5)
-                
-                final_memory = get_memory_usage()
-                if final_memory > 1400:  # Emergency threshold
-                    logger.error(f"Memory critically high ({final_memory}MB) after all cleanup - BLOCKING Chrome creation")
-                    raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({final_memory}MB)")
-                else:
-                    logger.warning(f"Proceeding with Chrome creation despite elevated memory ({final_memory}MB) - no Chrome processes to clean")
-            elif memory_after > 1000:
-                logger.warning(f"Memory elevated after cleanup ({memory_after}MB) - proceeding with caution")
-        else:
-            # Chrome processes exist - clean them up
-            logger.info(f"Found {chrome_process_count} Chrome processes - performing process cleanup")
-            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-            enhanced_python_memory_cleanup()
-            time.sleep(3)
-            
-            # Check again after cleanup
-            memory_after = get_memory_usage()
-            if memory_after > 1300:  # Realistic threshold for Railway
-                logger.error(f"Memory still high ({memory_after}MB) after cleanup - BLOCKING Chrome creation")
-                raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({memory_after}MB)")
+            final_memory = get_memory_usage()
+            if final_memory > 1400:  # Emergency threshold
+                logger.error(f"Memory critically high ({final_memory}MB) after all cleanup - BLOCKING Chrome creation")
+                raise MemoryError(f"Cannot create Chrome driver - memory usage dangerous ({final_memory}MB)")
             else:
-                logger.info(f"Memory acceptable after cleanup: {memory_after}MB")
+                logger.warning(f"Proceeding with Chrome creation despite elevated memory ({final_memory}MB) - no Chrome processes to clean")
+        elif memory_after > 1000:
+            logger.warning(f"Memory elevated after cleanup ({memory_after}MB) - proceeding with caution")
+        else:
+            logger.info(f"Memory acceptable after cleanup: {memory_after}MB")
     
     chrome_options = Options()
     
@@ -413,7 +404,7 @@ def get_driver():
                     pass
                 
                 # Kill all Chrome processes
-                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                kill_chrome_processes(aggressive=True)
                 
                 raise MemoryError(f"Chrome creation memory bomb: {post_chrome_memory}MB (increased by {memory_increase:.1f}MB)")
             
@@ -445,252 +436,13 @@ def get_driver():
     return driver
 
 def cleanup_driver(driver):
-    """Aggressively cleanup WebDriver session to prevent memory leaks with fast-fail on renderer timeouts"""
+    """Cleanup WebDriver session using unified cleanup system"""
     if not driver:
         logger.debug("cleanup_driver: No driver to cleanup")
         return True
     
-    # Get session ID for tracking if possible
-    session_id = "unknown"
-    try:
-        session_id = driver.session_id if hasattr(driver, 'session_id') else "unknown"
-    except Exception:
-        pass
-    
-    logger.info(f"[CLEANUP] Starting driver cleanup for session: {session_id}")
-    cleanup_success = True
-    cleanup_errors = []
-    renderer_timeout_detected = False
-    
-    # Step 1: Quick responsiveness test - if this fails, skip to process termination
-    try:
-        # Set a very short timeout for responsiveness test
-        driver.set_page_load_timeout(2)  # 2 second test
-        _ = driver.current_url  # Quick test
-        logger.debug(f"Session {session_id}: Renderer responsive, proceeding with cleanup")
-    except Exception as e:
-        if "timeout" in str(e).lower():
-            logger.warning(f"Session {session_id}: Renderer unresponsive, switching to fast termination")
-            renderer_timeout_detected = True
-        else:
-            logger.debug(f"Session {session_id}: Responsiveness test failed: {e}")
-    
-    # If renderer is unresponsive, skip cleanup and go straight to process termination
-    if renderer_timeout_detected:
-        logger.info(f"[FAST-FAIL] Session {session_id}: Skipping cleanup operations due to renderer timeout")
-        cleanup_errors.append("renderer_unresponsive: skipped_cleanup_for_speed")
-        cleanup_success = False
-        
-        # Go straight to process termination
-        try:
-            if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
-                logger.info(f"Session {session_id}: Force terminating Chrome process")
-                main_pid = driver.service.process.pid
-                
-                # Kill main process
-                driver.service.process.terminate()
-                import time
-                time.sleep(0.5)
-                if driver.service.process.poll() is None:  # Still running
-                    driver.service.process.kill()
-                    time.sleep(0.2)
-                
-                # Kill any child processes that might have been spawned
-                try:
-                    import psutil
-                    parent = psutil.Process(main_pid)
-                    children = parent.children(recursive=True)
-                    for child in children:
-                        child.terminate()
-                    psutil.wait_procs(children, timeout=3)
-                    for child in children:
-                        if child.is_running():
-                            child.kill()
-                    logger.info(f"Session {session_id}: Killed {len(children)} child processes")
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
-                
-                logger.info(f"Session {session_id}: Chrome process terminated successfully")
-            else:
-                # Fallback: try driver.quit() with very short timeout
-                driver.quit()
-        except Exception as e:
-            logger.warning(f"Session {session_id}: Process termination failed: {e}")
-        
-        logger.error(f"[FAILED] Driver cleanup FAILED for session: {session_id}")
-        logger.error(f"Session {session_id}: Cleanup errors: {'; '.join(cleanup_errors)}")
-        
-        logger.warning(f"[MEMORY LEAK RISK] Session {session_id} cleanup failed - may cause accumulation")
-        return False
-    
-    # Normal cleanup path - renderer is responsive
-    # Step 2: Clear browser data with timeout handling
-    try:
-        logger.debug(f"Session {session_id}: Clearing cookies...")
-        driver.delete_all_cookies()
-        logger.debug(f"Session {session_id}: Cookies cleared successfully")
-    except Exception as e:
-        # Check if it's a renderer timeout - these are expected during high load
-        error_str = str(e)
-        if "timeout" in error_str.lower() and "renderer" in error_str.lower():
-            logger.debug(f"Session {session_id}: Cookie cleanup timeout (expected during high load)")
-            cleanup_errors.append(f"delete_cookies: renderer_timeout")
-        else:
-            cleanup_errors.append(f"delete_cookies: {str(e)[:100]}")
-            logger.warning(f"Session {session_id}: Failed to clear cookies: {e}")
-        cleanup_success = False
-    
-    try:
-        logger.debug(f"Session {session_id}: Clearing localStorage...")
-        driver.execute_script("try { window.localStorage.clear(); } catch(e) { /* Storage disabled */ }")
-        logger.debug(f"Session {session_id}: localStorage cleared successfully")
-    except Exception as e:
-        # Only treat as error if it's not a storage-disabled issue
-        if "Storage is disabled" not in str(e):
-            cleanup_errors.append(f"localStorage: {str(e)[:100]}")
-            logger.warning(f"Session {session_id}: Failed to clear localStorage: {e}")
-            cleanup_success = False
-        else:
-            logger.debug(f"Session {session_id}: localStorage disabled (data: URL) - skipping")
-    
-    try:
-        logger.debug(f"Session {session_id}: Clearing sessionStorage...")
-        driver.execute_script("try { window.sessionStorage.clear(); } catch(e) { /* Storage disabled */ }")
-        logger.debug(f"Session {session_id}: sessionStorage cleared successfully")
-    except Exception as e:
-        # Only treat as error if it's not a storage-disabled issue
-        if "Storage is disabled" not in str(e):
-            cleanup_errors.append(f"sessionStorage: {str(e)[:100]}")
-            logger.warning(f"Session {session_id}: Failed to clear sessionStorage: {e}")
-            cleanup_success = False
-        else:
-            logger.debug(f"Session {session_id}: sessionStorage disabled (data: URL) - skipping")
-    
-    # Step 3: Advanced storage cleanup (non-critical) - skip if any timeouts occurred
-    if cleanup_success:
-        try:
-            logger.debug(f"Session {session_id}: Clearing IndexedDB...")
-            driver.execute_script("try { if (window.indexedDB) { window.indexedDB.deleteDatabase(''); } } catch(e) { /* Not available */ }")
-            logger.debug(f"Session {session_id}: IndexedDB cleared successfully")
-        except Exception as e:
-            logger.debug(f"Session {session_id}: IndexedDB cleanup failed (non-critical): {e}")
-        
-        try:
-            logger.debug(f"Session {session_id}: Clearing caches...")
-            driver.execute_script("try { if (window.caches) { window.caches.keys().then(names => names.forEach(name => caches.delete(name))); } } catch(e) { /* Not available */ }")
-            logger.debug(f"Session {session_id}: Caches cleared successfully")
-        except Exception as e:
-            logger.debug(f"Session {session_id}: Cache cleanup failed (non-critical): {e}")
-        
-        # Step 4: Close all windows and tabs
-        try:
-            logger.debug(f"Session {session_id}: Getting window handles...")
-            handles = driver.window_handles.copy()
-            logger.debug(f"Session {session_id}: Found {len(handles)} window handles")
-            
-            windows_closed = 0
-            for i, handle in enumerate(handles):
-                try:
-                    driver.switch_to.window(handle)
-                    driver.close()
-                    windows_closed += 1
-                    logger.debug(f"Session {session_id}: Closed window {i+1}/{len(handles)}")
-                except Exception as e:
-                    cleanup_errors.append(f"close_window_{i}: {str(e)[:50]}")
-                    logger.warning(f"Session {session_id}: Failed to close window {i+1}: {e}")
-                    cleanup_success = False
-            
-            logger.debug(f"Session {session_id}: Successfully closed {windows_closed}/{len(handles)} windows")
-            
-        except Exception as e:
-            cleanup_errors.append(f"window_handles: {str(e)[:100]}")
-            logger.warning(f"Session {session_id}: Failed to get/close window handles: {e}")
-            cleanup_success = False
-    
-    # Step 5: Final quit - but with process termination fallback for timeouts
-    try:
-        logger.debug(f"Session {session_id}: Calling driver.quit()...")
-        
-        # Get the main process PID and kill child processes BEFORE quitting
-        main_pid = None
-        if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
-            main_pid = driver.service.process.pid
-            
-            # Kill child processes BEFORE calling quit to prevent detachment
-            try:
-                import psutil
-                parent = psutil.Process(main_pid)
-                children = parent.children(recursive=True)
-                if children:
-                    logger.debug(f"Session {session_id}: Found {len(children)} child processes to terminate")
-                    for child in children:
-                        child.terminate()
-                    psutil.wait_procs(children, timeout=2)
-                    for child in children:
-                        if child.is_running():
-                            child.kill()
-                    logger.debug(f"Session {session_id}: Terminated {len(children)} child processes before quit")
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-        
-        driver.quit()
-        logger.debug(f"Session {session_id}: driver.quit() completed successfully")
-        
-        # Final check for any remaining processes after quit
-        if main_pid:
-            try:
-                import psutil
-                # Check if main process is still running and kill it
-                try:
-                    main_proc = psutil.Process(main_pid)
-                    if main_proc.is_running():
-                        main_proc.terminate()
-                        main_proc.wait(timeout=2)
-                        if main_proc.is_running():
-                            main_proc.kill()
-                        logger.debug(f"Session {session_id}: Terminated lingering main process")
-                except psutil.NoSuchProcess:
-                    pass  # Already gone, good
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
-        
-        # Give system time to clean up processes
-        import time
-        time.sleep(0.5)  # Wait for cleanup
-        logger.debug(f"Session {session_id}: Cleanup wait completed")
-        
-    except Exception as e:
-        error_str = str(e)
-        if "timeout" in error_str.lower() and "renderer" in error_str.lower():
-            logger.debug(f"Session {session_id}: Quit timeout (expected during high load)")
-            cleanup_errors.append(f"driver_quit: renderer_timeout")
-            # Try to force kill the process if quit times out
-            try:
-                if hasattr(driver, 'service') and hasattr(driver.service, 'process'):
-                    driver.service.process.terminate()
-                    import time
-                    time.sleep(0.5)
-                    if driver.service.process.poll() is None:  # Still running
-                        driver.service.process.kill()
-                    logger.debug(f"Session {session_id}: Force killed Chrome process after timeout")
-            except Exception:
-                pass  # Best effort
-        else:
-            cleanup_errors.append(f"driver_quit: {str(e)[:100]}")
-            logger.error(f"Session {session_id}: CRITICAL - driver.quit() failed: {e}")
-        cleanup_success = False
-    
-    # Final cleanup summary
-    if cleanup_success:
-        logger.info(f"[SUCCESS] Driver cleanup completed successfully for session: {session_id}")
-    else:
-        logger.error(f"[FAILED] Driver cleanup FAILED for session: {session_id}")
-        logger.error(f"Session {session_id}: Cleanup errors: {'; '.join(cleanup_errors)}")
-        
-        # Log this as a potential memory leak source
-        logger.warning(f"[MEMORY LEAK RISK] Session {session_id} cleanup failed - may cause accumulation")
-    
-    return cleanup_success
+    # Use unified cleanup system for driver cleanup
+    return safe_driver_quit(driver)
 
 def is_driver_alive(driver):
     """Check if the WebDriver is still alive and responsive"""
@@ -792,203 +544,14 @@ def count_chrome_processes():
         logger.debug(f"Error counting Chrome processes: {e}")
         return 0
 
-def enhanced_python_memory_cleanup():
-    """Perform enhanced Python memory cleanup to free process memory"""
-    try:
-        import gc
-        
-        logger.debug("Starting enhanced Python memory cleanup")
-        
-        # Step 1: Multiple rounds of conservative garbage collection
-        total_collected = 0
-        for round_num in range(3):  # Conservative rounds
-            collected = gc.collect()
-            total_collected += collected
-        
-        # Step 2: Clear specific known caches safely
-        try:
-            # Clear BeautifulSoup parser cache if it exists
-            import bs4
-            if hasattr(bs4, 'BeautifulSoup') and hasattr(bs4.BeautifulSoup, '_parser_cache'):
-                bs4.BeautifulSoup._parser_cache.clear()
-        except (ImportError, AttributeError):
-            pass
-        
-        try:
-            # Clear Selenium WebDriver cache if it exists
-            from selenium.webdriver.chrome import service
-            if hasattr(service, 'Service') and hasattr(service.Service, '_instances'):
-                service.Service._instances.clear()
-        except (ImportError, AttributeError):
-            pass
-        
-        # Step 3: Final garbage collection
-        final_collected = gc.collect()
-        total_collected += final_collected
-        
-        logger.debug(f"Enhanced cleanup completed: {total_collected} objects collected")
-        
-    except Exception as e:
-        logger.debug(f"Error during enhanced memory cleanup: {e}")
+# NOTE: enhanced_python_memory_cleanup() has been replaced with unified_cleanup system
+# All cleanup operations are now handled by the unified_cleanup module
 
-def force_system_memory_release():
-    """Force the system to release memory back to the OS"""
-    try:
-        # Step 1: Linux-specific memory trimming
-        try:
-            import ctypes
-            import ctypes.util
-            libc = ctypes.CDLL(ctypes.util.find_library("c"))
-            if hasattr(libc, 'malloc_trim'):
-                result = libc.malloc_trim(0)
-                logger.debug(f"malloc_trim result: {result}")
-        except Exception:
-            pass  # Not available on all systems
-        
-        # Step 2: Python-specific memory optimization
-        try:
-            import gc
-            
-            # Conservative garbage collection without changing GC settings
-            gc.collect()
-            gc.collect(0)  # Young generation
-            gc.collect(1)  # Middle generation
-            gc.collect(2)  # Old generation
-            
-        except Exception:
-            pass
-        
-        # Step 3: Process memory optimization
-        try:
-            import psutil
-            import os
-            
-            # Get current process
-            process = psutil.Process(os.getpid())
-            
-            # Force memory stats refresh
-            memory_info = process.memory_info()
-            memory_percent = process.memory_percent()
-            
-            logger.debug(f"Process memory after cleanup: RSS={memory_info.rss/1024/1024:.1f}MB, Percent={memory_percent:.1f}%")
-            
-        except Exception:
-            pass
-        
-        logger.debug("System memory release completed")
-        
-    except Exception as e:
-        logger.debug(f"Error during system memory release: {e}")
+# NOTE: force_system_memory_release() has been replaced with unified_cleanup system
+# System memory release is now handled by the unified_cleanup module's aggressive cleanup
 
-def kill_orphaned_chrome_processes(max_age_seconds=600, aggressive=False):
-    """Kill orphaned Chrome processes, with special focus on Chrome child processes
-    
-    Args:
-        max_age_seconds: Maximum age in seconds before a process is considered orphaned (ignored if aggressive=True)
-        aggressive: If True, kill ALL Chrome processes regardless of age or memory usage
-    """
-    try:
-        import psutil
-        import time
-        import os
-        
-        killed_count = 0
-        total_chrome_processes = 0
-        chrome_child_processes = 0
-        current_time = time.time()
-        current_pid = os.getpid()
-        
-        # First, kill any Chrome processes that are direct children of this Python process
-        try:
-            parent = psutil.Process(current_pid)
-            children = parent.children(recursive=True)
-            
-            for child in children:
-                try:
-                    if 'chrome' in child.name().lower():
-                        chrome_child_processes += 1
-                        try:
-                            memory_mb = child.memory_info().rss / 1024 / 1024
-                            # Only log if process has significant memory (not zombie)
-                            if memory_mb > 1:
-                                logger.warning(f"[CHILD CLEANUP] Killing Chrome child process PID: {child.pid}, Memory: {memory_mb:.1f}MB")
-                            else:
-                                logger.debug(f"[CHILD CLEANUP] Cleaning up zombie Chrome child PID: {child.pid}")
-                        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                            logger.debug(f"[CHILD CLEANUP] Zombie Chrome child PID: {child.pid}")
-                        
-                        # Try to terminate gracefully first
-                        try:
-                            child.terminate()
-                        except (psutil.NoSuchProcess, psutil.AccessDenied):
-                            pass  # Already dead
-                        
-                        killed_count += 1
-                        
-                        # Quick wait then force kill if still running
-                        try:
-                            child.wait(timeout=1)  # Reduced timeout for faster cleanup
-                        except psutil.TimeoutExpired:
-                            try:
-                                child.kill()
-                                logger.debug(f"[CHILD CLEANUP] Force killed stubborn Chrome child PID: {child.pid}")
-                            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                                pass  # Already dead
-                            
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                    continue
-                    
-        except Exception as e:
-            logger.debug(f"Error cleaning up child processes: {e}")
-        
-        # Then, kill other Chrome processes based on normal criteria
-        for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'create_time', 'ppid']):
-            try:
-                if proc.info['name'] and 'chrome' in proc.info['name'].lower():
-                    total_chrome_processes += 1
-                    process_age = current_time - proc.info['create_time']
-                    
-                    # Skip if this was already killed as a child process
-                    if proc.info['ppid'] == current_pid:
-                        continue  # Already handled above
-                    
-                    # Kill if aggressive mode, scraping finished, OR process is older than threshold
-                    should_kill = (aggressive or 
-                                 _scraping_finished or 
-                                 process_age > max_age_seconds)
-                    
-                    if should_kill:
-                        if aggressive:
-                            logger.debug(f"[AGGRESSIVE CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
-                        else:
-                            logger.debug(f"[PROCESS CLEANUP] Killing Chrome process PID: {proc.info['pid']} (age: {process_age:.1f}s)")
-                        
-                        proc.terminate()
-                        killed_count += 1
-                        
-                        # Wait a bit then force kill if still running
-                        try:
-                            proc.wait(timeout=3)
-                        except psutil.TimeoutExpired:
-                            proc.kill()
-                            logger.info(f"[PROCESS CLEANUP] Force killed stubborn Chrome process PID: {proc.info['pid']}")
-                            
-            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-                continue
-        
-        if killed_count > 0:
-            mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
-            logger.info(f"[{mode_str}] Killed {killed_count} Chrome processes (found {total_chrome_processes} total)")
-            if chrome_child_processes > 0:
-                logger.info(f"[CHILD CLEANUP] Killed {chrome_child_processes} Chrome child processes")
-            enhanced_python_memory_cleanup()  # Clean up after process cleanup
-            time.sleep(3)  # Give processes time to die and memory to be freed
-        else:
-            mode_str = "AGGRESSIVE CLEANUP" if aggressive else "PROCESS CLEANUP"
-            logger.info(f"[{mode_str}] No Chrome processes to kill (checked {total_chrome_processes} Chrome processes)")
-            
-    except Exception as e:
-        logger.warning(f"Process cleanup failed: {e}")
+# NOTE: kill_orphaned_chrome_processes() has been replaced with unified_cleanup system
+# Chrome process management is now handled by unified_cleanup.kill_chrome_processes()
 
 def check_memory_before_scraping():
     """Check memory usage and cleanup if necessary before starting scrape"""
@@ -1003,28 +566,11 @@ def check_memory_before_scraping():
     if memory_mb > 1000:  # Realistic threshold for Railway Docker with Chrome
         logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing enhanced cleanup")
         
-        # Check if there are Chrome processes to clean up
-        chrome_count = count_chrome_processes()
-        logger.info(f"Found {chrome_count} Chrome processes before cleanup")
-        
-        # Kill ALL Chrome processes before starting new scrape
-        if chrome_count > 0:
-            logger.info("Pre-scrape cleanup - killing ALL Chrome processes...")
-            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-        
-        # Perform enhanced Python memory cleanup
-        logger.info("Performing enhanced Python memory cleanup...")
-        enhanced_python_memory_cleanup()
-        
-        # Force system memory release
-        force_system_memory_release()
-        
-        # Wait for cleanup to take effect
-        time.sleep(5)
+        # Use unified cleanup system
+        success, memory_freed = pre_scrape_cleanup()
         
         # Check memory again after cleanup
         memory_after_cleanup = get_memory_usage()
-        memory_freed = memory_mb - memory_after_cleanup
         
         logger.info(f"Enhanced memory cleanup completed: {memory_after_cleanup}MB (freed {memory_freed:.1f}MB)")
         
@@ -1378,16 +924,17 @@ def scrape_and_update_records():
     should_stop_scraping = False
     _scraping_finished = False
     
+    # Set scraping state to prevent Chrome cleanup during active scraping
+    set_scraping_state(True)
+    
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
     
-    # Clean up zombie processes before starting
+    # Clean up zombie processes before starting using unified cleanup
     try:
-        from process_monitor import cleanup_zombie_processes, check_zombie_processes
-        zombie_count, cat_count = check_zombie_processes()
-        if zombie_count > 0 or cat_count > 0:
-            logger.warning(f"Found {zombie_count} zombies and {cat_count} cat processes before scraping")
-            cleaned = cleanup_zombie_processes()
+        from unified_cleanup import cleanup_zombie_processes
+        cleaned = cleanup_zombie_processes()
+        if cleaned > 0:
             logger.info(f"Cleaned up {cleaned} zombie processes")
     except Exception as e:
         logger.error(f"Error cleaning zombie processes: {e}")
@@ -1469,14 +1016,11 @@ def scrape_and_update_records():
                         
                         # Don't bother with complex cleanup - just kill everything and start fresh
                         if driver:
-                            try:
-                                driver.quit()
-                            except Exception:
-                                pass  # Don't care if quit fails
+                            safe_driver_quit(driver)
                             driver = None
                         
-                        # Kill ALL Chrome processes - simple and effective
-                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        # Kill ALL Chrome processes using unified cleanup
+                        kill_chrome_processes(aggressive=True)
                         time.sleep(2)  # Wait for processes to die
                         
                         # Create fresh driver
@@ -1588,7 +1132,7 @@ def scrape_and_update_records():
                             driver = None
                         
                         # Kill ALL Chrome processes - no exceptions, no age checks, no complex logic
-                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        kill_chrome_processes(aggressive=True)
                         
                         # Wait for processes to die
                         time.sleep(3)
@@ -1618,10 +1162,9 @@ def scrape_and_update_records():
                         # Conservative Python memory cleanup - avoid destroying built-ins
                         import gc
                         
-                        # Standard garbage collection only - no aggressive module clearing
-                        for cleanup_round in range(3):
-                            gc.collect()
-                            time.sleep(0.1)
+                        # Use safe during-scrape cleanup
+                        success, memory_freed = during_scrape_cleanup()
+                        logger.debug(f"Mid-scrape cleanup freed {memory_freed:.1f}MB")
                         
                         # Clear only safe, application-specific caches
                         try:
@@ -1648,10 +1191,9 @@ def scrape_and_update_records():
                         if memory_after_python_cleanup > 300:
                             logger.warning(f"Memory still high ({memory_after_python_cleanup}MB) - additional GC")
                             
-                            # Safe additional cleanup - no module destruction
-                            for _ in range(3):
-                                gc.collect()
-                                gc.collect(2)
+                            # Safe additional cleanup during scraping
+                            success, memory_freed = during_scrape_cleanup()
+                            logger.debug(f"Additional cleanup freed {memory_freed:.1f}MB")
                             
                             memory_after_additional = get_memory_usage()
                             logger.info(f"Memory after additional cleanup: {memory_after_additional}MB")
@@ -1666,9 +1208,9 @@ def scrape_and_update_records():
                         except:
                             pass  # Not available on all systems
                         
-                        # Additional aggressive cleanup
-                        gc.collect()
-                        gc.collect()  # Second pass for any remaining circular refs
+                        # Additional cleanup during scraping
+                        success, memory_freed = during_scrape_cleanup()
+                        logger.debug(f"Additional cleanup freed {memory_freed:.1f}MB")
                         
                         # Clear any local variables that might be holding references
                         if 'records' in locals():
@@ -1707,7 +1249,7 @@ def scrape_and_update_records():
                         
                         # Kill ALL Chrome processes - no guessing, no age/memory checks
                         logger.info("Killing ALL Chrome processes...")
-                        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                        kill_chrome_processes(aggressive=True)
                         
                         # AGGRESSIVE PYTHON MEMORY CLEANUP - Clear all large data structures
                         logger.info("🧹 Aggressive Python memory cleanup...")
@@ -1726,12 +1268,9 @@ def scrape_and_update_records():
                         db.flush()
                         
                         # Multiple rounds of garbage collection
-                        import gc
-                        gc.collect()
-                        enhanced_python_memory_cleanup()
-                        gc.collect(0)  # Young generation
-                        gc.collect(1)  # Middle generation
-                        gc.collect(2)  # Old generation
+                        # Use unified cleanup for memory management
+                        from unified_cleanup import smart_gc_collect
+                        smart_gc_collect()
                         
                         # Start fresh with new Chrome instance
                         try:
@@ -1759,10 +1298,11 @@ def scrape_and_update_records():
                     if consecutive_region_failures == 1:
                         # Try to refresh the WebDriver session after first failure
                         try:
-                            cleanup_success = cleanup_driver(driver)
-                            if not cleanup_success:
+                            # Use unified error recovery cleanup
+                            success, memory_freed = error_recovery_cleanup(driver=driver)
+                            if not success:
                                 failed_cleanups += 1
-                                logger.warning("Driver cleanup failed during error recovery")
+                                logger.warning("Error recovery cleanup failed")
                             driver = get_driver()
                         except Exception:
                             logger.error("Failed to refresh WebDriver session")
@@ -1781,7 +1321,7 @@ def scrape_and_update_records():
             logger.info(f"📊 {category_info['name']}: {category_successful_regions}/{len(category_info['regions'])} regions")
             logger.info(f"   └─ +{category_new_records} records ({category_truly_new_records} new, {category_updates} category updates)")
             
-            # ENHANCED CATEGORY-LEVEL CLEANUP - Kill ALL Chrome processes and children
+            # CATEGORY-LEVEL CLEANUP using unified cleanup system
             logger.info(f"🧹 CATEGORY COMPLETE: Thorough cleanup after {category_info['name']}")
             
             # Get memory before cleanup for comparison
@@ -1795,41 +1335,35 @@ def scrape_and_update_records():
             except Exception as db_error:
                 logger.error(f"Database flush error during category cleanup: {db_error}")
             
-            # 2. Aggressive Chrome cleanup - kill EVERYTHING
+            # 2. Use unified cleanup for aggressive Chrome and memory cleanup
             try:
-                # Close current driver
-                if driver:
-                    try:
-                        driver.quit()
-                    except Exception:
-                        pass  # Don't care if quit fails
-                    driver = None
+                # Use aggressive unified cleanup
+                from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
+                success, memory_freed = unified_cleanup(CLEANUP_AGGRESSIVE, driver=driver)
                 
-                # Kill ALL Chrome processes and children - no mercy, no age checks
-                logger.info("🔥 Killing ALL Chrome processes and children...")
-                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                
-                # Wait for processes to fully die
-                time.sleep(3)
-                
-                # Verify all Chrome processes are dead
-                chrome_count = count_chrome_processes()
-                if chrome_count > 0:
-                    logger.warning(f"⚠️  {chrome_count} Chrome processes still alive after cleanup - forcing kill")
-                    # One more aggressive attempt
-                    kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-                    time.sleep(2)
+                if success:
+                    logger.info(f"✅ Category cleanup successful (freed {memory_freed:.1f}MB)")
                 else:
-                    logger.info("✅ All Chrome processes successfully killed")
+                    logger.warning("⚠️ Category cleanup had some issues")
                 
-            except Exception as chrome_error:
-                logger.error(f"Chrome cleanup error: {chrome_error}")
+                # Clear driver reference after cleanup
+                driver = None
+                
+            except Exception as cleanup_error:
+                logger.error(f"Unified cleanup error: {cleanup_error}")
+                # Fallback - try to at least clear the driver
+                if driver:
+                    safe_driver_quit(driver)
+                    driver = None
             
             # 3. Database session refresh
             try:
                 # Clear cache and flush bulk operations to free memory
                 if 'record_checker' in locals() and record_checker:
                     record_checker.clear_cache()
+                
+                # Clear large data structures to prevent memory accumulation
+                all_unique_fish.clear()  # Reset fish tracking for next category
                 
                 # Force immediate database write and clear pending operations
                 db.flush()  # Write pending operations to database
@@ -1854,47 +1388,7 @@ def scrape_and_update_records():
                 except Exception as fallback_error:
                     logger.error(f"Failed to create fallback database session: {fallback_error}")
             
-            # 4. AGGRESSIVE Python memory cleanup
-            try:
-                # Clear large data structures to prevent memory accumulation
-                all_unique_fish.clear()  # Reset fish tracking for next category
-                
-                # Multiple rounds of aggressive cleanup
-                enhanced_python_memory_cleanup()
-                force_system_memory_release()
-                
-                # Additional aggressive cleanup
-                import gc
-                for _ in range(5):  # More aggressive cleanup rounds
-                    gc.collect()
-                    time.sleep(0.1)
-                
-                # Force memory trimming multiple times
-                try:
-                    import ctypes
-                    import ctypes.util
-                    libc = ctypes.CDLL(ctypes.util.find_library("c"))
-                    if hasattr(libc, 'malloc_trim'):
-                        for _ in range(3):  # Multiple trim attempts
-                            libc.malloc_trim(0)
-                            time.sleep(0.1)
-                except Exception:
-                    pass
-                
-            except Exception as py_error:
-                logger.error(f"Python memory cleanup error: {py_error}")
-            
-            # 5. Check memory after cleanup (BEFORE creating new Chrome)
-            memory_after_python_cleanup = get_memory_usage()
-            python_memory_freed = memory_before_cleanup - memory_after_python_cleanup
-            logger.info(f"📊 Memory after Python cleanup: {memory_after_python_cleanup}MB (freed {python_memory_freed:.1f}MB)")
-            
-            # Warn if Python cleanup wasn't effective enough
-            if memory_after_python_cleanup > 500:  # Should be much lower after killing Chrome
-                logger.warning(f"⚠️  Python cleanup not very effective - still at {memory_after_python_cleanup}MB")
-                logger.warning("This suggests memory leaks in Python objects or database connections")
-            
-            # 6. Create fresh Chrome driver for next category (if not last category)
+            # 4. Create fresh Chrome driver for next category (if not last category)
             remaining_categories = list(CATEGORIES.keys())[list(CATEGORIES.keys()).index(category_key) + 1:]
             if remaining_categories and not should_stop_scraping:
                 try:
@@ -1906,10 +1400,10 @@ def scrape_and_update_records():
                     # We'll try to create it on-demand later
                     driver = None
             
-            # 7. Final memory state (includes new Chrome if created)
+            # 5. Final memory state (includes new Chrome if created)
             memory_after_cleanup = get_memory_usage()
             
-            # 8. Final memory check - abort if still over 1.5GB
+            # 6. Final memory check - abort if still over 1.5GB
             if memory_after_cleanup > 1500:
                 logger.critical(f"🚨 Memory still critically high ({memory_after_cleanup}MB) after category cleanup!")
                 logger.critical("Aborting scraping to prevent memory bomb")
@@ -1956,7 +1450,11 @@ def scrape_and_update_records():
         logger.error(f"Critical error during scraping: {e}")
         errors_occurred = True
     finally:
-        # Aggressive cleanup to prevent memory leaks
+        # CRITICAL: Mark scraping as finished and reset scraping state
+        _scraping_finished = True
+        set_scraping_state(False)
+        
+        # Cleanup to prevent memory leaks
         try:
             # Flush any remaining bulk operations
             if 'bulk_inserter' in locals():
@@ -1970,26 +1468,10 @@ def scrape_and_update_records():
         except Exception as e:
             logger.debug(f"Error closing database session: {e}")
         
-        # SIMPLE FINAL CLEANUP - Just kill everything
-        if driver:
-            try:
-                driver.quit()
-            except Exception:
-                pass  # Don't care if quit fails
-            driver = None
+        # Use unified cleanup system for final cleanup
+        logger.info("🔒 Scraping session finished - performing comprehensive cleanup")
         
-        # CRITICAL: Mark scraping as finished IMMEDIATELY to prevent new Chrome processes
-        _scraping_finished = True
-        logger.info("🔒 Scraping session finished - killing ALL Chrome processes")
-        
-        # Kill ALL Chrome processes - simple and effective
-        kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-        time.sleep(2)  # Wait for processes to die
-        
-        # Comprehensive Python memory cleanup
-        logger.info("Final memory cleanup...")
-        
-        # Clear large variables
+        # Clear large variables before cleanup
         if 'all_unique_fish' in locals():
             all_unique_fish.clear()
             all_unique_fish = None
@@ -2017,58 +1499,27 @@ def scrape_and_update_records():
             except Exception as e:
                 logger.debug(f"Database cleanup error: {e}")
         
-        # Garbage collection
-        import gc
+        # Use unified post-scrape cleanup
         memory_before_final = get_memory_usage()
-        
-        for i in range(3):  # Reduced rounds
-            gc.collect()
-            enhanced_python_memory_cleanup()
-            gc.collect(0)
-            gc.collect(2)
-            if i < 2:
-                time.sleep(0.3)
-        
-        # Skip aggressive cache clearing to preserve built-ins
-        
-        # Clear import caches
-        try:
-            import importlib
-            importlib.invalidate_caches()
-        except Exception:
-            pass
-        
-        # Final zombie process cleanup
-        try:
-            from process_monitor import cleanup_zombie_processes, check_zombie_processes
-            zombie_count, cat_count = check_zombie_processes()
-            if zombie_count > 0 or cat_count > 0:
-                logger.warning(f"Found {zombie_count} zombies and {cat_count} cat processes after scraping")
-                cleaned = cleanup_zombie_processes()
-                logger.info(f"Cleaned up {cleaned} zombie processes in final cleanup")
-        except Exception as e:
-            logger.error(f"Error in final zombie cleanup: {e}")
-        
-        # Get memory after final cleanup
-        memory_after_final = get_memory_usage()
-        memory_freed_final = memory_before_final - memory_after_final
-        logger.info(f"Memory after cleanup: {memory_after_final}MB (freed {memory_freed_final:.1f}MB)")
+        success, memory_freed = post_scrape_cleanup(driver=driver if 'driver' in locals() else None)
         
         # Reset global variables
         should_stop_scraping = False
         
-        # Additional cleanup if memory still high
+        # Check if additional cleanup is needed
+        memory_after_final = get_memory_usage()
         if memory_after_final > 250:
-            logger.warning(f"Memory still high ({memory_after_final}MB) - additional cleanup")
+            logger.warning(f"Memory still high ({memory_after_final}MB) - performing additional aggressive cleanup")
+            from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
             for cleanup_round in range(2):
-                kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
+                unified_cleanup(CLEANUP_AGGRESSIVE)
                 time.sleep(1)
-                gc.collect()
-                gc.collect(2)
             
             final_memory = get_memory_usage()
             if final_memory > 300:
                 logger.critical(f"Memory remains very high ({final_memory}MB) after cleanup!")
+        
+        logger.info(f"Final cleanup completed: {memory_after_final}MB")
     
     # Update top baits cache if scrape was successful and had new records
     scrape_successful = not errors_occurred and not should_stop_scraping
