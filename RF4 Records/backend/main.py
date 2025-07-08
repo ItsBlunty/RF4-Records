@@ -6,7 +6,8 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, QADataset, create_tables
-from scraper import scrape_and_update_records, should_stop_scraping, kill_orphaned_chrome_processes, enhanced_python_memory_cleanup, get_memory_usage
+from scraper import scrape_and_update_records, should_stop_scraping
+from unified_cleanup import periodic_cleanup, pre_scrape_cleanup, error_recovery_cleanup, get_memory_usage, kill_chrome_processes, CLEANUP_AGGRESSIVE, unified_cleanup
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, timezone
 from scheduler import get_current_schedule_period, get_next_schedule_change
@@ -440,11 +441,8 @@ def periodic_memory_cleanup():
         if current_memory > 350:
             logger.info(f"🧹 Periodic cleanup: Memory at {current_memory:.1f}MB during idle")
             
-            # Kill any orphaned processes
-            kill_orphaned_chrome_processes(max_age_seconds=300, aggressive=False)
-            
-            # Light Python memory cleanup
-            enhanced_python_memory_cleanup()
+            # Use unified periodic cleanup (safe during any state)
+            success, memory_freed = periodic_cleanup()
             
             # Clear database session pools
             try:
@@ -453,15 +451,8 @@ def periodic_memory_cleanup():
             except Exception:
                 pass
             
-            import gc
-            gc.collect()
-            gc.collect(2)
-            
-            memory_after = get_memory_usage()
-            memory_freed = current_memory - memory_after
-            
             if memory_freed > 20:
-                logger.info(f"✅ Periodic cleanup freed {memory_freed:.1f}MB (now {memory_after:.1f}MB)")
+                logger.info(f"✅ Periodic cleanup freed {memory_freed:.1f}MB")
             
     except Exception as e:
         logger.debug(f"Periodic cleanup error: {type(e).__name__}")
