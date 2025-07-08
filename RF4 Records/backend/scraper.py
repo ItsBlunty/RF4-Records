@@ -22,7 +22,8 @@ from unified_cleanup import (
     periodic_cleanup,
     cleanup_zombie_processes,
     get_memory_usage,
-    clear_beautifulsoup_cache
+    clear_beautifulsoup_cache,
+    safe_driver_quit
 )
 
 # Built-in functions should be available naturally
@@ -276,8 +277,10 @@ def get_driver():
             logger.warning(f"Memory still very high ({memory_after}MB) - forcing aggressive cleanup")
             
             # Use aggressive cleanup
-            from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
-            success, extra_freed = unified_cleanup(CLEANUP_AGGRESSIVE)
+            memory_before_aggressive = get_memory_usage()
+            cleanup_zombie_processes()
+            clear_beautifulsoup_cache()
+            extra_freed = memory_before_aggressive - get_memory_usage()
             
             final_memory = get_memory_usage()
             if final_memory > 1400:  # Emergency threshold
@@ -1349,11 +1352,14 @@ def scrape_and_update_records():
             except Exception as db_error:
                 logger.error(f"Database flush error during category cleanup: {db_error}")
             
-            # 2. Use unified cleanup for aggressive Chrome and memory cleanup
+            # 2. Use simplified cleanup for Chrome and memory cleanup
             try:
-                # Use aggressive unified cleanup
-                from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
-                success, memory_freed = unified_cleanup(CLEANUP_AGGRESSIVE, driver=driver)
+                # Use simplified cleanup
+                memory_before_cleanup = get_memory_usage()
+                cleanup_zombie_processes()
+                clear_beautifulsoup_cache()
+                success = safe_driver_quit(driver)
+                memory_freed = memory_before_cleanup - get_memory_usage()
                 
                 if success:
                     logger.info(f"✅ Category cleanup successful (freed {memory_freed:.1f}MB)")
@@ -1533,9 +1539,9 @@ def scrape_and_update_records():
         memory_after_final = get_memory_usage()
         if memory_after_final > 250:
             logger.warning(f"Memory still high ({memory_after_final}MB) - performing additional aggressive cleanup")
-            from unified_cleanup import unified_cleanup, CLEANUP_AGGRESSIVE
             for cleanup_round in range(2):
-                unified_cleanup(CLEANUP_AGGRESSIVE)
+                cleanup_zombie_processes()
+                clear_beautifulsoup_cache()
                 time.sleep(1)
             
             final_memory = get_memory_usage()

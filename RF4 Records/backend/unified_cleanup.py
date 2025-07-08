@@ -109,6 +109,17 @@ def clear_beautifulsoup_cache():
     except (ImportError, AttributeError):
         pass
 
+def safe_driver_quit(driver) -> bool:
+    """Simple driver quit function"""
+    if not driver:
+        return True
+    try:
+        driver.quit()
+        return True
+    except Exception as e:
+        logger.debug(f"Driver quit failed: {e}")
+        return False
+
 def periodic_cleanup() -> Tuple[bool, float]:
     """Light cleanup for periodic maintenance - safe during scraping"""
     memory_before = get_memory_usage()
