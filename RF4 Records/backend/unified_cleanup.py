@@ -14,23 +14,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-# Cleanup levels
-CLEANUP_LIGHT = "light"
-CLEANUP_NORMAL = "normal"
-CLEANUP_AGGRESSIVE = "aggressive"
-
-# Global state to prevent cleaning during active scraping
-_is_scraping = False
-
-def set_scraping_state(is_scraping: bool):
-    """Set the global scraping state to prevent cleanup during active scrapes"""
-    global _is_scraping
-    _is_scraping = is_scraping
-    logger.debug(f"Scraping state set to: {is_scraping}")
-
-def is_safe_to_cleanup_chrome() -> bool:
-    """Check if it's safe to kill Chrome processes"""
-    return not _is_scraping
+# Simplified cleanup - no state management needed
 
 def cleanup_zombie_processes() -> int:
     """

@@ -1282,9 +1282,9 @@ def scrape_and_update_records():
                         db.flush()
                         
                         # Multiple rounds of garbage collection
-                        # Use unified cleanup for memory management
-                        from unified_cleanup import smart_gc_collect
-                        smart_gc_collect()
+                        import gc
+                        gc.collect()
+                        gc.collect()
                         
                         # Start fresh with new Chrome instance
                         try:
