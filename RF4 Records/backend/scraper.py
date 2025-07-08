@@ -20,6 +20,7 @@ import signal
 import sys
 from unified_cleanup import (
     periodic_cleanup,
+    post_scrape_cleanup,
     cleanup_zombie_processes,
     get_memory_usage,
     clear_beautifulsoup_cache,
@@ -1521,10 +1522,8 @@ def scrape_and_update_records():
             except Exception as e:
                 logger.debug(f"Database cleanup error: {e}")
         
-        # Use simplified post-scrape cleanup - can safely kill Chrome now
+        # Use comprehensive post-scrape cleanup - clears BeautifulSoup + SQLAlchemy accumulation
         memory_before_final = get_memory_usage()
-        cleanup_zombie_processes()
-        clear_beautifulsoup_cache()
         
         # Now safe to quit driver since scraping is finished
         if 'driver' in locals() and driver:
@@ -1533,7 +1532,10 @@ def scrape_and_update_records():
             except:
                 pass
         
-        memory_freed = memory_before_final - get_memory_usage()
+        # Comprehensive cleanup after scraping session completes
+        success, memory_freed = post_scrape_cleanup()
+        
+        logger.info(f"🧹 SCRAPING SESSION COMPLETE: Comprehensive cleanup freed {memory_freed:.1f}MB")
         
         # Reset global variables
         should_stop_scraping = False

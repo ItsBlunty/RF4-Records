@@ -82,14 +82,51 @@ def get_memory_usage() -> float:
         return 0.0
 
 def clear_beautifulsoup_cache():
-    """Clear BeautifulSoup parser cache that can accumulate HTML objects"""
+    """Clear BeautifulSoup parser cache and force cleanup of HTML objects"""
     try:
         import bs4
+        import gc
+        
+        objects_before = 0
+        objects_after = 0
+        
+        # Count BeautifulSoup objects before cleanup
+        try:
+            for obj in gc.get_objects():
+                if isinstance(obj, (bs4.Tag, bs4.NavigableString)):
+                    objects_before += 1
+        except:
+            pass
+        
+        # Clear parser cache
         if hasattr(bs4, 'BeautifulSoup') and hasattr(bs4.BeautifulSoup, '_parser_cache'):
             cache_size = len(bs4.BeautifulSoup._parser_cache)
             bs4.BeautifulSoup._parser_cache.clear()
-            if cache_size > 0:
-                logger.debug(f"Cleared BeautifulSoup cache ({cache_size} parsers)")
+        
+        # Force garbage collection to clean up HTML objects
+        gc.collect()
+        gc.collect()  # Second pass for circular references
+        
+        # Clear any remaining BeautifulSoup module-level caches
+        try:
+            if hasattr(bs4.builder, '_registry'):
+                bs4.builder._registry.clear()
+        except (AttributeError, TypeError):
+            pass
+            
+        # Count objects after cleanup
+        try:
+            for obj in gc.get_objects():
+                if isinstance(obj, (bs4.Tag, bs4.NavigableString)):
+                    objects_after += 1
+        except:
+            pass
+        
+        objects_freed = objects_before - objects_after
+        
+        if objects_before > 0:
+            logger.debug(f"BeautifulSoup cleanup: {objects_before} → {objects_after} objects ({objects_freed} freed)")
+            
     except (ImportError, AttributeError):
         pass
 
@@ -139,6 +176,45 @@ def kill_chrome_processes() -> int:
     except Exception as e:
         logger.error(f"Error in kill_chrome_processes: {e}")
         return 0
+
+def post_scrape_cleanup() -> Tuple[bool, float]:
+    """Comprehensive cleanup after scraping completes - clears all accumulating objects"""
+    memory_before = get_memory_usage()
+    
+    try:
+        # Clean zombie processes
+        zombies_cleaned = cleanup_zombie_processes()
+        
+        # Comprehensive BeautifulSoup cleanup 
+        clear_beautifulsoup_cache()
+        
+        # Clear SQLAlchemy session to release Record objects
+        try:
+            from database import SessionLocal
+            # Get a fresh session and close it to clear any cached objects
+            temp_session = SessionLocal()
+            temp_session.expunge_all()  # Remove all objects from session
+            temp_session.close()
+            logger.debug("SQLAlchemy session cleared")
+        except Exception as e:
+            logger.debug(f"SQLAlchemy cleanup error: {e}")
+        
+        # Aggressive garbage collection
+        import gc
+        collected = 0
+        for _ in range(3):  # Multiple passes to catch circular references
+            collected += gc.collect()
+        
+        memory_after = get_memory_usage()
+        memory_freed = memory_before - memory_after
+        
+        logger.info(f"Post-scrape cleanup: {zombies_cleaned} zombies, {collected} objects collected, {memory_freed:.1f}MB freed")
+        
+        return True, memory_freed
+        
+    except Exception as e:
+        logger.error(f"Error in post_scrape_cleanup: {e}")
+        return False, 0.0
 
 def periodic_cleanup() -> Tuple[bool, float]:
     """Light cleanup for periodic maintenance - safe during scraping"""
