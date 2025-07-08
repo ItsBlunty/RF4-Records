@@ -1381,6 +1381,17 @@ def scrape_and_update_records():
     start_time = datetime.now()
     logger.info(f"=== STARTING SCHEDULED SCRAPE at {start_time} ===")
     
+    # Clean up zombie processes before starting
+    try:
+        from process_monitor import cleanup_zombie_processes, check_zombie_processes
+        zombie_count, cat_count = check_zombie_processes()
+        if zombie_count > 0 or cat_count > 0:
+            logger.warning(f"Found {zombie_count} zombies and {cat_count} cat processes before scraping")
+            cleaned = cleanup_zombie_processes()
+            logger.info(f"Cleaned up {cleaned} zombie processes")
+    except Exception as e:
+        logger.error(f"Error cleaning zombie processes: {e}")
+    
     # Check memory usage before starting and cleanup if necessary
     try:
         initial_memory = check_memory_before_scraping()
@@ -2026,6 +2037,17 @@ def scrape_and_update_records():
             importlib.invalidate_caches()
         except Exception:
             pass
+        
+        # Final zombie process cleanup
+        try:
+            from process_monitor import cleanup_zombie_processes, check_zombie_processes
+            zombie_count, cat_count = check_zombie_processes()
+            if zombie_count > 0 or cat_count > 0:
+                logger.warning(f"Found {zombie_count} zombies and {cat_count} cat processes after scraping")
+                cleaned = cleanup_zombie_processes()
+                logger.info(f"Cleaned up {cleaned} zombie processes in final cleanup")
+        except Exception as e:
+            logger.error(f"Error in final zombie cleanup: {e}")
         
         # Get memory after final cleanup
         memory_after_final = get_memory_usage()
