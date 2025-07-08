@@ -2759,9 +2759,12 @@ def force_beautifulsoup_cleanup():
 def serve_frontend(path: str):
     """Serve the frontend application for all non-API routes"""
     # Don't serve frontend for API paths and endpoints
-    api_endpoints = ["api", "health", "refresh", "cleanup", "status", "records", "admin"]
-    if path.startswith("api") or path.startswith("admin") or path in api_endpoints:
-        raise HTTPException(status_code=404, detail="Not found")
+    # These paths should have been handled by their specific routes already
+    # If we reach here with these paths, it means the endpoint doesn't exist
+    api_prefixes = ["api/", "admin/", "health", "refresh", "cleanup", "status", "records"]
+    for prefix in api_prefixes:
+        if path.startswith(prefix) or path == prefix.rstrip('/'):
+            raise HTTPException(status_code=404, detail=f"API endpoint /{path} not found")
     
     frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
     index_path = os.path.join(frontend_dist_path, "index.html")
