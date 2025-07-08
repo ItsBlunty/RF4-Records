@@ -261,9 +261,12 @@ def get_driver():
     if current_memory > 1000:  # Realistic threshold for Railway with Chrome children
         logger.info(f"High memory usage ({current_memory}MB) detected - performing enhanced cleanup")
         
-        # Use unified cleanup system
-        success, memory_freed = pre_scrape_cleanup()
+        # Use simplified cleanup system - safe during scraping
+        memory_before = get_memory_usage()
+        cleanup_zombie_processes()
+        clear_beautifulsoup_cache()
         memory_after = get_memory_usage()
+        memory_freed = memory_before - memory_after
         
         logger.info(f"Memory cleanup completed: {memory_after}MB (freed {memory_freed:.1f}MB)")
         
@@ -461,6 +464,7 @@ def count_chrome_processes():
         chrome_count = 0
         total_chrome_memory = 0
         chrome_child_processes = 0
+        killed_count = 0
         current_pid = os.getpid()
         
         # Check all Chrome processes on the system
@@ -560,10 +564,13 @@ def check_memory_before_scraping():
         raise MemoryError(f"EMERGENCY ABORT: Memory usage dangerous ({memory_mb}MB) - preventing system failure")
     
     if memory_mb > 1000:  # Realistic threshold for Railway Docker with Chrome
-        logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing enhanced cleanup")
+        logger.warning(f"High memory usage detected ({memory_mb}MB) before scraping - performing safe cleanup")
         
-        # Use unified cleanup system
-        success, memory_freed = pre_scrape_cleanup()
+        # Use simplified cleanup system - safe during scraping
+        memory_before = get_memory_usage()
+        cleanup_zombie_processes()
+        clear_beautifulsoup_cache()
+        memory_freed = memory_before - get_memory_usage()
         
         # Check memory again after cleanup
         memory_after_cleanup = get_memory_usage()
@@ -1157,8 +1164,11 @@ def scrape_and_update_records():
                         # Conservative Python memory cleanup - avoid destroying built-ins
                         import gc
                         
-                        # Use safe during-scrape cleanup
-                        success, memory_freed = during_scrape_cleanup()
+                        # Use safe during-scrape cleanup - no Chrome killing
+                        memory_before = get_memory_usage()
+                        cleanup_zombie_processes()
+                        clear_beautifulsoup_cache()
+                        memory_freed = memory_before - get_memory_usage()
                         logger.debug(f"Mid-scrape cleanup freed {memory_freed:.1f}MB")
                         
                         # Clear only safe, application-specific caches
@@ -1186,8 +1196,11 @@ def scrape_and_update_records():
                         if memory_after_python_cleanup > 300:
                             logger.warning(f"Memory still high ({memory_after_python_cleanup}MB) - additional GC")
                             
-                            # Safe additional cleanup during scraping
-                            success, memory_freed = during_scrape_cleanup()
+                            # Safe additional cleanup during scraping - no Chrome killing
+                            memory_before = get_memory_usage()
+                            cleanup_zombie_processes()
+                            clear_beautifulsoup_cache()
+                            memory_freed = memory_before - get_memory_usage()
                             logger.debug(f"Additional cleanup freed {memory_freed:.1f}MB")
                             
                             memory_after_additional = get_memory_usage()
@@ -1203,8 +1216,11 @@ def scrape_and_update_records():
                         except:
                             pass  # Not available on all systems
                         
-                        # Additional cleanup during scraping
-                        success, memory_freed = during_scrape_cleanup()
+                        # Additional cleanup during scraping - no Chrome killing
+                        memory_before = get_memory_usage()
+                        cleanup_zombie_processes()
+                        clear_beautifulsoup_cache()
+                        memory_freed = memory_before - get_memory_usage()
                         logger.debug(f"Additional cleanup freed {memory_freed:.1f}MB")
                         
                         # Clear any local variables that might be holding references
@@ -1496,9 +1512,19 @@ def scrape_and_update_records():
             except Exception as e:
                 logger.debug(f"Database cleanup error: {e}")
         
-        # Use unified post-scrape cleanup
+        # Use simplified post-scrape cleanup - can safely kill Chrome now
         memory_before_final = get_memory_usage()
-        success, memory_freed = post_scrape_cleanup(driver=driver if 'driver' in locals() else None)
+        cleanup_zombie_processes()
+        clear_beautifulsoup_cache()
+        
+        # Now safe to quit driver since scraping is finished
+        if 'driver' in locals() and driver:
+            try:
+                driver.quit()
+            except:
+                pass
+        
+        memory_freed = memory_before_final - get_memory_usage()
         
         # Reset global variables
         should_stop_scraping = False

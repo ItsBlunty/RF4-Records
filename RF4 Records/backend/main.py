@@ -243,11 +243,10 @@ def scheduled_scrape():
         if memory_before_cleanup > 300:  # Significant memory accumulation
             logger.info(f"🧹 Pre-scrape cleanup: Memory at {memory_before_cleanup:.1f}MB - clearing idle accumulation")
             
-            # Kill any orphaned Chrome processes from previous sessions
-            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-            
-            # Enhanced Python memory cleanup to clear API operation residue
-            enhanced_python_memory_cleanup()
+            # Simple cleanup - no Chrome killing during API operations
+            from unified_cleanup import cleanup_zombie_processes, clear_beautifulsoup_cache
+            cleanup_zombie_processes()
+            clear_beautifulsoup_cache()
             
             # Additional garbage collection for FastAPI/database operations
             for _ in range(3):
@@ -298,8 +297,9 @@ def scheduled_scrape():
         # Force aggressive cleanup to try to recover
         logger.info("🧹 Attempting emergency system recovery...")
         try:
-            kill_orphaned_chrome_processes(max_age_seconds=0, aggressive=True)
-            enhanced_python_memory_cleanup()
+            from unified_cleanup import cleanup_zombie_processes, clear_beautifulsoup_cache
+            cleanup_zombie_processes()
+            clear_beautifulsoup_cache()
             import time
             time.sleep(5)  # Give system time to recover
             
@@ -1483,16 +1483,17 @@ def force_cleanup():
     """Force garbage collection and process cleanup for memory management"""
     try:
         import gc
-        from scraper import enhanced_python_memory_cleanup, kill_orphaned_chrome_processes
+        from unified_cleanup import cleanup_zombie_processes, clear_beautifulsoup_cache
         
         # Get memory before cleanup
         memory_before = get_memory_usage()
         
         # Force garbage collection
-        enhanced_python_memory_cleanup()
+        cleanup_zombie_processes()
+        clear_beautifulsoup_cache()
         
-        # Kill orphaned Chrome processes
-        kill_orphaned_chrome_processes()
+        # Additional garbage collection
+        gc.collect()
         
         # Additional aggressive cleanup
         gc.collect()
