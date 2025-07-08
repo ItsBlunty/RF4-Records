@@ -2780,6 +2780,70 @@ def force_system_memory_release():
         logger.error(f"Error in system memory release: {e}")
         return {"error": str(e)}
 
+@app.get("/admin/system/info")
+def get_system_info():
+    """Get system information including C library details"""
+    try:
+        import platform
+        import subprocess
+        import ctypes
+        import os
+        
+        info = {
+            "platform": platform.platform(),
+            "python_version": platform.python_version(),
+            "architecture": platform.architecture(),
+            "machine": platform.machine(),
+            "processor": platform.processor(),
+            "system": platform.system(),
+            "release": platform.release(),
+        }
+        
+        # Check for glibc
+        try:
+            # Try to load libc and get version
+            libc = ctypes.CDLL("libc.so.6")
+            info["libc_available"] = True
+            info["libc_path"] = "libc.so.6"
+            
+            # Try to get glibc version
+            try:
+                result = subprocess.run(['ldd', '--version'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    info["ldd_version"] = result.stdout.split('\n')[0]
+            except:
+                info["ldd_version"] = "not available"
+                
+        except OSError as e:
+            info["libc_available"] = False
+            info["libc_error"] = str(e)
+            
+            # Try alternative libc names
+            for lib_name in ["libc.so", "libSystem.dylib", "msvcrt.dll"]:
+                try:
+                    ctypes.CDLL(lib_name)
+                    info["alternative_libc"] = lib_name
+                    break
+                except:
+                    continue
+        
+        # Check /etc/os-release for distro info
+        try:
+            with open('/etc/os-release', 'r') as f:
+                os_release = {}
+                for line in f:
+                    if '=' in line:
+                        key, value = line.strip().split('=', 1)
+                        os_release[key] = value.strip('"')
+                info["os_release"] = os_release
+        except:
+            info["os_release"] = "not available"
+            
+        return info
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
