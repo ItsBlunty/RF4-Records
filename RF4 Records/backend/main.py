@@ -2844,6 +2844,52 @@ def get_system_info():
     except Exception as e:
         return {"error": str(e)}
 
+@app.get("/admin/memory/malloc/info")
+def get_malloc_info():
+    """Get malloc configuration and test malloc_trim()"""
+    try:
+        import ctypes
+        import os
+        
+        info = {
+            "malloc_trim_threshold": os.environ.get("MALLOC_TRIM_THRESHOLD", "not_set"),
+            "other_malloc_vars": {
+                "MALLOC_MMAP_THRESHOLD_": os.environ.get("MALLOC_MMAP_THRESHOLD_", "not_set"),
+                "MALLOC_TOP_PAD_": os.environ.get("MALLOC_TOP_PAD_", "not_set"),
+                "MALLOC_MMAP_MAX_": os.environ.get("MALLOC_MMAP_MAX_", "not_set"),
+            }
+        }
+        
+        # Test malloc_trim()
+        try:
+            libc = ctypes.CDLL("libc.so.6")
+            
+            # Get memory before trim
+            before_memory = get_memory_usage()
+            
+            # Call malloc_trim(0) to release all possible memory
+            trim_result = libc.malloc_trim(0)
+            
+            # Get memory after trim
+            after_memory = get_memory_usage()
+            memory_freed = before_memory - after_memory
+            
+            info["malloc_trim_test"] = {
+                "success": bool(trim_result),
+                "memory_before_mb": before_memory,
+                "memory_after_mb": after_memory, 
+                "memory_freed_mb": memory_freed,
+                "trim_return_value": trim_result
+            }
+            
+        except Exception as e:
+            info["malloc_trim_test"] = {"error": str(e)}
+            
+        return info
+        
+    except Exception as e:
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
