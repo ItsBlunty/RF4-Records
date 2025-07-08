@@ -248,7 +248,7 @@ def get_driver():
     chrome_count = count_chrome_processes()
     if chrome_count > 0:
         logger.info(f"Found {chrome_count} existing Chrome processes - cleaning up before creating new driver")
-        kill_chrome_processes(aggressive=True)
+        kill_chrome_processes()
         time.sleep(2)  # Wait for cleanup
     
     # IMPROVED MEMORY MANAGEMENT - Check memory before creating new driver
@@ -407,7 +407,7 @@ def get_driver():
                     pass
                 
                 # Kill all Chrome processes
-                kill_chrome_processes(aggressive=True)
+                kill_chrome_processes()
                 
                 raise MemoryError(f"Chrome creation memory bomb: {post_chrome_memory}MB (increased by {memory_increase:.1f}MB)")
             
@@ -1026,7 +1026,7 @@ def scrape_and_update_records():
                             driver = None
                         
                         # Kill ALL Chrome processes using unified cleanup
-                        kill_chrome_processes(aggressive=True)
+                        kill_chrome_processes()
                         time.sleep(2)  # Wait for processes to die
                         
                         # Create fresh driver
@@ -1138,7 +1138,7 @@ def scrape_and_update_records():
                             driver = None
                         
                         # Kill ALL Chrome processes - no exceptions, no age checks, no complex logic
-                        kill_chrome_processes(aggressive=True)
+                        kill_chrome_processes()
                         
                         # Wait for processes to die
                         time.sleep(3)
@@ -1264,7 +1264,7 @@ def scrape_and_update_records():
                         
                         # Kill ALL Chrome processes - no guessing, no age/memory checks
                         logger.info("Killing ALL Chrome processes...")
-                        kill_chrome_processes(aggressive=True)
+                        kill_chrome_processes()
                         
                         # AGGRESSIVE PYTHON MEMORY CLEANUP - Clear all large data structures
                         logger.info("🧹 Aggressive Python memory cleanup...")
