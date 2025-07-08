@@ -928,7 +928,6 @@ def scrape_and_update_records():
     
     # Clean up zombie processes before starting using unified cleanup
     try:
-        from unified_cleanup import cleanup_zombie_processes
         cleaned = cleanup_zombie_processes()
         if cleaned > 0:
             logger.info(f"Cleaned up {cleaned} zombie processes")
