@@ -2682,6 +2682,59 @@ def force_gc_collect():
         logger.error(f"Error during GC collect: {e}")
         return {"error": str(e)}
 
+# System-wide memory monitoring endpoints
+@app.get("/admin/memory/system/breakdown")
+def get_system_memory_breakdown():
+    """Get comprehensive memory breakdown for all processes"""
+    try:
+        from system_monitor import system_monitor
+        
+        breakdown = system_monitor.get_system_memory_breakdown()
+        return {"system_breakdown": breakdown}
+    except Exception as e:
+        logger.error(f"Error getting system breakdown: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/system/categories")
+def get_memory_by_category():
+    """Get memory usage categorized by type (Python, Chrome, etc)"""
+    try:
+        from system_monitor import system_monitor
+        
+        categories = system_monitor.monitor_memory_sources()
+        return {"memory_categories": categories}
+    except Exception as e:
+        logger.error(f"Error getting memory categories: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/system/chrome")
+def get_chrome_processes():
+    """Get all Chrome/Chromium processes"""
+    try:
+        from system_monitor import system_monitor
+        
+        chrome_procs = system_monitor.get_chrome_processes()
+        return {
+            "chrome_processes": chrome_procs,
+            "count": len(chrome_procs),
+            "total_rss_mb": sum(p['rss_mb'] for p in chrome_procs)
+        }
+    except Exception as e:
+        logger.error(f"Error getting Chrome processes: {e}")
+        return {"error": str(e)}
+
+@app.get("/admin/memory/system/compare/{railway_mb}")
+def compare_with_railway(railway_mb: float):
+    """Compare our measurements with Railway's reported memory"""
+    try:
+        from system_monitor import system_monitor
+        
+        comparison = system_monitor.compare_with_railway(railway_mb)
+        return comparison
+    except Exception as e:
+        logger.error(f"Error comparing with Railway: {e}")
+        return {"error": str(e)}
+
 # Serve the frontend for all other routes (SPA routing)
 @app.get("/{path:path}")
 def serve_frontend(path: str):
