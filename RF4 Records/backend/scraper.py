@@ -1360,6 +1360,8 @@ def scrape_and_update_records():
                 cleanup_zombie_processes()
                 clear_beautifulsoup_cache()
                 success = safe_driver_quit(driver)
+                # Kill any remaining Chrome child processes after driver quit
+                kill_chrome_processes()
                 memory_freed = memory_before_cleanup - get_memory_usage()
                 
                 if success:
