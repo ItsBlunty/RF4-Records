@@ -23,7 +23,8 @@ from unified_cleanup import (
     cleanup_zombie_processes,
     get_memory_usage,
     clear_beautifulsoup_cache,
-    safe_driver_quit
+    safe_driver_quit,
+    kill_chrome_processes
 )
 
 # Built-in functions should be available naturally

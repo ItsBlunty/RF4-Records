@@ -104,6 +104,42 @@ def safe_driver_quit(driver) -> bool:
         logger.debug(f"Driver quit failed: {e}")
         return False
 
+def kill_chrome_processes() -> int:
+    """Kill Chrome processes, especially child processes of current Python process"""
+    try:
+        import psutil
+        killed_count = 0
+        current_pid = os.getpid()
+        
+        # First, kill Chrome child processes of current Python process
+        try:
+            parent = psutil.Process(current_pid)
+            children = parent.children(recursive=True)
+            
+            for child in children:
+                try:
+                    if 'chrome' in child.name().lower():
+                        logger.debug(f"Killing Chrome child process: PID {child.pid}")
+                        child.terminate()
+                        killed_count += 1
+                        try:
+                            child.wait(timeout=1)
+                        except psutil.TimeoutExpired:
+                            child.kill()
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            logger.debug(f"Error killing child Chrome processes: {e}")
+        
+        if killed_count > 0:
+            logger.info(f"Killed {killed_count} Chrome processes")
+            
+        return killed_count
+        
+    except Exception as e:
+        logger.error(f"Error in kill_chrome_processes: {e}")
+        return 0
+
 def periodic_cleanup() -> Tuple[bool, float]:
     """Light cleanup for periodic maintenance - safe during scraping"""
     memory_before = get_memory_usage()
