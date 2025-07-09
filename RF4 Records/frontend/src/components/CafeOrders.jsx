@@ -63,13 +63,13 @@ const CafeOrders = () => {
   const groupedOrders = groupOrdersByLocation();
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white">
+    <div className="max-w-7xl mx-auto p-6 bg-white dark:bg-gray-800">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <Coffee className="text-yellow-600" />
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+          <Coffee className="text-yellow-600 dark:text-yellow-400" />
           Cafe Orders Price Guide
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 dark:text-gray-300">
           View silver price ranges for cafe orders across different locations
         </p>
       </div>
@@ -77,8 +77,8 @@ const CafeOrders = () => {
       {/* Location Filter */}
       <div className="mb-6 flex items-center gap-4">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-500" />
-          <label htmlFor="location-filter" className="text-sm font-medium text-gray-700">
+          <Filter className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <label htmlFor="location-filter" className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Filter by Location:
           </label>
         </div>
@@ -86,7 +86,7 @@ const CafeOrders = () => {
           id="location-filter"
           value={selectedLocation}
           onChange={(e) => setSelectedLocation(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
         >
           <option value="">All Locations</option>
           {locations.map(location => (
