@@ -957,55 +957,6 @@ const ReelInfo = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Differences Summary */}
-              <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Key Differences</h4>
-                <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                  {(() => {
-                    const differences = [];
-                    
-                    // Test Weight difference
-                    const tw1 = parseFloat(selectedReels[0].Test_Weight?.replace('~', '')) || 0;
-                    const tw2 = parseFloat(selectedReels[1].Test_Weight?.replace('~', '')) || 0;
-                    if (tw1 && tw2 && Math.abs(tw1 - tw2) > 0) {
-                      differences.push(`Test Weight: ${tw1 > tw2 ? selectedReels[0].Name : selectedReels[1].Name} is stronger (${Math.abs(tw1 - tw2).toFixed(1)} kg difference)`);
-                    }
-
-                    // Drag difference
-                    const drag1 = parseFloat(parseDragValues(selectedReels[0].Drag_Real).listed) || 0;
-                    const drag2 = parseFloat(parseDragValues(selectedReels[1].Drag_Real).listed) || 0;
-                    if (drag1 && drag2 && Math.abs(drag1 - drag2) > 0) {
-                      differences.push(`Drag: ${drag1 > drag2 ? selectedReels[0].Name : selectedReels[1].Name} has ${Math.abs(drag1 - drag2).toFixed(1)} kg more drag`);
-                    }
-
-                    // Weight difference
-                    const weight1 = parseFloat(selectedReels[0].Mechanism_Weight) || 0;
-                    const weight2 = parseFloat(selectedReels[1].Mechanism_Weight) || 0;
-                    if (weight1 && weight2 && Math.abs(weight1 - weight2) > 0) {
-                      differences.push(`Weight: ${weight1 < weight2 ? selectedReels[0].Name : selectedReels[1].Name} is lighter (${Math.abs(weight1 - weight2).toFixed(2)} kg difference)`);
-                    }
-
-                    // Price difference
-                    const price1 = parseFloat(selectedReels[0].Price?.replace(/\s/g, '').replace(',', '.')) || 0;
-                    const price2 = parseFloat(selectedReels[1].Price?.replace(/\s/g, '').replace(',', '.')) || 0;
-                    if (price1 && price2 && Math.abs(price1 - price2) > 0) {
-                      differences.push(`Price: ${price1 < price2 ? selectedReels[0].Name : selectedReels[1].Name} is cheaper (${formatPrice(Math.abs(price1 - price2).toString())} difference)`);
-                    }
-
-                    // Saltwater resistance
-                    const salt1 = selectedReels[0].Saltwater_Resistance?.includes('💧');
-                    const salt2 = selectedReels[1].Saltwater_Resistance?.includes('💧');
-                    if (salt1 !== salt2) {
-                      differences.push(`Saltwater: Only ${salt1 ? selectedReels[0].Name : selectedReels[1].Name} is saltwater resistant`);
-                    }
-
-                    return differences.map((diff, idx) => (
-                      <p key={idx}>• {diff}</p>
-                    ));
-                  })()}
-                </div>
-              </div>
             </div>
           </div>
         </div>
