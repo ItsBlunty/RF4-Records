@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, Filter, X } from 'lucide-react';
+import { ArrowLeft, Search, Filter, X, Scale } from 'lucide-react';
 
 const ReelInfo = () => {
   const [reels, setReels] = useState([]);
@@ -22,6 +22,9 @@ const ReelInfo = () => {
   const [gearRatioMax, setGearRatioMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedReels, setSelectedReels] = useState([]);
+  const [showComparison, setShowComparison] = useState(false);
 
   // Parse CSV data and extract reel information
   const parseCSVData = (text) => {
@@ -352,6 +355,19 @@ const ReelInfo = () => {
     setGearRatioMax('');
     setSortConfig({ key: null, direction: 'ascending' });
   };
+
+  const toggleReelSelection = (reel) => {
+    if (selectedReels.find(r => r.Name === reel.Name)) {
+      setSelectedReels(selectedReels.filter(r => r.Name !== reel.Name));
+    } else if (selectedReels.length < 2) {
+      setSelectedReels([...selectedReels, reel]);
+    }
+  };
+
+  const exitCompareMode = () => {
+    setCompareMode(false);
+    setSelectedReels([]);
+  };
   
   const hasActiveFilters = searchTerm || saltwaterFilter !== 'All' || typeFilter !== 'All' || sizeFilter !== 'All' ||
                          testWeightMin || testWeightMax || dragListedMin || dragListedMax ||
@@ -391,12 +407,43 @@ const ReelInfo = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Reel Information
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Complete specifications and pricing for RF4 fishing reels
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                Reel Information
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400">
+                Complete specifications and pricing for RF4 fishing reels
+              </p>
+            </div>
+            {!compareMode && (
+              <button
+                onClick={() => setCompareMode(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+              >
+                <Scale className="w-4 h-4" />
+                Compare Reels
+              </button>
+            )}
+            {compareMode && (
+              <div className="flex gap-2">
+                <button
+                  onClick={exitCompareMode}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                >
+                  Exit Compare
+                </button>
+                {selectedReels.length === 2 && (
+                  <button
+                    onClick={() => setShowComparison(true)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                  >
+                    View Comparison
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -622,8 +669,15 @@ const ReelInfo = () => {
             </div>
           )}
 
-          <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-            Showing {filteredReels.length} of {reels.length} reels
+          <div className="mt-3 flex justify-between items-center">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              Showing {filteredReels.length} of {reels.length} reels
+            </div>
+            {compareMode && (
+              <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                {selectedReels.length}/2 reels selected for comparison
+              </div>
+            )}
           </div>
         </div>
 
@@ -633,6 +687,11 @@ const ReelInfo = () => {
             <table className="w-full">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
+                  {compareMode && (
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Select
+                    </th>
+                  )}
                   <th onClick={() => handleSort('Name')} className={getColumnHeaderClass('Name', 'left')}>
                     Reel Name {getSortIndicator('Name')}
                   </th>
@@ -671,6 +730,17 @@ const ReelInfo = () => {
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {filteredReels.map((reel, index) => (
                   <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    {compareMode && (
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedReels.some(r => r.Name === reel.Name)}
+                          onChange={() => toggleReelSelection(reel)}
+                          disabled={selectedReels.length === 2 && !selectedReels.some(r => r.Name === reel.Name)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                        />
+                      </td>
+                    )}
                     <td className="px-4 py-2">
                       <div className="flex items-center space-x-2">
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -746,6 +816,200 @@ const ReelInfo = () => {
           </div>
         </div>
       </div>
+
+      {/* Comparison Modal */}
+      {showComparison && selectedReels.length === 2 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reel Comparison</h2>
+                <button
+                  onClick={() => setShowComparison(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Reel Names */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  Specification
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedReels[0].Name}
+                  </h3>
+                  {selectedReels[0].Saltwater_Resistance && selectedReels[0].Saltwater_Resistance.includes('💧') && (
+                    <span className="text-blue-500">💧 Saltwater Resistant</span>
+                  )}
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedReels[1].Name}
+                  </h3>
+                  {selectedReels[1].Saltwater_Resistance && selectedReels[1].Saltwater_Resistance.includes('💧') && (
+                    <span className="text-blue-500">💧 Saltwater Resistant</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="space-y-2">
+                {/* Type */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Type || '-'}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Type || '-'}</div>
+                </div>
+
+                {/* Size */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Size || '-'}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Size || '-'}</div>
+                </div>
+
+                {/* Test Weight */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Weight</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Test_Weight || '-'}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Test_Weight || '-'}</div>
+                </div>
+
+                {/* Gear Ratio */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Gear Ratio</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {formatGearRatio(selectedReels[0].Gear_Ratio_1, selectedReels[0].Gear_Ratio_2)}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {formatGearRatio(selectedReels[1].Gear_Ratio_1, selectedReels[1].Gear_Ratio_2)}
+                  </div>
+                </div>
+
+                {/* Line Capacity */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Line Capacity (m)</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[0].Line_Capacity || '-'}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[1].Line_Capacity || '-'}
+                  </div>
+                </div>
+
+                {/* Retrieve Speed */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Retrieve Speed</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {formatSpeed(selectedReels[0].Retrieve_Speed_1, selectedReels[0].Retrieve_Speed_2, selectedReels[0].Retrieve_Speed_3, selectedReels[0].Retrieve_Speed_4)}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {formatSpeed(selectedReels[1].Retrieve_Speed_1, selectedReels[1].Retrieve_Speed_2, selectedReels[1].Retrieve_Speed_3, selectedReels[1].Retrieve_Speed_4)}
+                  </div>
+                </div>
+
+                {/* Tested Drag */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Tested Drag (kg)</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {parseDragValues(selectedReels[0].Drag_Real).tested}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {parseDragValues(selectedReels[1].Drag_Real).tested}
+                  </div>
+                </div>
+
+                {/* Listed Drag */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Listed Drag (kg)</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {parseDragValues(selectedReels[0].Drag_Real).listed}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {parseDragValues(selectedReels[1].Drag_Real).listed}
+                  </div>
+                </div>
+
+                {/* Mechanism Weight */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Mechanism Weight</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[0].Mechanism_Weight || '-'}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[1].Mechanism_Weight || '-'}
+                  </div>
+                </div>
+
+                {/* Price */}
+                <div className="grid grid-cols-3 gap-4 py-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Price</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[0].Price ? formatPrice(selectedReels[0].Price) : '-'}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">
+                    {selectedReels[1].Price ? formatPrice(selectedReels[1].Price) : '-'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Differences Summary */}
+              <div className="mt-8 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Key Differences</h4>
+                <div className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
+                  {(() => {
+                    const differences = [];
+                    
+                    // Test Weight difference
+                    const tw1 = parseFloat(selectedReels[0].Test_Weight?.replace('~', '')) || 0;
+                    const tw2 = parseFloat(selectedReels[1].Test_Weight?.replace('~', '')) || 0;
+                    if (tw1 && tw2 && Math.abs(tw1 - tw2) > 0) {
+                      differences.push(`Test Weight: ${tw1 > tw2 ? selectedReels[0].Name : selectedReels[1].Name} is stronger (${Math.abs(tw1 - tw2).toFixed(1)} kg difference)`);
+                    }
+
+                    // Drag difference
+                    const drag1 = parseFloat(parseDragValues(selectedReels[0].Drag_Real).listed) || 0;
+                    const drag2 = parseFloat(parseDragValues(selectedReels[1].Drag_Real).listed) || 0;
+                    if (drag1 && drag2 && Math.abs(drag1 - drag2) > 0) {
+                      differences.push(`Drag: ${drag1 > drag2 ? selectedReels[0].Name : selectedReels[1].Name} has ${Math.abs(drag1 - drag2).toFixed(1)} kg more drag`);
+                    }
+
+                    // Weight difference
+                    const weight1 = parseFloat(selectedReels[0].Mechanism_Weight) || 0;
+                    const weight2 = parseFloat(selectedReels[1].Mechanism_Weight) || 0;
+                    if (weight1 && weight2 && Math.abs(weight1 - weight2) > 0) {
+                      differences.push(`Weight: ${weight1 < weight2 ? selectedReels[0].Name : selectedReels[1].Name} is lighter (${Math.abs(weight1 - weight2).toFixed(2)} kg difference)`);
+                    }
+
+                    // Price difference
+                    const price1 = parseFloat(selectedReels[0].Price?.replace(/\s/g, '').replace(',', '.')) || 0;
+                    const price2 = parseFloat(selectedReels[1].Price?.replace(/\s/g, '').replace(',', '.')) || 0;
+                    if (price1 && price2 && Math.abs(price1 - price2) > 0) {
+                      differences.push(`Price: ${price1 < price2 ? selectedReels[0].Name : selectedReels[1].Name} is cheaper (${formatPrice(Math.abs(price1 - price2).toString())} difference)`);
+                    }
+
+                    // Saltwater resistance
+                    const salt1 = selectedReels[0].Saltwater_Resistance?.includes('💧');
+                    const salt2 = selectedReels[1].Saltwater_Resistance?.includes('💧');
+                    if (salt1 !== salt2) {
+                      differences.push(`Saltwater: Only ${salt1 ? selectedReels[0].Name : selectedReels[1].Name} is saltwater resistant`);
+                    }
+
+                    return differences.map((diff, idx) => (
+                      <p key={idx}>• {diff}</p>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
