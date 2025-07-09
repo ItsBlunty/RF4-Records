@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Star, Info, Filter, X } from 'lucide-react';
+import { Search, Star, Info, Filter, X, Scale } from 'lucide-react';
 
 const RodInfo = () => {
   const [rods, setRods] = useState([]);
@@ -19,6 +19,9 @@ const RodInfo = () => {
   const [highTestMax, setHighTestMax] = useState('');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
+  const [compareMode, setCompareMode] = useState(false);
+  const [selectedRods, setSelectedRods] = useState([]);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     const loadRodData = async () => {
@@ -264,6 +267,19 @@ const RodInfo = () => {
     setHighTestMin('');
     setHighTestMax('');
   };
+
+  const toggleRodSelection = (rod) => {
+    if (selectedRods.find(r => r.name === rod.name)) {
+      setSelectedRods(selectedRods.filter(r => r.name !== rod.name));
+    } else if (selectedRods.length < 2) {
+      setSelectedRods([...selectedRods, rod]);
+    }
+  };
+
+  const exitCompareMode = () => {
+    setCompareMode(false);
+    setSelectedRods([]);
+  };
   
   const hasActiveFilters = searchTerm || typeFilter !== 'All' || powerFilter !== 'All' || 
                           actionFilter !== 'All' || stiffnessMin || stiffnessMax || 
@@ -304,6 +320,33 @@ const RodInfo = () => {
                   Complete rod specifications and statistics
                 </p>
               </div>
+              {!compareMode && (
+                <button
+                  onClick={() => setCompareMode(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+                >
+                  <Scale className="w-4 h-4" />
+                  Compare Rods
+                </button>
+              )}
+              {compareMode && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={exitCompareMode}
+                    className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-medium"
+                  >
+                    Exit Compare
+                  </button>
+                  {selectedRods.length === 2 && (
+                    <button
+                      onClick={() => setShowComparison(true)}
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                    >
+                      View Comparison
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -497,9 +540,16 @@ const RodInfo = () => {
 
           {/* Results count */}
           <div className="px-6 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Showing {filteredAndSortedRods.length} of {rods.length} rods
-            </p>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {filteredAndSortedRods.length} of {rods.length} rods
+              </p>
+              {compareMode && (
+                <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                  {selectedRods.length}/2 rods selected for comparison
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Rod sections by type */}
@@ -512,6 +562,11 @@ const RodInfo = () => {
                   <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-auto">
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
+                        {compareMode && (
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                            Select
+                          </th>
+                        )}
                         <th onClick={() => handleSort('name')} className={`${getColumnHeaderClass('name')} whitespace-nowrap`}>
                           Rod Name {getSortIndicator('name')}
                         </th>
@@ -550,6 +605,17 @@ const RodInfo = () => {
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                       {typeRods.map((rod, index) => (
                         <tr key={`${rod.name}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          {compareMode && (
+                            <td className="px-6 py-2.5 whitespace-nowrap text-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedRods.some(r => r.name === rod.name)}
+                                onChange={() => toggleRodSelection(rod)}
+                                disabled={selectedRods.length === 2 && !selectedRods.some(r => r.name === rod.name)}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                              />
+                            </td>
+                          )}
                           <td className="px-6 py-2.5 whitespace-nowrap">
                             <div className="group relative">
                               <span className={`text-sm font-medium ${rod.bonuses.length > 0 ? 'text-blue-600 dark:text-blue-400 cursor-help' : 'text-gray-900 dark:text-white'}`}>
@@ -614,6 +680,173 @@ const RodInfo = () => {
           )}
         </div>
       </div>
+
+      {/* Comparison Modal */}
+      {showComparison && selectedRods.length === 2 && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Rod Comparison</h2>
+                <button
+                  onClick={() => setShowComparison(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Rod Names */}
+              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                  Specification
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedRods[0].name}
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {selectedRods[0].type} | Level {selectedRods[0].level}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedRods[1].name}
+                  </h3>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    {selectedRods[1].type} | Level {selectedRods[1].level}
+                  </div>
+                </div>
+              </div>
+
+              {/* Comparison Table */}
+              <div className="space-y-2">
+                {/* Type */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].type}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].type}</div>
+                </div>
+
+                {/* Level */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Level</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].level}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].level}</div>
+                </div>
+
+                {/* Low Test */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Low Test</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].lowTest}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].lowTest}</div>
+                </div>
+
+                {/* High Test */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">High Test</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].highTest}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].highTest}</div>
+                </div>
+
+                {/* Action */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Action</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].action}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].action}</div>
+                </div>
+
+                {/* Stiffness */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Stiffness</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].stiffness}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].stiffness}</div>
+                </div>
+
+                {/* Power */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Power</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].power}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].power}</div>
+                </div>
+
+                {/* Length */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Length</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].length}m</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].length}m</div>
+                </div>
+
+                {/* Max Load */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Load</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].maxLoad}kg</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].maxLoad}kg</div>
+                </div>
+
+                {/* Cost */}
+                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Cost</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].cost.toFixed(2)}</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].cost.toFixed(2)}</div>
+                </div>
+
+                {/* Stars */}
+                <div className="grid grid-cols-3 gap-4 py-3">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Stars</div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white flex justify-center">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${i < selectedRods[0].stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                  <div className="text-sm text-center text-gray-900 dark:text-white flex justify-center">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <Star
+                        key={i}
+                        className={`w-4 h-4 ${i < selectedRods[1].stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Bonuses */}
+                {(selectedRods[0].bonuses.length > 0 || selectedRods[1].bonuses.length > 0) && (
+                  <div className="grid grid-cols-3 gap-4 py-3">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Bonuses</div>
+                    <div className="text-sm text-center text-gray-900 dark:text-white">
+                      {selectedRods[0].bonuses.length > 0 ? (
+                        <ul className="text-xs space-y-1">
+                          {selectedRods[0].bonuses.map((bonus, i) => (
+                            <li key={i}>• {bonus}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-400">None</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-center text-gray-900 dark:text-white">
+                      {selectedRods[1].bonuses.length > 0 ? (
+                        <ul className="text-xs space-y-1">
+                          {selectedRods[1].bonuses.map((bonus, i) => (
+                            <li key={i}>• {bonus}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-gray-400">None</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
