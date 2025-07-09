@@ -49,6 +49,22 @@ class QADataset(Base):
         Index('idx_qa_date', 'date_added'),
     )
 
+class CafeOrder(Base):
+    __tablename__ = 'cafe_orders'
+    id = Column(Integer, primary_key=True)
+    fish_name = Column(String, nullable=False, index=True)
+    location = Column(String, nullable=False, index=True)
+    quantity = Column(Integer, nullable=False)
+    mass = Column(String, nullable=False)  # Store as string to preserve units (g/kg)
+    price = Column(Float, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), index=True)
+    
+    # Composite indexes for common query patterns
+    __table_args__ = (
+        Index('idx_cafe_fish_location', 'fish_name', 'location'),
+        Index('idx_cafe_location_fish', 'location', 'fish_name'),
+    )
+
 # Database configuration
 def get_database_url():
     """Get database URL from environment or use default SQLite"""

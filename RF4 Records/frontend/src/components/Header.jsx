@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
@@ -127,7 +127,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setGameInfoDropdownOpen(!gameInfoDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  ['waterbodyprices', 'timeline', 'alcohol', 'qa'].includes(currentPage)
+                  ['waterbodyprices', 'timeline', 'alcohol', 'qa', 'imagescraper', 'cafeorders'].includes(currentPage)
                     ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
                     : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
                 }`}
@@ -180,12 +180,36 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                       onPageChange && onPageChange('qa');
                       setGameInfoDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                       currentPage === 'qa' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <MessageCircle className="w-4 h-4 inline mr-2" />
                     Dev FAQ
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('imagescraper');
+                      setGameInfoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      currentPage === 'imagescraper' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <FileImage className="w-4 h-4 inline mr-2" />
+                    Image Scraper
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('cafeorders');
+                      setGameInfoDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'cafeorders' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Coffee className="w-4 h-4 inline mr-2" />
+                    Cafe Orders
                   </button>
                 </div>
               )}

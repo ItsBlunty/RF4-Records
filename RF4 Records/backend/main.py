@@ -1,11 +1,11 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from database import SessionLocal, Record, QADataset, create_tables
+from database import SessionLocal, Record, QADataset, CafeOrder, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
 from unified_cleanup import periodic_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -18,6 +18,8 @@ import sys
 import time
 import threading
 import os
+import tempfile
+import shutil
 
 # Set up logging to stdout (not stderr) to avoid red text in Railway
 logging.basicConfig(
@@ -2605,6 +2607,142 @@ def get_all_memory_snapshots():
     except Exception as e:
         logger.error(f"Error getting all memory snapshots: {e}")
         return {"error": str(e)}
+
+@app.post("/api/scrape-image")
+async def scrape_fish_image(file: UploadFile = File(...)):
+    """Scrape fish data from uploaded image"""
+    try:
+        # Validate file type
+        if not file.content_type.startswith('image/'):
+            raise HTTPException(status_code=400, detail="File must be an image")
+        
+        # Create temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
+            # Copy uploaded file to temporary file
+            shutil.copyfileobj(file.file, temp_file)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Import and use the image scraper
+            from image_scraper_api import FishImageScraper
+            
+            scraper = FishImageScraper()
+            fish_data = scraper.scrape_image(temp_file_path)
+            
+            return {
+                "success": True,
+                "filename": file.filename,
+                "fish_data": fish_data,
+                "count": len(fish_data),
+                "requires_confirmation": True
+            }
+            
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_file_path):
+                os.unlink(temp_file_path)
+                
+    except Exception as e:
+        logger.error(f"Error scraping image: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
+
+@app.post("/api/cafe-orders/confirm")
+async def confirm_cafe_orders(orders: list[dict]):
+    """Confirm and save cafe orders to database"""
+    db = SessionLocal()
+    try:
+        saved_orders = []
+        for order in orders:
+            # Convert mass to grams for consistent storage
+            mass_str = order.get('mass', '')
+            mass_grams = 0
+            if 'kg' in mass_str:
+                mass_grams = float(mass_str.replace('kg', '').strip()) * 1000
+            elif 'g' in mass_str:
+                mass_grams = float(mass_str.replace('g', '').strip())
+            
+            # Create new cafe order
+            cafe_order = CafeOrder(
+                fish_name=order['name'],
+                location=order['location'],
+                quantity=order['quantity'] if isinstance(order['quantity'], int) else int(order['quantity'].split()[0]),
+                mass=order['mass'],
+                price=float(order['price'])
+            )
+            db.add(cafe_order)
+            saved_orders.append(cafe_order)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "saved_count": len(saved_orders),
+            "message": f"Successfully saved {len(saved_orders)} cafe orders"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving cafe orders: {e}")
+        raise HTTPException(status_code=500, detail=f"Error saving orders: {str(e)}")
+    finally:
+        db.close()
+
+@app.get("/api/cafe-orders")
+def get_cafe_orders(location: str = None):
+    """Get all cafe orders with price ranges"""
+    db = SessionLocal()
+    try:
+        from sqlalchemy import func
+        
+        # Base query to get price ranges
+        query = db.query(
+            CafeOrder.fish_name,
+            CafeOrder.location,
+            CafeOrder.quantity,
+            CafeOrder.mass,
+            func.min(CafeOrder.price).label('min_price'),
+            func.max(CafeOrder.price).label('max_price'),
+            func.count(CafeOrder.id).label('sample_count')
+        ).group_by(
+            CafeOrder.fish_name,
+            CafeOrder.location,
+            CafeOrder.quantity,
+            CafeOrder.mass
+        )
+        
+        if location:
+            query = query.filter(CafeOrder.location == location)
+            
+        results = query.all()
+        
+        # Format results
+        cafe_orders = []
+        for result in results:
+            cafe_orders.append({
+                "fish_name": result.fish_name,
+                "location": result.location,
+                "quantity": result.quantity,
+                "mass": result.mass,
+                "min_price": result.min_price,
+                "max_price": result.max_price,
+                "price_range": f"{result.min_price:.2f} - {result.max_price:.2f}" if result.min_price != result.max_price else f"{result.min_price:.2f}",
+                "sample_count": result.sample_count
+            })
+        
+        # Get unique locations
+        locations = db.query(CafeOrder.location).distinct().all()
+        
+        return {
+            "orders": cafe_orders,
+            "locations": [loc[0] for loc in locations],
+            "total_orders": len(cafe_orders)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting cafe orders: {e}")
+        raise HTTPException(status_code=500, detail=f"Error retrieving orders: {str(e)}")
+    finally:
+        db.close()
 
 # Enhanced memory profiling endpoints
 @app.post("/admin/memory/profile/start")
