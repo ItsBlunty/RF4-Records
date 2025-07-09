@@ -173,6 +173,10 @@ function AppContent() {
       navigate('/timeline');
     } else if (page === 'qa') {
       navigate('/qa');
+    } else if (page === 'imagescraper') {
+      navigate('/imagescraper');
+    } else if (page === 'cafeorders') {
+      navigate('/cafeorders');
     } else if (page === 'maps') {
       // Navigate to first map in the availableMaps list dynamically
       const firstMapKey = Object.keys(availableMaps)[0];
