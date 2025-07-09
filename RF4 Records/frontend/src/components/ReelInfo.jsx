@@ -359,7 +359,7 @@ const ReelInfo = () => {
   const toggleReelSelection = (reel) => {
     if (selectedReels.find(r => r.Name === reel.Name)) {
       setSelectedReels(selectedReels.filter(r => r.Name !== reel.Name));
-    } else if (selectedReels.length < 2) {
+    } else if (selectedReels.length < 5) {
       setSelectedReels([...selectedReels, reel]);
     }
   };
@@ -433,12 +433,12 @@ const ReelInfo = () => {
                 >
                   Exit Compare
                 </button>
-                {selectedReels.length === 2 && (
+                {selectedReels.length >= 2 && (
                   <button
                     onClick={() => setShowComparison(true)}
                     className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                   >
-                    View Comparison
+                    View Comparison ({selectedReels.length})
                   </button>
                 )}
               </div>
@@ -675,7 +675,7 @@ const ReelInfo = () => {
             </div>
             {compareMode && (
               <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                {selectedReels.length}/2 reels selected for comparison
+                {selectedReels.length}/5 reels selected for comparison
               </div>
             )}
           </div>
@@ -736,7 +736,7 @@ const ReelInfo = () => {
                           type="checkbox"
                           checked={selectedReels.some(r => r.Name === reel.Name)}
                           onChange={() => toggleReelSelection(reel)}
-                          disabled={selectedReels.length === 2 && !selectedReels.some(r => r.Name === reel.Name)}
+                          disabled={selectedReels.length === 5 && !selectedReels.some(r => r.Name === reel.Name)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
                         />
                       </td>
@@ -818,7 +818,7 @@ const ReelInfo = () => {
       </div>
 
       {/* Comparison Modal */}
-      {showComparison && selectedReels.length === 2 && (
+      {showComparison && selectedReels.length >= 2 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
@@ -835,127 +835,59 @@ const ReelInfo = () => {
 
             <div className="p-6">
               {/* Reel Names */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className={`grid gap-4 mb-6`} style={{gridTemplateColumns: `200px repeat(${selectedReels.length}, 1fr)`}}>
                 <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   Specification
                 </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedReels[0].Name}
-                  </h3>
-                  {selectedReels[0].Saltwater_Resistance && selectedReels[0].Saltwater_Resistance.includes('💧') && (
-                    <span className="text-blue-500">💧 Saltwater Resistant</span>
-                  )}
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedReels[1].Name}
-                  </h3>
-                  {selectedReels[1].Saltwater_Resistance && selectedReels[1].Saltwater_Resistance.includes('💧') && (
-                    <span className="text-blue-500">💧 Saltwater Resistant</span>
-                  )}
-                </div>
+                {selectedReels.map((reel, index) => (
+                  <div key={index} className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {reel.Name}
+                    </h3>
+                    {reel.Saltwater_Resistance && reel.Saltwater_Resistance.includes('💧') && (
+                      <span className="text-blue-500">💧 Saltwater Resistant</span>
+                    )}
+                  </div>
+                ))}
               </div>
 
               {/* Comparison Table */}
               <div className="space-y-2">
-                {/* Type */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Type || '-'}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Type || '-'}</div>
-                </div>
+                {/* Helper function to render comparison rows */}
+                {(() => {
+                  const renderComparisonRow = (label, getValue) => (
+                    <div className={`grid gap-4 py-3 border-b border-gray-200 dark:border-gray-700`} style={{gridTemplateColumns: `200px repeat(${selectedReels.length}, 1fr)`}}>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</div>
+                      {selectedReels.map((reel, index) => (
+                        <div key={index} className="text-sm text-center text-gray-900 dark:text-white">{getValue(reel)}</div>
+                      ))}
+                    </div>
+                  );
 
-                {/* Size */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Size</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Size || '-'}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Size || '-'}</div>
-                </div>
-
-                {/* Test Weight */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Test Weight</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[0].Test_Weight || '-'}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedReels[1].Test_Weight || '-'}</div>
-                </div>
-
-                {/* Gear Ratio */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Gear Ratio</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {formatGearRatio(selectedReels[0].Gear_Ratio_1, selectedReels[0].Gear_Ratio_2)}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {formatGearRatio(selectedReels[1].Gear_Ratio_1, selectedReels[1].Gear_Ratio_2)}
-                  </div>
-                </div>
-
-                {/* Line Capacity */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Line Capacity (m)</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[0].Line_Capacity || '-'}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[1].Line_Capacity || '-'}
-                  </div>
-                </div>
-
-                {/* Retrieve Speed */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Retrieve Speed</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {formatSpeed(selectedReels[0].Retrieve_Speed_1, selectedReels[0].Retrieve_Speed_2, selectedReels[0].Retrieve_Speed_3, selectedReels[0].Retrieve_Speed_4)}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {formatSpeed(selectedReels[1].Retrieve_Speed_1, selectedReels[1].Retrieve_Speed_2, selectedReels[1].Retrieve_Speed_3, selectedReels[1].Retrieve_Speed_4)}
-                  </div>
-                </div>
-
-                {/* Tested Drag */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Tested Drag (kg)</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {parseDragValues(selectedReels[0].Drag_Real).tested}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {parseDragValues(selectedReels[1].Drag_Real).tested}
-                  </div>
-                </div>
-
-                {/* Listed Drag */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Listed Drag (kg)</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {parseDragValues(selectedReels[0].Drag_Real).listed}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {parseDragValues(selectedReels[1].Drag_Real).listed}
-                  </div>
-                </div>
-
-                {/* Mechanism Weight */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Mechanism Weight</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[0].Mechanism_Weight || '-'}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[1].Mechanism_Weight || '-'}
-                  </div>
-                </div>
-
-                {/* Price */}
-                <div className="grid grid-cols-3 gap-4 py-3">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Price</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[0].Price ? formatPrice(selectedReels[0].Price) : '-'}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">
-                    {selectedReels[1].Price ? formatPrice(selectedReels[1].Price) : '-'}
-                  </div>
-                </div>
+                  return (
+                    <>
+                      {renderComparisonRow('Type', (reel) => reel.Type || '-')}
+                      {renderComparisonRow('Size', (reel) => reel.Size || '-')}
+                      {renderComparisonRow('Test Weight', (reel) => reel.Test_Weight || '-')}
+                      {renderComparisonRow('Gear Ratio', (reel) => formatGearRatio(reel.Gear_Ratio_1, reel.Gear_Ratio_2))}
+                      {renderComparisonRow('Line Capacity (m)', (reel) => reel.Line_Capacity && reel.Line_Capacity !== '-' ? reel.Line_Capacity : '-')}
+                      {renderComparisonRow('Retrieve Speed', (reel) => formatSpeed(reel.Retrieve_Speed_1, reel.Retrieve_Speed_2, reel.Retrieve_Speed_3, reel.Retrieve_Speed_4))}
+                      {renderComparisonRow('Tested Drag (kg)', (reel) => parseDragValues(reel.Drag_Real).tested)}
+                      {renderComparisonRow('Listed Drag (kg)', (reel) => parseDragValues(reel.Drag_Real).listed)}
+                      {renderComparisonRow('Mechanism Weight', (reel) => reel.Mechanism_Weight && reel.Mechanism_Weight !== '-' ? reel.Mechanism_Weight : '-')}
+                      
+                      {/* Price - no border for last row */}
+                      <div className={`grid gap-4 py-3`} style={{gridTemplateColumns: `200px repeat(${selectedReels.length}, 1fr)`}}>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Price</div>
+                        {selectedReels.map((reel, index) => (
+                          <div key={index} className="text-sm text-center text-gray-900 dark:text-white">
+                            {reel.Price && reel.Price !== '-' ? formatPrice(reel.Price) : '-'}
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

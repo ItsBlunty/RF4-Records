@@ -271,7 +271,7 @@ const RodInfo = () => {
   const toggleRodSelection = (rod) => {
     if (selectedRods.find(r => r.name === rod.name)) {
       setSelectedRods(selectedRods.filter(r => r.name !== rod.name));
-    } else if (selectedRods.length < 2) {
+    } else if (selectedRods.length < 5) {
       setSelectedRods([...selectedRods, rod]);
     }
   };
@@ -337,12 +337,12 @@ const RodInfo = () => {
                   >
                     Exit Compare
                   </button>
-                  {selectedRods.length === 2 && (
+                  {selectedRods.length >= 2 && (
                     <button
                       onClick={() => setShowComparison(true)}
                       className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
                     >
-                      View Comparison
+                      View Comparison ({selectedRods.length})
                     </button>
                   )}
                 </div>
@@ -546,7 +546,7 @@ const RodInfo = () => {
               </p>
               {compareMode && (
                 <div className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                  {selectedRods.length}/2 rods selected for comparison
+                  {selectedRods.length}/5 rods selected for comparison
                 </div>
               )}
             </div>
@@ -611,7 +611,7 @@ const RodInfo = () => {
                                 type="checkbox"
                                 checked={selectedRods.some(r => r.name === rod.name)}
                                 onChange={() => toggleRodSelection(rod)}
-                                disabled={selectedRods.length === 2 && !selectedRods.some(r => r.name === rod.name)}
+                                disabled={selectedRods.length === 5 && !selectedRods.some(r => r.name === rod.name)}
                                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
                               />
                             </td>
@@ -682,7 +682,7 @@ const RodInfo = () => {
       </div>
 
       {/* Comparison Modal */}
-      {showComparison && selectedRods.length === 2 && (
+      {showComparison && selectedRods.length >= 2 && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4">
@@ -699,149 +699,85 @@ const RodInfo = () => {
 
             <div className="p-6">
               {/* Rod Names */}
-              <div className="grid grid-cols-3 gap-4 mb-6">
+              <div className={`grid gap-4 mb-6`} style={{gridTemplateColumns: `200px repeat(${selectedRods.length}, 1fr)`}}>
                 <div className="text-sm font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   Specification
                 </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedRods[0].name}
-                  </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {selectedRods[0].type} | Level {selectedRods[0].level}
+                {selectedRods.map((rod, index) => (
+                  <div key={index} className="text-center">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {rod.name}
+                    </h3>
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                      {rod.type} | Level {rod.level}
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    {selectedRods[1].name}
-                  </h3>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    {selectedRods[1].type} | Level {selectedRods[1].level}
-                  </div>
-                </div>
+                ))}
               </div>
 
               {/* Comparison Table */}
               <div className="space-y-2">
-                {/* Type */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Type</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].type}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].type}</div>
-                </div>
-
-                {/* Level */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Level</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].level}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].level}</div>
-                </div>
-
-                {/* Low Test */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Low Test</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].lowTest}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].lowTest}</div>
-                </div>
-
-                {/* High Test */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">High Test</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].highTest}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].highTest}</div>
-                </div>
-
-                {/* Action */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Action</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].action}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].action}</div>
-                </div>
-
-                {/* Stiffness */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Stiffness</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].stiffness}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].stiffness}</div>
-                </div>
-
-                {/* Power */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Power</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].power}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].power}</div>
-                </div>
-
-                {/* Length */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Length</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].length}m</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].length}m</div>
-                </div>
-
-                {/* Max Load */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Max Load</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].maxLoad}kg</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].maxLoad}kg</div>
-                </div>
-
-                {/* Cost */}
-                <div className="grid grid-cols-3 gap-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Cost</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[0].cost.toFixed(2)}</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white">{selectedRods[1].cost.toFixed(2)}</div>
-                </div>
-
-                {/* Stars */}
-                <div className="grid grid-cols-3 gap-4 py-3">
-                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Stars</div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white flex justify-center">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < selectedRods[0].stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                  <div className="text-sm text-center text-gray-900 dark:text-white flex justify-center">
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-4 h-4 ${i < selectedRods[1].stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Bonuses */}
-                {(selectedRods[0].bonuses.length > 0 || selectedRods[1].bonuses.length > 0) && (
-                  <div className="grid grid-cols-3 gap-4 py-3">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Bonuses</div>
-                    <div className="text-sm text-center text-gray-900 dark:text-white">
-                      {selectedRods[0].bonuses.length > 0 ? (
-                        <ul className="text-xs space-y-1">
-                          {selectedRods[0].bonuses.map((bonus, i) => (
-                            <li key={i}>• {bonus}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-400">None</span>
-                      )}
+                {/* Helper function to render comparison rows */}
+                {(() => {
+                  const renderComparisonRow = (label, getValue) => (
+                    <div className={`grid gap-4 py-3 border-b border-gray-200 dark:border-gray-700`} style={{gridTemplateColumns: `200px repeat(${selectedRods.length}, 1fr)`}}>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</div>
+                      {selectedRods.map((rod, index) => (
+                        <div key={index} className="text-sm text-center text-gray-900 dark:text-white">{getValue(rod)}</div>
+                      ))}
                     </div>
-                    <div className="text-sm text-center text-gray-900 dark:text-white">
-                      {selectedRods[1].bonuses.length > 0 ? (
-                        <ul className="text-xs space-y-1">
-                          {selectedRods[1].bonuses.map((bonus, i) => (
-                            <li key={i}>• {bonus}</li>
+                  );
+
+                  return (
+                    <>
+                      {renderComparisonRow('Type', (rod) => rod.type)}
+                      {renderComparisonRow('Level', (rod) => rod.level)}
+                      {renderComparisonRow('Low Test', (rod) => rod.lowTest)}
+                      {renderComparisonRow('High Test', (rod) => rod.highTest)}
+                      {renderComparisonRow('Action', (rod) => rod.action)}
+                      {renderComparisonRow('Stiffness', (rod) => rod.stiffness)}
+                      {renderComparisonRow('Power', (rod) => rod.power)}
+                      {renderComparisonRow('Length', (rod) => `${rod.length}m`)}
+                      {renderComparisonRow('Max Load', (rod) => `${rod.maxLoad}kg`)}
+                      {renderComparisonRow('Cost', (rod) => rod.cost.toFixed(2))}
+                      
+                      {/* Stars */}
+                      <div className={`grid gap-4 py-3 border-b border-gray-200 dark:border-gray-700`} style={{gridTemplateColumns: `200px repeat(${selectedRods.length}, 1fr)`}}>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Stars</div>
+                        {selectedRods.map((rod, index) => (
+                          <div key={index} className="text-sm text-center text-gray-900 dark:text-white flex justify-center">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-4 h-4 ${i < rod.stars ? 'text-yellow-400 fill-current' : 'text-gray-300'}`}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Bonuses */}
+                      {selectedRods.some(rod => rod.bonuses.length > 0) && (
+                        <div className={`grid gap-4 py-3`} style={{gridTemplateColumns: `200px repeat(${selectedRods.length}, 1fr)`}}>
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Bonuses</div>
+                          {selectedRods.map((rod, index) => (
+                            <div key={index} className="text-sm text-center text-gray-900 dark:text-white">
+                              {rod.bonuses.length > 0 ? (
+                                <ul className="text-xs space-y-1">
+                                  {rod.bonuses.map((bonus, i) => (
+                                    <li key={i}>• {bonus}</li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-gray-400">None</span>
+                              )}
+                            </div>
                           ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-400">None</span>
+                        </div>
                       )}
-                    </div>
-                  </div>
-                )}
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>
