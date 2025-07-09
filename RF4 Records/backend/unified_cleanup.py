@@ -215,10 +215,14 @@ def post_scrape_cleanup() -> Tuple[bool, float]:
             import ctypes
             try:
                 libc = ctypes.CDLL("libc.so.6")
-                libc.malloc_trim(0)  # Force malloc to release memory back to OS
-                logger.debug("Forced malloc trim to release system memory")
-            except:
-                pass
+                # malloc_trim returns 1 on success, 0 on failure
+                result = libc.malloc_trim(0)  # Force malloc to release memory back to OS
+                if result:
+                    logger.info("✅ malloc_trim succeeded - memory released to OS")
+                else:
+                    logger.warning("⚠️ malloc_trim returned 0 - no memory was released")
+            except Exception as e:
+                logger.warning(f"❌ malloc_trim failed: {e}")
                 
             # Python-specific memory release
             try:
