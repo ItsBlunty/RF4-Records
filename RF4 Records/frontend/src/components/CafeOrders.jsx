@@ -166,7 +166,7 @@ const CafeOrders = () => {
                   {/* Five-column layout for fish */}
                   <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {locationOrders.map((fishGroup, index) => (
-                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 aspect-square flex flex-col">
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-col">
                         {/* Fish name header - centered at top */}
                         <div className="text-center mb-3">
                           <span className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -175,7 +175,7 @@ const CafeOrders = () => {
                         </div>
                         
                         {/* Order variants - two mini columns */}
-                        <div className="flex-1 space-y-2">
+                        <div className="space-y-2">
                           {fishGroup.orderVariants.map((variant, variantIndex) => (
                             <div key={variantIndex} className="flex items-center justify-between text-xs">
                               {/* Left mini-column: order details */}
