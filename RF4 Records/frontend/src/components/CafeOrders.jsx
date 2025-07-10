@@ -45,30 +45,51 @@ const CafeOrders = () => {
         grouped[order.location][order.fish_name] = {
           fish_name: order.fish_name,
           location: order.location,
-          orders: []
+          orderVariants: {}
         };
       }
       
       const fishGroup = grouped[order.location][order.fish_name];
-      fishGroup.orders.push(order);
+      const orderKey = `${order.quantity} × ${order.mass}`;
+      
+      if (!fishGroup.orderVariants[orderKey]) {
+        fishGroup.orderVariants[orderKey] = {
+          quantity: order.quantity,
+          mass: order.mass,
+          prices: []
+        };
+      }
+      
+      // Add this price to the variant
+      const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
+      fishGroup.orderVariants[orderKey].prices.push(price);
     });
     
     // Convert nested object to array format and calculate average silver for sorting
     const result = {};
     Object.keys(grouped).forEach(location => {
       result[location] = Object.values(grouped[location]).map(fishGroup => {
-        // Calculate average silver price for sorting
-        let totalSilver = 0;
-        let sampleCount = 0;
-        
-        fishGroup.orders.forEach(order => {
-          // Parse price to get numeric value
-          const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
-          totalSilver += price;
-          sampleCount += 1;
+        // Convert orderVariants object to array and calculate price ranges
+        fishGroup.orderVariants = Object.values(fishGroup.orderVariants).map(variant => {
+          const prices = variant.prices;
+          const minPrice = Math.min(...prices);
+          const maxPrice = Math.max(...prices);
+          
+          return {
+            ...variant,
+            priceRange: prices.length > 1 && minPrice !== maxPrice 
+              ? `${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`
+              : minPrice.toFixed(2),
+            averagePrice: prices.reduce((sum, p) => sum + p, 0) / prices.length
+          };
         });
         
-        fishGroup.averageSilver = sampleCount > 0 ? totalSilver / sampleCount : 0;
+        // Calculate average silver for sorting (across all variants)
+        const allPrices = fishGroup.orderVariants.flatMap(v => v.prices);
+        fishGroup.averageSilver = allPrices.length > 0 
+          ? allPrices.reduce((sum, p) => sum + p, 0) / allPrices.length 
+          : 0;
+        
         return fishGroup;
       }).sort((a, b) => b.averageSilver - a.averageSilver); // Sort by average silver descending
     });
@@ -145,24 +166,31 @@ const CafeOrders = () => {
                   {/* Five-column layout for fish */}
                   <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {locationOrders.map((fishGroup, index) => (
-                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                        {/* Fish name header */}
-                        <div className="mb-2">
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 aspect-square flex flex-col">
+                        {/* Fish name header - centered at top */}
+                        <div className="text-center mb-3">
                           <span className="text-sm font-semibold text-gray-900 dark:text-white">
                             {fishGroup.fish_name}
                           </span>
                         </div>
                         
-                        {/* Order variants - more compact */}
-                        <div className="space-y-1">
-                          {fishGroup.orders.map((order, orderIndex) => (
-                            <div key={orderIndex} className="flex items-center gap-2 text-xs">
-                              <span className="text-gray-700 dark:text-gray-300 flex-shrink-0">
-                                {order.quantity} × {order.mass}
-                              </span>
-                              <span className="text-gray-600 dark:text-gray-400 font-medium">
-                                {parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0).toFixed(2)}
-                              </span>
+                        {/* Order variants - two mini columns */}
+                        <div className="flex-1 space-y-2">
+                          {fishGroup.orderVariants.map((variant, variantIndex) => (
+                            <div key={variantIndex} className="flex items-center justify-between text-xs">
+                              {/* Left mini-column: order details */}
+                              <div className="flex-1 text-center">
+                                <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                  {variant.quantity} × {variant.mass}
+                                </span>
+                              </div>
+                              
+                              {/* Right mini-column: silver price/range */}
+                              <div className="flex-1 text-center">
+                                <span className="text-gray-600 dark:text-gray-400 font-medium">
+                                  {variant.priceRange}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
