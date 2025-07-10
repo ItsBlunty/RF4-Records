@@ -142,47 +142,32 @@ const CafeOrders = () => {
                     </h2>
                   </div>
                   
-                  {/* Two-column layout for fish */}
-                  <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
-                    {locationOrders.map((fishGroup, index) => {
-                      // Calculate if we should show range or single price
-                      const allPrices = fishGroup.orders.map(order => {
-                        const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
-                        return price;
-                      });
-                      
-                      const minPrice = Math.min(...allPrices);
-                      const maxPrice = Math.max(...allPrices);
-                      const showRange = allPrices.length > 1 && minPrice !== maxPrice;
-                      
-                      return (
-                        <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                          {/* Fish name header */}
-                          <div className="mb-2">
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {fishGroup.fish_name}
-                            </span>
-                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                              💰 {showRange ? `${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}` : minPrice.toFixed(2)}
-                            </div>
-                          </div>
-                          
-                          {/* Order variants - more compact */}
-                          <div className="space-y-1">
-                            {fishGroup.orders.map((order, orderIndex) => (
-                              <div key={orderIndex} className="flex items-center justify-between text-xs">
-                                <span className="text-gray-700 dark:text-gray-300">
-                                  {order.quantity} × {order.mass}
-                                </span>
-                                <span className="text-gray-600 dark:text-gray-400">
-                                  {parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0).toFixed(2)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
+                  {/* Four-column layout for fish */}
+                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                    {locationOrders.map((fishGroup, index) => (
+                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                        {/* Fish name header */}
+                        <div className="mb-2">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {fishGroup.fish_name}
+                          </span>
                         </div>
-                      );
-                    })}
+                        
+                        {/* Order variants - more compact */}
+                        <div className="space-y-1">
+                          {fishGroup.orders.map((order, orderIndex) => (
+                            <div key={orderIndex} className="flex items-center justify-between text-xs">
+                              <span className="text-gray-700 dark:text-gray-300">
+                                {order.quantity} × {order.mass}
+                              </span>
+                              <span className="text-gray-600 dark:text-gray-400">
+                                {parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
