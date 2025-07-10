@@ -208,11 +208,6 @@ const CafeOrders = () => {
                                 <span className="text-gray-600 dark:text-gray-400 font-medium">
                                   {variant.priceRange}
                                 </span>
-                                {variant.sampleCount > 1 && (
-                                  <div className="text-xs text-gray-500 dark:text-gray-500">
-                                    ({variant.sampleCount} samples)
-                                  </div>
-                                )}
                               </div>
                             </div>
                           ))}
