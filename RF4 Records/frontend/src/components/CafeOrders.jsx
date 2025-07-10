@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coffee, Filter, MapPin, Fish, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Coffee, Filter, MapPin, Fish } from 'lucide-react';
 
 const CafeOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -34,20 +34,6 @@ const CafeOrders = () => {
     }
   };
 
-  const getPriceRangeIcon = (minPrice, maxPrice) => {
-    const diff = maxPrice - minPrice;
-    const percent = (diff / minPrice) * 100;
-    
-    if (percent > 20) {
-      return <TrendingUp className="w-4 h-4 text-red-500" />;
-    } else if (percent > 10) {
-      return <TrendingUp className="w-4 h-4 text-orange-500" />;
-    } else if (percent > 5) {
-      return <TrendingUp className="w-4 h-4 text-yellow-500" />;
-    } else {
-      return <Minus className="w-4 h-4 text-green-500" />;
-    }
-  };
 
   const groupOrdersByLocationAndFish = () => {
     const grouped = {};
@@ -59,18 +45,12 @@ const CafeOrders = () => {
         grouped[order.location][order.fish_name] = {
           fish_name: order.fish_name,
           location: order.location,
-          orders: [],
-          min_price: Infinity,
-          max_price: -Infinity,
-          sample_count: 0
+          orders: []
         };
       }
       
       const fishGroup = grouped[order.location][order.fish_name];
       fishGroup.orders.push(order);
-      fishGroup.min_price = Math.min(fishGroup.min_price, order.min_price);
-      fishGroup.max_price = Math.max(fishGroup.max_price, order.max_price);
-      fishGroup.sample_count += order.sample_count;
     });
     
     // Convert nested object to array format for easier rendering
@@ -155,23 +135,14 @@ const CafeOrders = () => {
                             Fish Type
                           </th>
                           <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Orders
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Silver Range
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Trend
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Samples
+                            Order Variants
                           </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         {locationOrders.map((fishGroup, index) => (
                           <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3">
+                            <td className="px-4 py-3 align-top">
                               <div className="flex items-center">
                                 <Fish className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-2" />
                                 <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -180,27 +151,23 @@ const CafeOrders = () => {
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <div className="space-y-1">
+                              <div className="space-y-2">
                                 {fishGroup.orders.map((order, orderIndex) => (
-                                  <div key={orderIndex} className="text-xs text-gray-700 dark:text-gray-300">
-                                    {order.quantity} pcs × {order.mass}
+                                  <div key={orderIndex} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {order.quantity} × {order.mass}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-gray-500 dark:text-gray-400">💰</span>
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {order.price_range || `${order.min_price?.toFixed(2)} - ${order.max_price?.toFixed(2)}`}
+                                      </span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-1">
-                                <span className="text-gray-500 dark:text-gray-400">💰</span>
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {fishGroup.min_price.toFixed(2)} - {fishGroup.max_price.toFixed(2)}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              {getPriceRangeIcon(fishGroup.min_price, fishGroup.max_price)}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className="text-sm text-gray-500 dark:text-gray-400">{fishGroup.sample_count}</span>
                             </td>
                           </tr>
                         ))}
