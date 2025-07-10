@@ -142,8 +142,8 @@ const CafeOrders = () => {
                     </h2>
                   </div>
                   
-                  {/* Four-column layout for fish */}
-                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                  {/* Five-column layout for fish */}
+                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                     {locationOrders.map((fishGroup, index) => (
                       <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
                         {/* Fish name header */}
@@ -156,11 +156,11 @@ const CafeOrders = () => {
                         {/* Order variants - more compact */}
                         <div className="space-y-1">
                           {fishGroup.orders.map((order, orderIndex) => (
-                            <div key={orderIndex} className="flex items-center justify-between text-xs">
-                              <span className="text-gray-700 dark:text-gray-300">
+                            <div key={orderIndex} className="flex items-center gap-2 text-xs">
+                              <span className="text-gray-700 dark:text-gray-300 flex-shrink-0">
                                 {order.quantity} × {order.mass}
                               </span>
-                              <span className="text-gray-600 dark:text-gray-400">
+                              <span className="text-gray-600 dark:text-gray-400 font-medium">
                                 {parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0).toFixed(2)}
                               </span>
                             </div>
