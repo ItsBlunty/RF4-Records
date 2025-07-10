@@ -2664,7 +2664,7 @@ async def confirm_cafe_orders(orders: list[dict]):
             
             # Create new cafe order
             cafe_order = CafeOrder(
-                fish_name=order['name'],
+                fish_name=order.get('fish_name', order.get('name', '')),
                 location=order['location'],
                 quantity=order['quantity'] if isinstance(order['quantity'], int) else int(order['quantity'].split()[0]),
                 mass=order['mass'],
@@ -2685,6 +2685,38 @@ async def confirm_cafe_orders(orders: list[dict]):
         db.rollback()
         logger.error(f"Error saving cafe orders: {e}")
         raise HTTPException(status_code=500, detail=f"Error saving orders: {str(e)}")
+    finally:
+        db.close()
+
+@app.post("/api/cafe-orders/add")
+async def add_cafe_orders(orders: list[dict]):
+    """Add new cafe orders to database (simplified endpoint)"""
+    db = SessionLocal()
+    try:
+        saved_orders = []
+        for order in orders:
+            cafe_order = CafeOrder(
+                fish_name=order['fish_name'],
+                location=order['location'],
+                quantity=order['quantity'],
+                mass=order['mass'],
+                price=float(order['price'])
+            )
+            db.add(cafe_order)
+            saved_orders.append(cafe_order)
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "added_count": len(saved_orders),
+            "message": f"Successfully added {len(saved_orders)} cafe orders"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error adding cafe orders: {e}")
+        raise HTTPException(status_code=500, detail=f"Error adding orders: {str(e)}")
     finally:
         db.close()
 

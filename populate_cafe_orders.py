@@ -87,7 +87,7 @@ def populate_cafe_orders():
     
     # Try to use the API endpoint if server is running
     try:
-        response = requests.post('http://localhost:8000/api/cafe-orders/confirm', json=all_orders)
+        response = requests.post('http://localhost:8000/api/cafe-orders/add', json=all_orders)
         if response.status_code == 200:
             print(f"Successfully inserted {len(all_orders)} cafe orders via API")
             return True
