@@ -13,7 +13,7 @@ const CafeOrders = () => {
     'Mosquito Lake',
     'Elk Lake',
     'Winding Rivulet',
-    'Old Burg',
+    'Old Burg Lake',
     'Belaya River',
     'Kuori Lake',
     'Bear Lake',
@@ -25,6 +25,7 @@ const CafeOrders = () => {
     'Ladoga archipelago',
     'Akhtuba River',
     'Copper lake',
+    'Copper Lake',
     'Lower Tunguska River',
     'Yana River',
     'Norwegian Sea'
