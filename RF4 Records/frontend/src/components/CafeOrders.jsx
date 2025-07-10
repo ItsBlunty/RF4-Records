@@ -55,39 +55,41 @@ const CafeOrders = () => {
       if (!fishGroup.orderVariants[orderKey]) {
         fishGroup.orderVariants[orderKey] = {
           quantity: order.quantity,
-          mass: order.mass,
-          prices: []
+          mass: order.mass
         };
       }
       
-      // Add this price to the variant
-      const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
-      fishGroup.orderVariants[orderKey].prices.push(price);
+      // Store the complete price info from the API
+      if (!fishGroup.orderVariants[orderKey].priceInfo) {
+        fishGroup.orderVariants[orderKey].priceInfo = {
+          price_range: order.price_range,
+          min_price: order.min_price,
+          max_price: order.max_price,
+          sample_count: order.sample_count
+        };
+      }
     });
     
     // Convert nested object to array format and calculate average silver for sorting
     const result = {};
     Object.keys(grouped).forEach(location => {
       result[location] = Object.values(grouped[location]).map(fishGroup => {
-        // Convert orderVariants object to array and calculate price ranges
+        // Convert orderVariants object to array and use API-provided price ranges
         fishGroup.orderVariants = Object.values(fishGroup.orderVariants).map(variant => {
-          const prices = variant.prices;
-          const minPrice = Math.min(...prices);
-          const maxPrice = Math.max(...prices);
+          const priceInfo = variant.priceInfo;
           
           return {
             ...variant,
-            priceRange: prices.length > 1 && minPrice !== maxPrice 
-              ? `${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`
-              : minPrice.toFixed(2),
-            averagePrice: prices.reduce((sum, p) => sum + p, 0) / prices.length
+            priceRange: priceInfo?.price_range || priceInfo?.min_price?.toFixed(2) || '0.00',
+            averagePrice: priceInfo ? (priceInfo.min_price + priceInfo.max_price) / 2 : 0,
+            sampleCount: priceInfo?.sample_count || 1
           };
         });
         
         // Calculate average silver for sorting (across all variants)
-        const allPrices = fishGroup.orderVariants.flatMap(v => v.prices);
-        fishGroup.averageSilver = allPrices.length > 0 
-          ? allPrices.reduce((sum, p) => sum + p, 0) / allPrices.length 
+        const averagePrices = fishGroup.orderVariants.map(v => v.averagePrice).filter(p => p > 0);
+        fishGroup.averageSilver = averagePrices.length > 0 
+          ? averagePrices.reduce((sum, p) => sum + p, 0) / averagePrices.length 
           : 0;
         
         return fishGroup;
@@ -190,6 +192,11 @@ const CafeOrders = () => {
                                 <span className="text-gray-600 dark:text-gray-400 font-medium">
                                   {variant.priceRange}
                                 </span>
+                                {variant.sampleCount > 1 && (
+                                  <div className="text-xs text-gray-500 dark:text-gray-500">
+                                    ({variant.sampleCount} samples)
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
