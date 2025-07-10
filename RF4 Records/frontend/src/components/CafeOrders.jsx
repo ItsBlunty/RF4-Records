@@ -24,8 +24,7 @@ const CafeOrders = () => {
     'The Amber Lake',
     'Ladoga archipelago',
     'Akhtuba River',
-    'Copper lake',
-    'Copper Lake',
+    'Copper Lake', // Normalized form - will include both "Copper lake" and "Copper Lake"
     'Lower Tunguska River',
     'Yana River',
     'Norwegian Sea'
@@ -33,7 +32,10 @@ const CafeOrders = () => {
 
   // Function to sort locations according to maps page order
   const sortLocationsByMapOrder = (locations) => {
-    return [...locations].sort((a, b) => {
+    // First normalize and deduplicate locations
+    const normalizedLocations = [...new Set(locations.map(normalizeLocationName))];
+    
+    return normalizedLocations.sort((a, b) => {
       const indexA = locationOrder.indexOf(a);
       const indexB = locationOrder.indexOf(b);
       
@@ -78,6 +80,15 @@ const CafeOrders = () => {
   };
 
 
+  // Helper function to normalize location names for grouping
+  const normalizeLocationName = (locationName) => {
+    // Normalize "Copper Lake" and "Copper lake" to same group
+    if (locationName.toLowerCase() === 'copper lake') {
+      return 'Copper Lake';
+    }
+    return locationName;
+  };
+
   // Helper function to parse weight strings and convert to grams
   const parseWeightToGrams = (weightStr) => {
     if (!weightStr) return 0;
@@ -94,18 +105,19 @@ const CafeOrders = () => {
   const groupOrdersByLocationAndFish = () => {
     const grouped = {};
     orders.forEach(order => {
-      if (!grouped[order.location]) {
-        grouped[order.location] = {};
+      const normalizedLocation = normalizeLocationName(order.location);
+      if (!grouped[normalizedLocation]) {
+        grouped[normalizedLocation] = {};
       }
-      if (!grouped[order.location][order.fish_name]) {
-        grouped[order.location][order.fish_name] = {
+      if (!grouped[normalizedLocation][order.fish_name]) {
+        grouped[normalizedLocation][order.fish_name] = {
           fish_name: order.fish_name,
-          location: order.location,
+          location: normalizedLocation,
           orderVariants: {}
         };
       }
       
-      const fishGroup = grouped[order.location][order.fish_name];
+      const fishGroup = grouped[normalizedLocation][order.fish_name];
       const orderKey = `${order.quantity} × ${order.mass}`;
       
       if (!fishGroup.orderVariants[orderKey]) {
