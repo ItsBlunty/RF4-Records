@@ -8,6 +8,48 @@ const CafeOrders = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Location ordering to match maps page
+  const locationOrder = [
+    'Mosquito Lake',
+    'Elk Lake',
+    'Winding Rivulet',
+    'Old Burg',
+    'Belaya River',
+    'Kuori Lake',
+    'Bear Lake',
+    'Volkhov River',
+    'Seversky Donets River',
+    'Sura River',
+    'Ladoga Lake',
+    'The Amber Lake',
+    'Ladoga archipelago',
+    'Akhtuba River',
+    'Copper lake',
+    'Lower Tunguska River',
+    'Yana River',
+    'Norwegian Sea'
+  ];
+
+  // Function to sort locations according to maps page order
+  const sortLocationsByMapOrder = (locations) => {
+    return [...locations].sort((a, b) => {
+      const indexA = locationOrder.indexOf(a);
+      const indexB = locationOrder.indexOf(b);
+      
+      // If both locations are in the order array, sort by their index
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      
+      // If only one is in the array, prioritize it
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      
+      // If neither is in the array, sort alphabetically
+      return a.localeCompare(b);
+    });
+  };
+
   useEffect(() => {
     fetchCafeOrders();
   }, [selectedLocation]);
@@ -26,7 +68,7 @@ const CafeOrders = () => {
 
       const data = await response.json();
       setOrders(data.orders);
-      setLocations(data.locations);
+      setLocations(sortLocationsByMapOrder(data.locations));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -172,7 +214,19 @@ const CafeOrders = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {Object.entries(groupedOrders).map(([location, locationOrders]) => (
+              {Object.entries(groupedOrders)
+                .sort(([locationA], [locationB]) => {
+                  const indexA = locationOrder.indexOf(locationA);
+                  const indexB = locationOrder.indexOf(locationB);
+                  
+                  if (indexA !== -1 && indexB !== -1) {
+                    return indexA - indexB;
+                  }
+                  if (indexA !== -1) return -1;
+                  if (indexB !== -1) return 1;
+                  return locationA.localeCompare(locationB);
+                })
+                .map(([location, locationOrders]) => (
                 <div key={location} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
                     <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center gap-2">
