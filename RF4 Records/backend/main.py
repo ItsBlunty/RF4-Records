@@ -76,15 +76,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error generating top baits cache on startup: {e}")
     
-    # Load cafe orders on startup (database is ready at this point)
-    try:
-        from load_cafe_orders import load_cafe_orders
-        print("☕ Loading cafe orders on startup...", flush=True)
-        load_cafe_orders()
-        print("✅ Cafe orders loaded successfully", flush=True)
-    except Exception as e:
-        logger.error(f"Error loading cafe orders on startup: {e}")
-        print(f"⚠️ Cafe orders loading failed: {e}", flush=True)
     
     # Now start the scheduler after database is ready
     try:
