@@ -1,22 +1,22 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'RF4 Records', 'backend'))
+
 import cv2
-import numpy as np
+import re
 try:
     import pytesseract
     TESSERACT_AVAILABLE = True
 except ImportError:
     TESSERACT_AVAILABLE = False
-    print("Warning: pytesseract not available, using fallback method")
 
-from PIL import Image
-import json
-import re
-import os
 from trophy_classifier import TROPHY_WEIGHTS
 
-class FishImageScraper:
+class OptimizedFishImageScraper:
     def __init__(self):
-        # Configure tesseract for better OCR results
-        self.custom_config = r'--oem 3 --psm 6'
+        pass
         
     def validate_fish_name(self, extracted_name):
         """Validate and correct fish name against trophy weights database"""
@@ -42,8 +42,7 @@ class FishImageScraper:
                     best_match = trophy_fish_name
         
         return best_match if best_match else extracted_name
-    
-    
+
     def extract_text_from_image(self, image_path):
         """Extract text using simple, optimized OCR"""
         if not TESSERACT_AVAILABLE:
@@ -63,8 +62,7 @@ class FishImageScraper:
         except Exception as e:
             print(f"OCR failed: {e}")
             return "OCR failed"
-    
-    
+
     def parse_fish_data(self, text):
         """Parse OCR text to extract fish orders using column-based parsing"""
         print("Parsing fish data...")
@@ -122,18 +120,13 @@ class FishImageScraper:
         # Use comprehensive fish detection to find ALL fish names from trophy weights
         print("Using comprehensive fish name detection...")
         
-        # Find ALL occurrences of fish names (including duplicates)
+        # Try to find each fish name from the trophy database in the line
         found_positions = []
         for fish_name in TROPHY_WEIGHTS.keys():
-            # Find all occurrences of this fish name
-            start = 0
-            while True:
-                pos = fish_line.lower().find(fish_name.lower(), start)
-                if pos == -1:
-                    break
+            if fish_name.lower() in fish_line.lower():
+                pos = fish_line.lower().find(fish_name.lower())
                 found_positions.append((pos, fish_name))
                 print(f"Found '{fish_name}' at position {pos}")
-                start = pos + 1
         
         # Sort by position and filter out substring matches
         found_positions.sort()
@@ -326,28 +319,57 @@ class FishImageScraper:
         
         print(f"Final result: {len(fish_data)} fish orders found")
         return fish_data
-    
-    
 
     def scrape_image(self, image_path):
-        """Main method to scrape fish data from image using OCR only"""
+        """Main method to scrape fish data from image"""
         print(f"Processing image: {image_path}")
         
-        # Always use OCR - no manual parsing
-        print("Using OCR extraction")
+        # Extract text using OCR
         text = self.extract_text_from_image(image_path)
-        print(f"Raw extracted text:\n{text}")
+        print(f"Raw extracted text preview:")
+        print(text[:500] + "..." if len(text) > 500 else text)
         print("-" * 50)
         
         # Parse fish data
         fish_data = self.parse_fish_data(text)
         
-        # Validate fish names
-        for fish in fish_data:
-            if 'name' in fish:
-                validated_name = self.validate_fish_name(fish['name'])
-                if validated_name != fish['name']:
-                    print(f"Fish name corrected: '{fish['name']}' -> '{validated_name}'")
-                    fish['name'] = validated_name
-        
         return fish_data
+
+def test_optimized():
+    import sys
+    scraper = OptimizedFishImageScraper()
+    
+    # Use command line argument if provided, otherwise default to copper1.png
+    image_path = sys.argv[1] if len(sys.argv) > 1 else "copper1.png"
+    
+    if not os.path.exists(image_path):
+        print(f"Error: {image_path} not found.")
+        return
+    
+    print(f"Testing optimized OCR with {image_path}")
+    print("=" * 50)
+    
+    try:
+        results = scraper.scrape_image(image_path)
+        print(f"\nFound {len(results)} orders:")
+        print("=" * 50)
+        
+        for i, fish in enumerate(results, 1):
+            print(f"{i}. {fish.get('name', 'Unknown')} - {fish.get('location', 'Unknown')}")
+            print(f"   Quantity: {fish.get('quantity', 'N/A')}")
+            print(f"   Mass: {fish.get('mass', 'N/A')}")
+            print(f"   Price: {fish.get('price', 'N/A')}")
+            print()
+            
+        # Dynamic success evaluation - just report what we found
+        if len(results) > 0:
+            print("✅ OCR extraction successful!")
+            print(f"📊 Location: {results[0].get('location', 'Unknown')} - Found {len(results)} orders")
+        else:
+            print("❌ No orders extracted")
+            
+    except Exception as e:
+        print(f"Error during OCR: {e}")
+
+if __name__ == "__main__":
+    test_optimized()
