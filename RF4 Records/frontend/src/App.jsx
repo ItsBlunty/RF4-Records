@@ -21,7 +21,6 @@ import MapViewer from './components/MapViewer.jsx';
 import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
 import QAPage from './components/QAPage.jsx';
-import ImageScraper from './components/ImageScraper.jsx';
 import CafeOrders from './components/CafeOrders.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
@@ -67,7 +66,6 @@ function AppContent() {
     if (location.pathname === '/rodinfo') return 'rodinfo';
     if (location.pathname === '/timeline') return 'timeline';
     if (location.pathname === '/qa') return 'qa';
-    if (location.pathname === '/imagescraper') return 'imagescraper';
     if (location.pathname === '/cafeorders') return 'cafeorders';
     if (location.pathname.startsWith('/maps')) return 'maps';
     return 'records';
@@ -173,8 +171,6 @@ function AppContent() {
       navigate('/timeline');
     } else if (page === 'qa') {
       navigate('/qa');
-    } else if (page === 'imagescraper') {
-      navigate('/imagescraper');
     } else if (page === 'cafeorders') {
       navigate('/cafeorders');
     } else if (page === 'maps') {
@@ -681,8 +677,6 @@ function AppContent() {
         <Timeline />
       ) : getCurrentPage() === 'qa' ? (
         <QAPage darkMode={darkMode} />
-      ) : getCurrentPage() === 'imagescraper' ? (
-        <ImageScraper />
       ) : getCurrentPage() === 'cafeorders' ? (
         <CafeOrders />
       ) : null}
@@ -715,7 +709,6 @@ function App() {
         <Route path="/lurecrafting" element={<AppContent />} />
         <Route path="/timeline" element={<AppContent />} />
         <Route path="/qa" element={<AppContent />} />
-        <Route path="/imagescraper" element={<AppContent />} />
         <Route path="/cafeorders" element={<AppContent />} />
       </Routes>
     </Router>
