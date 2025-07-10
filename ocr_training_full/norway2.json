@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "European hake",
+      "quantity": "1",
+      "mass": "1.5 kg",
+      "price": "66.51"
+    },
+    {
+      "fish": "Cusk",
+      "quantity": "2",
+      "mass": "2.5 kg",
+      "price": "77.38"
+    },
+    {
+      "fish": "Atlantic wolffish",
+      "quantity": "1",
+      "mass": "2 kg",
+      "price": "97.43"
+    },
+    {
+      "fish": "Saithe",
+      "quantity": "4",
+      "mass": "3 kg",
+      "price": "148.93"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "549 g",
+      "price": "164.11"
+    },
+    {
+      "fish": "Mussel",
+      "quantity": "1",
+      "mass": "84 g",
+      "price": "194.37"
+    },
+    {
+      "fish": "Cusk",
+      "quantity": "1",
+      "mass": "20.999 kg",
+      "price": "619.06"
+    },
+    {
+      "fish": "Pollock",
+      "quantity": "1",
+      "mass": "12.499 kg",
+      "price": "737.54"
+    }
+  ]
+}

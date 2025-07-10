@@ -1,0 +1,10 @@
+Frog	River mussel	Gibel Carp	White-eye Bream	Perch	Bleak	Gibel Carp
+Volkhov River	Volkhov River	Volkhov River	Volkhov River	Volkhov River	Volkhov River	Volkhov River
+Quantity 1 pcs	Quantity 1 pcs	Quantity 5 pcs	Quantity 3 pcs	Quantity 8 pcs	Quantity 7 pcs	Quantity 6 pcs
+Mass from 64 g	Mass from 139 g	Mass from 189 g	Mass from 110 g	Mass from 100 g	Mass from 40 g	Mass from 1.124 kg
+2.15	7.95	8.71	26.24	47.20	60.66	61.97
+Bream	Ide	Burbot
+Volkhov River	Volkhov River	Volkhov River
+Quantity 4 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 2.699 kg	Mass from 5.249 kg	Mass from 9 kg
+82.14	$ 262.99	$ 366.18

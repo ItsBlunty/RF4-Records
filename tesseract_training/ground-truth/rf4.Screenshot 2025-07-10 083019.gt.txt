@@ -1,0 +1,10 @@
+Haddock	Shorthorn sculpin	Atlantic herring	Atlantic mackerel	Blue whiting
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 3 pcs	Quantity 6 pcs	Quantity 1 pcs	Quantity 4 pcs	Quantity 6 pcs
+Mass from 1.5 kg	Mass from 600 g	Mass from 489 g	Mass from 1.199 kg	Mass from 549 g
+92.23	$ 112.47	$ 134.46	$ 191.84	$ 218.67
+Edible crab	Spiny dogfish	Esmark's eelpout
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 1.149 kg	Mass from 7 kg	Mass from 2.899 kg
+$ 318.89	$ 876.92	1,940.24

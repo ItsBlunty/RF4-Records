@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Viviparous eelpout",
+      "quantity": "2",
+      "mass": "180 g",
+      "price": "98.36"
+    },
+    {
+      "fish": "American plaice",
+      "quantity": "1",
+      "mass": "700 g",
+      "price": "100.82"
+    },
+    {
+      "fish": "Haddock",
+      "quantity": "3",
+      "mass": "1.5 kg",
+      "price": "107.46"
+    },
+    {
+      "fish": "Atlantic mackerel",
+      "quantity": "4",
+      "mass": "400 g",
+      "price": "130.37"
+    },
+    {
+      "fish": "Pollock",
+      "quantity": "1",
+      "mass": "6.249 kg",
+      "price": "174.26"
+    },
+    {
+      "fish": "Saithe",
+      "quantity": "4",
+      "mass": "10.999 kg",
+      "price": "207.46"
+    },
+    {
+      "fish": "Viviparous eelpout",
+      "quantity": "1",
+      "mass": "900 g",
+      "price": "218.23"
+    },
+    {
+      "fish": "Saithe",
+      "quantity": "1",
+      "mass": "21.999 kg",
+      "price": "340.38"
+    }
+  ]
+}

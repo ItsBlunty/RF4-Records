@@ -1,0 +1,10 @@
+Chinese sleeper	Gibel Carp	Common Roach	Crucian Carp	White Bream	Perch	Bleak
+Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake
+Quantity 1 pcs	Quantity 3 pcs	Quantity 6 pcs	Quantity 3 pcs	Quantity 5 pcs	Quantity 5 pcs	Quantity 6 pcs
+Mass from 30 g	Mass from 180 g	Mass from 50 g	Mass from 100 g	Mass from 149 g	Mass from 299 g	Mass from 40 g
+1.98	5.02	13.48	15.21	28.91	36.84	41.62
+White Bream	Pike	Tench
+Mosquito Lake	Mosquito Lake	Mosquito Lake
+Quantity 6 pcs	Quantity 2 pcs	Quantity 1 pcs
+Mass from 469 g	Mass from 2 kg	Mass from 5.449 kg
+56.53	59.89	$ 249.55

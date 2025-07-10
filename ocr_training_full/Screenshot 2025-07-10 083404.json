@@ -1,0 +1,65 @@
+{
+  "location": "Winding Rivulet",
+  "orders": [
+    {
+      "fish": "River mussel",
+      "quantity": "1",
+      "mass": "30 g",
+      "price": "5.03"
+    },
+    {
+      "fish": "Chinese Sleeper",
+      "quantity": "2",
+      "mass": "30 g",
+      "price": "6.04"
+    },
+    {
+      "fish": "Ruffe",
+      "quantity": "5",
+      "mass": "20 g",
+      "price": "8.37"
+    },
+    {
+      "fish": "Common Roach",
+      "quantity": "4",
+      "mass": "50 g",
+      "price": "9.11"
+    },
+    {
+      "fish": "Perch",
+      "quantity": "5",
+      "mass": "199 g",
+      "price": "12.75"
+    },
+    {
+      "fish": "Tench",
+      "quantity": "1",
+      "mass": "600 g",
+      "price": "13.28"
+    },
+    {
+      "fish": "Common Carp",
+      "quantity": "1",
+      "mass": "3 kg",
+      "price": "19.16"
+    },
+    {
+      "fish": "Gudgeon",
+      "quantity": "5",
+      "mass": "15 g",
+      "price": "19.41"
+    },
+    {
+      "fish": "Pike",
+      "quantity": "2",
+      "mass": "2 kg",
+      "price": "77.49"
+    },
+    {
+      "fish": "White-eye Bream",
+      "quantity": "1",
+      "mass": "600 g",
+      "price": "86.93"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Pollock",
+      "quantity": "1",
+      "mass": "5.5 kg",
+      "price": "68.61"
+    },
+    {
+      "fish": "Viviparous eelpout",
+      "quantity": "2",
+      "mass": "180 g",
+      "price": "104.37"
+    },
+    {
+      "fish": "Haddock",
+      "quantity": "3",
+      "mass": "1.5 kg",
+      "price": "107.02"
+    },
+    {
+      "fish": "Shorthorn sculpin",
+      "quantity": "6",
+      "mass": "460 g",
+      "price": "139.24"
+    },
+    {
+      "fish": "Atlantic wolffish",
+      "quantity": "1",
+      "mass": "6.349 kg",
+      "price": "185.35"
+    },
+    {
+      "fish": "Small redfish",
+      "quantity": "1",
+      "mass": "1 kg",
+      "price": "218.13"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "549 g",
+      "price": "232.91"
+    },
+    {
+      "fish": "Atlantic redfish",
+      "quantity": "1",
+      "mass": "5.399 kg",
+      "price": "2,667.49"
+    }
+  ]
+}

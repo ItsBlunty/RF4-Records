@@ -1,0 +1,10 @@
+River mussel	Crucian Carp	White Bream	Loach	Chub	Common Roach	Freshwater Crayfish
+Akhtuba River	Akhtuba River	Akhtuba River	Akhtuba River	Akhtuba River	Akhtuba River	Akhtuba River
+Quantity 1 pcs	Quantity 3 pcs	Quantity 6 pcs	Quantity 2 pcs	Quantity 3 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 90 g	Mass from 340 g	Mass from 50 g	Mass from 20 g	Mass from 750 g	Mass from 1.2 kg	Mass from 199 g
+3.11	7.78	11.00	20.65	48.51	50.39	68.66
+Buffalo	Caspian Roach	Pike
+Akhtuba River	Akhtuba River	Akhtuba River
+Quantity 1 pcs	Quantity 1 pcs	Quantity 3 pcs
+Mass from 10.999 kg	Mass from 649 g	Mass from 6.999 kg
+82.10	$ 140.61	$ 144.49

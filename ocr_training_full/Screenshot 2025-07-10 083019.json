@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Haddock",
+      "quantity": "3",
+      "mass": "1.5 kg",
+      "price": "92.23"
+    },
+    {
+      "fish": "Shorthorn sculpin",
+      "quantity": "6",
+      "mass": "600 g",
+      "price": "112.47"
+    },
+    {
+      "fish": "Atlantic herring",
+      "quantity": "1",
+      "mass": "489 g",
+      "price": "134.46"
+    },
+    {
+      "fish": "Atlantic mackerel",
+      "quantity": "4",
+      "mass": "1.199 kg",
+      "price": "191.84"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "549 g",
+      "price": "218.67"
+    },
+    {
+      "fish": "Edible crab",
+      "quantity": "1",
+      "mass": "1.149 kg",
+      "price": "318.89"
+    },
+    {
+      "fish": "Spiny dogfish",
+      "quantity": "1",
+      "mass": "7 kg",
+      "price": "876.92"
+    },
+    {
+      "fish": "Esmark's eelpout",
+      "quantity": "1",
+      "mass": "2.899 kg",
+      "price": "1,940.24"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Atlantic wolffish	Blue whiting	Cusk	Viviparous eelpout	Saithe
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 6 pcs	Quantity 2 pcs	Quantity 2 pcs	Quantity 4 pcs
+Mass from 2 kg	Mass from 200 g	Mass from 2.5 kg	Mass from 180 g	Mass from 3 kg
+70.18	79.04	93.97	98.56	$ 114.18
+Atlantic herring	Beaked redfish	Northern wolffish
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 489 g	Mass from 5 kg	Mass from 13 kg
+$ 160.57	$ 598.93	3,685.74

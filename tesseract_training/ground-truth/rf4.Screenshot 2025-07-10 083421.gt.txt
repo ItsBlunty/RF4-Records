@@ -1,0 +1,10 @@
+Blue whiting	Sardine	Atlantic mackerel	Saithe	Haddock
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 6 pcs	Quantity 3 pcs	Quantity 4 pcs	Quantity 4 pcs	Quantity 3 pcs
+Mass from 200 g	Mass from 50 g	Mass from 400 g	Mass from 3 kg	Mass from 1.5 kg
+$ 101.01	$ 125.64	$ 150.66	$ 153.17	$ 171.19
+Cusk	European hake	Atlantic redfish
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 2 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 10.999 kg	Mass from 7.299 kg	Mass from 5.399 kg
+$ 190.89	$ 225.65	2,901.54

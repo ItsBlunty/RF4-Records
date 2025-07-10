@@ -1,0 +1,10 @@
+Cusk	Blue whiting	Sardine	Atlantic wolffish	Saithe
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 2 pcs	Quantity 6 pcs	Quantity 3 pcs	Quantity 1 pcs	Quantity 4 pcs
+Mass from 2.5 kg	Mass from 549 g	Mass from 50 g	Mass from 2 kg	Mass from 3 kg
+87.89	98.66	$ 113.64	$ 124.75	$ 133.77
+Haddock	Beaked redfish	Small redfish
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 3 pcs	Quantity 1 pcs	Quantity 5 pcs
+Mass from 1.5 kg	Mass from 5 kg	Mass from 600 g
+$ 140.89	$ 443.28	$ 488.43

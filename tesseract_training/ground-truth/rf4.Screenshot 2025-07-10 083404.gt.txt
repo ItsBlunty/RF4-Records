@@ -1,0 +1,10 @@
+River mussel	Chinese Sleeper	Ruffe	Common Roach	Perch	Tench	Common Carp
+Winding Rivulet	Winding Rivulet	Winding Rivulet	Winding Rivulet	Winding Rivulet	Winding Rivulet	Winding Rivulet
+Quantity 1 pcs	Quantity 2 pcs	Quantity 5 pcs	Quantity 4 pcs	Quantity 5 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 30 g	Mass from 30 g	Mass from 20 g	Mass from 50 g	Mass from 199 g	Mass from 600 g	Mass from 3 kg
+5.03	6.04	8.37	9.11	12.75	13.28	19.16
+Gudgeon	Pike	White-eye Bream
+Winding Rivulet	Winding Rivulet	Winding Rivulet
+Quantity 5 pcs	Quantity 2 pcs	Quantity 1 pcs
+Mass from 15 g	Mass from 2 kg	Mass from 600 g
+19.41	77.49	86.93

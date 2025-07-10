@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Atlantic wolffish",
+      "quantity": "1",
+      "mass": "2 kg",
+      "price": "70.18"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "200 g",
+      "price": "79.04"
+    },
+    {
+      "fish": "Cusk",
+      "quantity": "2",
+      "mass": "2.5 kg",
+      "price": "93.97"
+    },
+    {
+      "fish": "Viviparous eelpout",
+      "quantity": "2",
+      "mass": "180 g",
+      "price": "98.56"
+    },
+    {
+      "fish": "Saithe",
+      "quantity": "4",
+      "mass": "3 kg",
+      "price": "114.18"
+    },
+    {
+      "fish": "Atlantic herring",
+      "quantity": "1",
+      "mass": "489 g",
+      "price": "160.57"
+    },
+    {
+      "fish": "Beaked redfish",
+      "quantity": "1",
+      "mass": "5 kg",
+      "price": "598.93"
+    },
+    {
+      "fish": "Northern wolffish",
+      "quantity": "1",
+      "mass": "13 kg",
+      "price": "3,685.74"
+    }
+  ]
+}

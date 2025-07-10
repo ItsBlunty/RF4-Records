@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Longhead dab",
+      "quantity": "1",
+      "mass": "450 g",
+      "price": "71.36"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "200 g",
+      "price": "102.24"
+    },
+    {
+      "fish": "Atlantic mackerel",
+      "quantity": "4",
+      "mass": "400 g",
+      "price": "124.16"
+    },
+    {
+      "fish": "Atlantic mackerel",
+      "quantity": "1",
+      "mass": "2 kg",
+      "price": "132.79"
+    },
+    {
+      "fish": "Saithe",
+      "quantity": "4",
+      "mass": "3 kg",
+      "price": "133.74"
+    },
+    {
+      "fish": "American plaice",
+      "quantity": "1",
+      "mass": "2.349 kg",
+      "price": "170.42"
+    },
+    {
+      "fish": "Small redfish",
+      "quantity": "5",
+      "mass": "600 g",
+      "price": "174.24"
+    },
+    {
+      "fish": "Edible crab",
+      "quantity": "1",
+      "mass": "1.999 kg",
+      "price": "738.70"
+    }
+  ]
+}

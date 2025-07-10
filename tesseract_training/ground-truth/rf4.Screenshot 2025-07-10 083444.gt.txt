@@ -1,0 +1,10 @@
+Warmouth	Gizzard shad	White crappie	Bluegill	Warmouth
+Tri Lake	Tri Lake	Tri Lake	Tri Lake	Tri Lake
+Quantity 5 pcs	Quantity 6 pcs	Quantity 9 pcs	Quantity 9 pcs	Quantity 7 pcs
+Mass from 30 g	Mass from 30 g	Mass from 50 g	Mass from 50 g	Mass from 110 g
+11.62	12.52	13.11	13.74	35.62
+Redear sunfish	Gizzard shad	Largemouth bass
+Tri Lake	Tri Lake	Tri Lake
+Quantity 2 pcs	Quantity 8 pcs	Quantity 1 pcs
+Mass from 550 g	Mass from 30 g	Mass from 3.399 kg
+41.42	62.01	83.18

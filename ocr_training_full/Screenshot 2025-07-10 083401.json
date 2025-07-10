@@ -1,0 +1,53 @@
+{
+  "location": "Tri Lake",
+  "orders": [
+    {
+      "fish": "Gizzard shad",
+      "quantity": "6",
+      "mass": "30 g",
+      "price": "10.01"
+    },
+    {
+      "fish": "Warmouth",
+      "quantity": "5",
+      "mass": "30 g",
+      "price": "10.46"
+    },
+    {
+      "fish": "White crappie",
+      "quantity": "9",
+      "mass": "50 g",
+      "price": "11.95"
+    },
+    {
+      "fish": "Bluegill",
+      "quantity": "9",
+      "mass": "50 g",
+      "price": "13.23"
+    },
+    {
+      "fish": "Warmouth",
+      "quantity": "7",
+      "mass": "110 g",
+      "price": "41.50"
+    },
+    {
+      "fish": "Gizzard shad",
+      "quantity": "8",
+      "mass": "30 g",
+      "price": "57.93"
+    },
+    {
+      "fish": "Largemouth bass",
+      "quantity": "1",
+      "mass": "3.399 kg",
+      "price": "80.92"
+    },
+    {
+      "fish": "Striped Bass (Striper)",
+      "quantity": "1",
+      "mass": "30 kg",
+      "price": "820.11"
+    }
+  ]
+}

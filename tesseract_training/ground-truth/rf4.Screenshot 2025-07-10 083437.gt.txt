@@ -1,0 +1,10 @@
+Crucian Carp	Gibel Carp	Common Roach	Ruffe	Bream	Chinese sleeper	Ide
+Old Burg Lake	Old Burg Lake	Old Burg Lake	Old Burg Lake	Old Burg Lake	Old Burg Lake	Old Burg Lake
+Quantity 3 pcs	Quantity 4 pcs	Quantity 7 pcs	Quantity 6 pcs	Quantity 3 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 100 g	Mass from 350 g	Mass from 300 g	Mass from 40 g	Mass from 1 kg	Mass from 249 g	Mass from 2 kg
+11.16	17.48	31.54	41.61	45.40	46.24	$ 108.24
+Grass Carp	Common Carp	Pike
+Old Burg Lake	Old Burg Lake	Old Burg Lake
+Quantity 1 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 28 kg	Mass from 25 kg	Mass from 18 kg
+$ 295.43	$ 424.39	$ 551.15

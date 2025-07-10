@@ -1,0 +1,65 @@
+{
+  "location": "Mosquito Lake",
+  "orders": [
+    {
+      "fish": "Chinese sleeper",
+      "quantity": "1",
+      "mass": "30 g",
+      "price": "1.98"
+    },
+    {
+      "fish": "Gibel Carp",
+      "quantity": "3",
+      "mass": "180 g",
+      "price": "5.02"
+    },
+    {
+      "fish": "Common Roach",
+      "quantity": "6",
+      "mass": "50 g",
+      "price": "13.48"
+    },
+    {
+      "fish": "Crucian Carp",
+      "quantity": "3",
+      "mass": "100 g",
+      "price": "15.21"
+    },
+    {
+      "fish": "White Bream",
+      "quantity": "5",
+      "mass": "149 g",
+      "price": "28.91"
+    },
+    {
+      "fish": "Perch",
+      "quantity": "5",
+      "mass": "299 g",
+      "price": "36.84"
+    },
+    {
+      "fish": "Bleak",
+      "quantity": "6",
+      "mass": "40 g",
+      "price": "41.62"
+    },
+    {
+      "fish": "White Bream",
+      "quantity": "6",
+      "mass": "469 g",
+      "price": "56.53"
+    },
+    {
+      "fish": "Pike",
+      "quantity": "2",
+      "mass": "2 kg",
+      "price": "59.89"
+    },
+    {
+      "fish": "Tench",
+      "quantity": "1",
+      "mass": "5.449 kg",
+      "price": "249.55"
+    }
+  ]
+}

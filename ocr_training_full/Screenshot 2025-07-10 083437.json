@@ -1,0 +1,65 @@
+{
+  "location": "Old Burg Lake",
+  "orders": [
+    {
+      "fish": "Crucian Carp",
+      "quantity": "3",
+      "mass": "100 g",
+      "price": "11.16"
+    },
+    {
+      "fish": "Gibel Carp",
+      "quantity": "4",
+      "mass": "350 g",
+      "price": "17.48"
+    },
+    {
+      "fish": "Common Roach",
+      "quantity": "7",
+      "mass": "300 g",
+      "price": "31.54"
+    },
+    {
+      "fish": "Ruffe",
+      "quantity": "6",
+      "mass": "40 g",
+      "price": "41.61"
+    },
+    {
+      "fish": "Bream",
+      "quantity": "3",
+      "mass": "1 kg",
+      "price": "45.40"
+    },
+    {
+      "fish": "Chinese sleeper",
+      "quantity": "1",
+      "mass": "249 g",
+      "price": "46.24"
+    },
+    {
+      "fish": "Ide",
+      "quantity": "1",
+      "mass": "2 kg",
+      "price": "108.24"
+    },
+    {
+      "fish": "Grass Carp",
+      "quantity": "1",
+      "mass": "28 kg",
+      "price": "295.43"
+    },
+    {
+      "fish": "Common Carp",
+      "quantity": "1",
+      "mass": "25 kg",
+      "price": "424.39"
+    },
+    {
+      "fish": "Pike",
+      "quantity": "1",
+      "mass": "18 kg",
+      "price": "551.15"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+Common Roach	White Bream	Bleak	Ruffe	Perch	Common Roach	White Bream
+The Amber Lake	The Amber Lake	The Amber Lake	The Amber Lake	The Amber Lake	The Amber Lake	The Amber Lake
+Quantity 6 pcs	Quantity 5 pcs	Quantity 4 pcs	Quantity 4 pcs	Quantity 8 pcs	Quantity 7 pcs	Quantity 6 pcs
+Mass from 50 g	Mass from 50 g	Mass from 20 g	Mass from 20 g	Mass from 100 g	Mass from 749 g	Mass from 449 g
+14.81	17.61	18.01	25.28	40.21	46.70	84.48
+Bream	Common Carp	Pike
+The Amber Lake	The Amber Lake	The Amber Lake
+Quantity 4 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 850 g	Mass from 15 kg	Mass from 15.5 kg
+98.51	$ 190.44	$ 472.37

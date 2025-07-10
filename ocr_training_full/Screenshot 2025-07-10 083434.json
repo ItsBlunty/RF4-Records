@@ -1,0 +1,65 @@
+{
+  "location": "Volkhov River",
+  "orders": [
+    {
+      "fish": "Frog",
+      "quantity": "1",
+      "mass": "64 g",
+      "price": "2.10"
+    },
+    {
+      "fish": "River mussel",
+      "quantity": "1",
+      "mass": "139 g",
+      "price": "7.06"
+    },
+    {
+      "fish": "Gibel Carp",
+      "quantity": "5",
+      "mass": "189 g",
+      "price": "9.51"
+    },
+    {
+      "fish": "Crucian Carp",
+      "quantity": "3",
+      "mass": "340 g",
+      "price": "17.14"
+    },
+    {
+      "fish": "Ruffe",
+      "quantity": "6",
+      "mass": "40 g",
+      "price": "31.83"
+    },
+    {
+      "fish": "Perch",
+      "quantity": "8",
+      "mass": "100 g",
+      "price": "43.29"
+    },
+    {
+      "fish": "Bleak",
+      "quantity": "7",
+      "mass": "72 g",
+      "price": "63.02"
+    },
+    {
+      "fish": "Gibel Carp",
+      "quantity": "6",
+      "mass": "1.124 kg",
+      "price": "65.04"
+    },
+    {
+      "fish": "White-eye Bream",
+      "quantity": "3",
+      "mass": "599 g",
+      "price": "65.41"
+    },
+    {
+      "fish": "Ide",
+      "quantity": "1",
+      "mass": "5.249 kg",
+      "price": "225.71"
+    }
+  ]
+}

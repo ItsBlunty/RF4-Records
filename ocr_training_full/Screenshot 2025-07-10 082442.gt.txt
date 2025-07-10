@@ -1,0 +1,10 @@
+Longhead dab	Blue whiting	Atlantic mackerel	Atlantic mackerel	Saithe
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 6 pcs	Quantity 4 pcs	Quantity 1 pcs	Quantity 4 pcs
+Mass from 450 g	Mass from 200 g	Mass from 400 g	Mass from 2 kg	Mass from 3 kg
+71.36	$ 102.24	$ 124.16	$ 132.79	$ 133.74
+American plaice	Small redfish	Edible crab
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 5 pcs	Quantity 1 pcs
+Mass from 2.349 kg	Mass from 600 g	Mass from 1.999 kg
+$ 170.42	$ 174.24	$ 738.70

@@ -1,0 +1,47 @@
+{
+  "location": "Sura River",
+  "orders": [
+    {
+      "fish": "Chinese Sleeper",
+      "quantity": "1",
+      "mass": "222 g",
+      "price": "50.22"
+    },
+    {
+      "fish": "White Bream",
+      "quantity": "5",
+      "mass": "140 g",
+      "price": "46.38"
+    },
+    {
+      "fish": "Gibel Carp",
+      "quantity": "3",
+      "mass": "180 g",
+      "price": "27.71"
+    },
+    {
+      "fish": "Crucian Carp",
+      "quantity": "3",
+      "mass": "340 g",
+      "price": "20.64"
+    },
+    {
+      "fish": "Mirror Carp",
+      "quantity": "1",
+      "mass": "3 kg",
+      "price": "26.93"
+    },
+    {
+      "fish": "Common Carp",
+      "quantity": "1",
+      "mass": "3 kg",
+      "price": "57.88"
+    },
+    {
+      "fish": "Tench",
+      "quantity": "1",
+      "mass": "1.249 kg",
+      "price": "48.38"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "location": "Norwegian Sea",
+  "orders": [
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "200 g",
+      "price": "74.34"
+    },
+    {
+      "fish": "Atlantic wolffish",
+      "quantity": "1",
+      "mass": "2 kg",
+      "price": "91.64"
+    },
+    {
+      "fish": "Haddock",
+      "quantity": "3",
+      "mass": "1.5 kg",
+      "price": "107.69"
+    },
+    {
+      "fish": "Cusk",
+      "quantity": "2",
+      "mass": "2.5 kg",
+      "price": "112.48"
+    },
+    {
+      "fish": "European hake",
+      "quantity": "1",
+      "mass": "5.249 kg",
+      "price": "135.89"
+    },
+    {
+      "fish": "Sardine",
+      "quantity": "3",
+      "mass": "154 g",
+      "price": "191.48"
+    },
+    {
+      "fish": "Blue whiting",
+      "quantity": "6",
+      "mass": "549 g",
+      "price": "220.70"
+    },
+    {
+      "fish": "Turbot",
+      "quantity": "1",
+      "mass": "14 kg",
+      "price": "1,031.59"
+    }
+  ]
+}

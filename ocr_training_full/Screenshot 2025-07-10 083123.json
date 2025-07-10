@@ -1,0 +1,65 @@
+{
+  "location": "Akhtuba River",
+  "orders": [
+    {
+      "fish": "River mussel",
+      "quantity": "1",
+      "mass": "90 g",
+      "price": "3.52"
+    },
+    {
+      "fish": "Crucian Carp",
+      "quantity": "3",
+      "mass": "340 g",
+      "price": "7.53"
+    },
+    {
+      "fish": "White Bream",
+      "quantity": "6",
+      "mass": "50 g",
+      "price": "12.93"
+    },
+    {
+      "fish": "Freshwater Crayfish",
+      "quantity": "1",
+      "mass": "100 g",
+      "price": "19.18"
+    },
+    {
+      "fish": "Loach",
+      "quantity": "2",
+      "mass": "20 g",
+      "price": "22.34"
+    },
+    {
+      "fish": "Buffalo",
+      "quantity": "1",
+      "mass": "6.999 kg",
+      "price": "46.59"
+    },
+    {
+      "fish": "Chub",
+      "quantity": "3",
+      "mass": "750 g",
+      "price": "57.28"
+    },
+    {
+      "fish": "Common Roach",
+      "quantity": "1",
+      "mass": "1.2 kg",
+      "price": "63.41"
+    },
+    {
+      "fish": "Caspian Roach",
+      "quantity": "1",
+      "mass": "649 g",
+      "price": "133.69"
+    },
+    {
+      "fish": "Pike",
+      "quantity": "3",
+      "mass": "6.999 kg",
+      "price": "174.79"
+    }
+  ]
+}

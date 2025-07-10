@@ -1,0 +1,10 @@
+Frog	Gibel Carp	Common Roach	Perch	Ide	Loach	Bleak
+Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake	Mosquito Lake
+Quantity 1 pcs	Quantity 3 pcs	Quantity 6 pcs	Quantity 5 pcs	Quantity 1 pcs	Quantity 2 pcs	Quantity 6 pcs
+Mass from 30 g	Mass from 180 g	Mass from 50 g	Mass from 100 g	Mass from 650 g	Mass from 20 g	Mass from 40 g
+1.59	3.19	11.61	14.50	15.33	17.00	30.41
+White Bream	Pike	Pike
+Mosquito Lake	Mosquito Lake	Mosquito Lake
+Quantity 6 pcs	Quantity 2 pcs	Quantity 1 pcs
+Mass from 469 g	Mass from 2 kg	Mass from 12 kg
+63.62	70.10	$ 420.07

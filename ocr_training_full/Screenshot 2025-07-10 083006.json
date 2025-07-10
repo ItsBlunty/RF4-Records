@@ -1,0 +1,65 @@
+{
+  "location": "The Amber Lake",
+  "orders": [
+    {
+      "fish": "Common Roach",
+      "quantity": "6",
+      "mass": "50 g",
+      "price": "15.55"
+    },
+    {
+      "fish": "Bleak",
+      "quantity": "5",
+      "mass": "29 g",
+      "price": "21.92"
+    },
+    {
+      "fish": "Mirror Carp",
+      "quantity": "1",
+      "mass": "4 kg",
+      "price": "25.51"
+    },
+    {
+      "fish": "Ruffe",
+      "quantity": "4",
+      "mass": "40 g",
+      "price": "40.83"
+    },
+    {
+      "fish": "Ide",
+      "quantity": "1",
+      "mass": "2.324 kg",
+      "price": "45.99"
+    },
+    {
+      "fish": "Bleak",
+      "quantity": "6",
+      "mass": "40 g",
+      "price": "49.18"
+    },
+    {
+      "fish": "White Bream",
+      "quantity": "6",
+      "mass": "140 g",
+      "price": "49.48"
+    },
+    {
+      "fish": "Common Roach",
+      "quantity": "7",
+      "mass": "749 g",
+      "price": "50.39"
+    },
+    {
+      "fish": "Ide",
+      "quantity": "1",
+      "mass": "4 kg",
+      "price": "226.76"
+    },
+    {
+      "fish": "Catfish",
+      "quantity": "1",
+      "mass": "160 kg",
+      "price": "2,042.28"
+    }
+  ]
+}

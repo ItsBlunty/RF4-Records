@@ -1,0 +1,10 @@
+European hake	Cusk	Atlantic wolffish	Saithe	Blue whiting
+Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 2 pcs	Quantity 1 pcs	Quantity 4 pcs	Quantity 6 pcs
+Mass from 1.5 kg	Mass from 2.5 kg	Mass from 2 kg	Mass from 3 kg	Mass from 549 g
+$ 66.51	$ 77.38	$ 97.43	$ 148.93	$ 164.11
+Mussel	Cusk	Pollock
+Norwegian Sea	Norwegian Sea	Norwegian Sea
+Quantity 1 pcs	Quantity 1 pcs	Quantity 1 pcs
+Mass from 84 g	Mass from 20.999 kg	Mass from 12.499 kg
+$ 194.37	$ 619.06	$ 737.54
