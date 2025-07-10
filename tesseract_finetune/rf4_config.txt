@@ -1,5 +1,0 @@
-# RF4 Cafe OCR Configuration
-tessedit_char_whitelist 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-'. $,
-load_system_dawg 0
-load_freq_dawg 0
-tessedit_enable_dict_correction 1
