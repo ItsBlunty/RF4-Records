@@ -333,36 +333,8 @@ class FishImageScraper:
         """Main method to scrape fish data from image using OCR only"""
         print(f"Processing image: {image_path}")
         
-        # Try trained OCR first
-        try:
-            import sys
-            sys.path.append('/home/itsblunty/workspace/rf4recordssite/RF4-Records')
-            from rf4_trained_ocr import process_cafe_image
-            
-            print("Using trained OCR model")
-            result = process_cafe_image(image_path)
-            
-            if result.get('success') and result.get('orders'):
-                print(f"Trained OCR extracted {len(result['orders'])} orders")
-                
-                # Convert to expected format
-                fish_data = []
-                for order in result['orders']:
-                    fish_entry = {
-                        'name': order['fish'],
-                        'location': result.get('location', 'Unknown'),
-                        'quantity': f"{order['quantity']} pcs",
-                        'mass': order['mass'],
-                        'price': order['price']
-                    }
-                    fish_data.append(fish_entry)
-                
-                return fish_data
-        except Exception as e:
-            print(f"Trained OCR failed: {e}, falling back to original OCR")
-        
-        # Fallback to original OCR
-        print("Using fallback OCR extraction")
+        # Always use OCR - no manual parsing
+        print("Using OCR extraction")
         text = self.extract_text_from_image(image_path)
         print(f"Raw extracted text:\n{text}")
         print("-" * 50)
