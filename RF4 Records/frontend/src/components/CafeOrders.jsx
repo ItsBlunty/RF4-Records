@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coffee, Filter, MapPin, Fish } from 'lucide-react';
+import { Coffee, Filter, MapPin } from 'lucide-react';
 
 const CafeOrders = () => {
   const [orders, setOrders] = useState([]);
@@ -53,10 +53,24 @@ const CafeOrders = () => {
       fishGroup.orders.push(order);
     });
     
-    // Convert nested object to array format for easier rendering
+    // Convert nested object to array format and calculate average silver for sorting
     const result = {};
     Object.keys(grouped).forEach(location => {
-      result[location] = Object.values(grouped[location]);
+      result[location] = Object.values(grouped[location]).map(fishGroup => {
+        // Calculate average silver price for sorting
+        let totalSilver = 0;
+        let sampleCount = 0;
+        
+        fishGroup.orders.forEach(order => {
+          // Parse price to get numeric value
+          const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
+          totalSilver += price;
+          sampleCount += 1;
+        });
+        
+        fishGroup.averageSilver = sampleCount > 0 ? totalSilver / sampleCount : 0;
+        return fishGroup;
+      }).sort((a, b) => b.averageSilver - a.averageSilver); // Sort by average silver descending
     });
     
     return result;
@@ -113,7 +127,7 @@ const CafeOrders = () => {
         <>
           {/* Orders Display */}
           {Object.keys(groupedOrders).length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <Coffee className="w-12 h-12 mx-auto mb-4 text-gray-400" />
               <p>No cafe orders found. Upload an image to add orders!</p>
             </div>
@@ -127,88 +141,54 @@ const CafeOrders = () => {
                       {location}
                     </h2>
                   </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 dark:bg-gray-700">
-                        <tr>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Fish Type
-                          </th>
-                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            Order Variants
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {locationOrders.map((fishGroup, index) => (
-                          <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                            <td className="px-4 py-3 align-top">
-                              <div className="flex items-center">
-                                <Fish className="w-5 h-5 text-blue-500 dark:text-blue-400 mr-2" />
-                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                  {fishGroup.fish_name}
+                  
+                  {/* Two-column layout for fish */}
+                  <div className="p-3 grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    {locationOrders.map((fishGroup, index) => {
+                      // Calculate if we should show range or single price
+                      const allPrices = fishGroup.orders.map(order => {
+                        const price = parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0);
+                        return price;
+                      });
+                      
+                      const minPrice = Math.min(...allPrices);
+                      const maxPrice = Math.max(...allPrices);
+                      const showRange = allPrices.length > 1 && minPrice !== maxPrice;
+                      
+                      return (
+                        <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                          {/* Fish name header */}
+                          <div className="mb-2">
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {fishGroup.fish_name}
+                            </span>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              💰 {showRange ? `${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}` : minPrice.toFixed(2)}
+                            </div>
+                          </div>
+                          
+                          {/* Order variants - more compact */}
+                          <div className="space-y-1">
+                            {fishGroup.orders.map((order, orderIndex) => (
+                              <div key={orderIndex} className="flex items-center justify-between text-xs">
+                                <span className="text-gray-700 dark:text-gray-300">
+                                  {order.quantity} × {order.mass}
+                                </span>
+                                <span className="text-gray-600 dark:text-gray-400">
+                                  {parseFloat(order.price_range?.split(' - ')[0] || order.min_price || order.price || 0).toFixed(2)}
                                 </span>
                               </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="space-y-2">
-                                {fishGroup.orders.map((order, orderIndex) => (
-                                  <div key={orderIndex} className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {order.quantity} × {order.mass}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                      <span className="text-gray-500 dark:text-gray-400">💰</span>
-                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                        {order.price_range || `${order.min_price?.toFixed(2)} - ${order.max_price?.toFixed(2)}`}
-                                      </span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {/* Statistics Summary */}
-          {orders.length > 0 && (
-            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Coffee className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  <h3 className="font-medium text-blue-900 dark:text-blue-100">Total Orders</h3>
-                </div>
-                <p className="text-xl font-bold text-blue-900 dark:text-blue-100">{orders.length}</p>
-              </div>
-              
-              <div className="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-700 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <MapPin className="w-5 h-5 text-green-600 dark:text-green-400" />
-                  <h3 className="font-medium text-green-900 dark:text-green-100">Locations</h3>
-                </div>
-                <p className="text-xl font-bold text-green-900 dark:text-green-100">{locations.length}</p>
-              </div>
-              
-              <div className="bg-purple-50 dark:bg-purple-900 border border-purple-200 dark:border-purple-700 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-1">
-                  <Fish className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                  <h3 className="font-medium text-purple-900 dark:text-purple-100">Fish Types</h3>
-                </div>
-                <p className="text-xl font-bold text-purple-900 dark:text-purple-100">
-                  {new Set(orders.map(o => o.fish_name)).size}
-                </p>
-              </div>
-            </div>
-          )}
         </>
       )}
     </div>
