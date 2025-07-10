@@ -35,6 +35,19 @@ const CafeOrders = () => {
   };
 
 
+  // Helper function to parse weight strings and convert to grams
+  const parseWeightToGrams = (weightStr) => {
+    if (!weightStr) return 0;
+    const numMatch = weightStr.match(/([0-9.]+)/);
+    if (!numMatch) return 0;
+    
+    const num = parseFloat(numMatch[1]);
+    if (weightStr.toLowerCase().includes('kg')) {
+      return num * 1000; // Convert kg to grams
+    }
+    return num; // Already in grams
+  };
+
   const groupOrdersByLocationAndFish = () => {
     const grouped = {};
     orders.forEach(order => {
@@ -67,6 +80,8 @@ const CafeOrders = () => {
           max_price: order.max_price,
           sample_count: order.sample_count
         };
+        // Add weight in grams for sorting
+        fishGroup.orderVariants[orderKey].weightInGrams = parseWeightToGrams(order.mass);
       }
     });
     
@@ -82,18 +97,19 @@ const CafeOrders = () => {
             ...variant,
             priceRange: priceInfo?.price_range || priceInfo?.min_price?.toFixed(2) || '0.00',
             averagePrice: priceInfo ? (priceInfo.min_price + priceInfo.max_price) / 2 : 0,
-            sampleCount: priceInfo?.sample_count || 1
+            sampleCount: priceInfo?.sample_count || 1,
+            weightInGrams: variant.weightInGrams || 0
           };
-        });
+        }).sort((a, b) => a.weightInGrams - b.weightInGrams); // Sort variants by weight (lowest to highest)
         
-        // Calculate average silver for sorting (across all variants)
-        const averagePrices = fishGroup.orderVariants.map(v => v.averagePrice).filter(p => p > 0);
-        fishGroup.averageSilver = averagePrices.length > 0 
-          ? averagePrices.reduce((sum, p) => sum + p, 0) / averagePrices.length 
+        // Calculate average weight for sorting (across all variants)
+        const weights = fishGroup.orderVariants.map(v => v.weightInGrams).filter(w => w > 0);
+        fishGroup.averageWeight = weights.length > 0 
+          ? weights.reduce((sum, w) => sum + w, 0) / weights.length 
           : 0;
         
         return fishGroup;
-      }).sort((a, b) => b.averageSilver - a.averageSilver); // Sort by average silver descending
+      }).sort((a, b) => a.averageWeight - b.averageWeight); // Sort by average weight ascending (lowest to highest)
     });
     
     return result;
