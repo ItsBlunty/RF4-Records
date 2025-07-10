@@ -52,6 +52,14 @@ async def lifespan(app: FastAPI):
         logger.error(f"Error creating database tables: {e}")
         print(f"❌ Database error: {e}", flush=True)
     
+    # Run database migrations
+    try:
+        from migrations import run_migrations
+        run_migrations()
+    except Exception as e:
+        logger.error(f"Error running migrations: {e}")
+        print(f"❌ Migration error: {e}", flush=True)
+    
     # Initialize Q&A dataset with initial data (database is ready at this point)
     try:
         from init_qa_data import init_qa_data

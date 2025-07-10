@@ -26,7 +26,7 @@ const CafeOrders = () => {
     'Akhtuba River',
     'Copper Lake', // Normalized form - will include both "Copper lake" and "Copper Lake"
     'Lower Tunguska River',
-    'Yana River',
+    'Yama River',
     'Norwegian Sea'
   ];
 
