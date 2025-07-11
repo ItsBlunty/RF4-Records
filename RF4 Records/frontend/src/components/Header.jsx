@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X } from 'lucide-react';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Check if we're in development/staging environment
@@ -9,6 +9,9 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   const [gearDropdownOpen, setGearDropdownOpen] = useState(false);
   const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
   const [gameInfoDropdownOpen, setGameInfoDropdownOpen] = useState(false);
+  
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Refs for dropdown containers
   const gearDropdownRef = useRef(null);
@@ -54,38 +57,50 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       
-      <div className="mx-auto px-6 py-3">
+      <div className="mx-auto px-4 sm:px-6 py-3">
         {/* Top Section - Title, Attribution, and Navigation */}
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3">
+        <div className="flex items-center justify-between">
           {/* Left Side - Title and Attribution with Dark Mode Toggle */}
-          <div className="flex flex-col space-y-2">
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-              <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                  Created by ItsBlunty
-                </span>
-                
-                {/* Dark Mode Toggle */}
-                {onToggleDarkMode && (
-                  <button
-                    onClick={onToggleDarkMode}
-                    className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                  >
-                    {darkMode ? (
-                      <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    ) : (
-                      <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    )}
-                  </button>
-                )}
-              </div>
+          <div className="flex items-center space-x-3 sm:space-x-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
+            <div className="hidden sm:flex items-center space-x-3">
+              <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
+                Created by ItsBlunty
+              </span>
+              
+              {/* Dark Mode Toggle */}
+              {onToggleDarkMode && (
+                <button
+                  onClick={onToggleDarkMode}
+                  className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {darkMode ? (
+                    <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
           
-          {/* Right Side - Navigation Buttons */}
-          <div className="flex space-x-3 mt-4 lg:mt-0">
+          {/* Mobile menu button */}
+          <div className="lg:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              ) : (
+                <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              )}
+            </button>
+          </div>
+          
+          {/* Desktop Navigation Buttons */}
+          <div className="hidden lg:flex space-x-3">
             <button
               onClick={() => onPageChange && onPageChange('links')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
@@ -328,6 +343,279 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             )}
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+            {/* Mobile Attribution and Dark Mode Toggle */}
+            <div className="flex items-center justify-between mb-4 sm:hidden">
+              <span className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+                Created by ItsBlunty
+              </span>
+              
+              {/* Mobile Dark Mode Toggle */}
+              {onToggleDarkMode && (
+                <button
+                  onClick={onToggleDarkMode}
+                  className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                  {darkMode ? (
+                    <Sun className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  ) : (
+                    <Moon className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  )}
+                </button>
+              )}
+            </div>
+            
+            {/* Mobile Navigation Links */}
+            <div className="space-y-2">
+              <button
+                onClick={() => {
+                  onPageChange && onPageChange('links');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 'links' 
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Link className="w-4 h-4 mr-3" />
+                Links
+              </button>
+              
+              <button
+                onClick={() => {
+                  onPageChange && onPageChange('records');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 'records' 
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Database className="w-4 h-4 mr-3" />
+                Records
+              </button>
+
+              <button
+                onClick={() => {
+                  onPageChange && onPageChange('maps');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 'maps' 
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Map className="w-4 h-4 mr-3" />
+                Maps
+              </button>
+
+              {/* Game Info Section */}
+              <div className="py-2">
+                <div className="flex items-center px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <GamepadIcon className="w-4 h-4 mr-2" />
+                  Game Info
+                </div>
+                <div className="ml-6 space-y-1">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('waterbodyprices');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'waterbodyprices' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <DollarSign className="w-4 h-4 mr-3" />
+                    Waterbody Prices
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('timeline');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'timeline' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Clock className="w-4 h-4 mr-3" />
+                    Update History
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('alcohol');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'alcohol' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Wine className="w-4 h-4 mr-3" />
+                    Alcohol
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('qa');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'qa' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-3" />
+                    Dev FAQ
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('cafeorders');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'cafeorders' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Coffee className="w-4 h-4 mr-3" />
+                    Cafe Orders
+                  </button>
+                </div>
+              </div>
+
+              {/* Skill Info Section */}
+              <div className="py-2">
+                <div className="flex items-center px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Skill Info
+                </div>
+                <div className="ml-6 space-y-1">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('guides');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'guides' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <BookOpen className="w-4 h-4 mr-3" />
+                    Skill Leveling Guides
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('skilltrees');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'skilltrees' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <TreePine className="w-4 h-4 mr-3" />
+                    Skill Trees
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('lurecrafting');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'lurecrafting' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Lure Crafting Recipes
+                  </button>
+                </div>
+              </div>
+
+              {/* Gear Info Section */}
+              <div className="py-2">
+                <div className="flex items-center px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <Settings className="w-4 h-4 mr-2" />
+                  Gear Info
+                </div>
+                <div className="ml-6 space-y-1">
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('wearcalc');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'wearcalc' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Calculator className="w-4 h-4 mr-3" />
+                    Wear Calculator
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('reelinfo');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'reelinfo' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Reel Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('rodinfo');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'rodinfo' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Zap className="w-4 h-4 mr-3" />
+                    Rod Info
+                  </button>
+                </div>
+              </div>
+
+              {/* About Button */}
+              {onAboutClick && (
+                <button
+                  onClick={() => {
+                    onAboutClick();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <HelpCircle className="w-4 h-4 mr-3" />
+                  About
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </header>
   );
