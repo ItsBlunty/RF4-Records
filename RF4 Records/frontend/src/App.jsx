@@ -17,6 +17,7 @@ import Links from './components/Links.jsx';
 import SkillTrees from './components/SkillTrees.jsx';
 import ReelInfo from './components/ReelInfo.jsx';
 import RodInfo from './components/RodInfo.jsx';
+import ItemInfo from './components/ItemInfo.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
@@ -64,6 +65,7 @@ function AppContent() {
     if (location.pathname === '/alcohol') return 'alcohol';
     if (location.pathname === '/reelinfo') return 'reelinfo';
     if (location.pathname === '/rodinfo') return 'rodinfo';
+    if (location.pathname === '/iteminfo') return 'iteminfo';
     if (location.pathname === '/timeline') return 'timeline';
     if (location.pathname === '/qa') return 'qa';
     if (location.pathname === '/cafeorders') return 'cafeorders';
@@ -167,6 +169,8 @@ function AppContent() {
       navigate('/reelinfo');
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
+    } else if (page === 'iteminfo') {
+      navigate('/iteminfo');
     } else if (page === 'timeline') {
       navigate('/timeline');
     } else if (page === 'qa') {
@@ -669,6 +673,8 @@ function AppContent() {
         <ReelInfo />
       ) : getCurrentPage() === 'rodinfo' ? (
         <RodInfo />
+      ) : getCurrentPage() === 'iteminfo' ? (
+        <ItemInfo />
       ) : getCurrentPage() === 'maps' ? (
         <MapViewer />
       ) : getCurrentPage() === 'lurecrafting' ? (
@@ -704,6 +710,7 @@ function App() {
         <Route path="/alcohol" element={<AppContent />} />
         <Route path="/reelinfo" element={<AppContent />} />
         <Route path="/rodinfo" element={<AppContent />} />
+        <Route path="/iteminfo" element={<AppContent />} />
         <Route path="/maps" element={<AppContent />} />
         <Route path="/maps/:mapName" element={<AppContent />} />
         <Route path="/lurecrafting" element={<AppContent />} />

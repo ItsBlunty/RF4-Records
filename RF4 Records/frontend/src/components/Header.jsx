@@ -280,7 +280,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setGearDropdownOpen(!gearDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  ['wearcalc', 'reelinfo', 'rodinfo'].includes(currentPage)
+                  ['wearcalc', 'reelinfo', 'rodinfo', 'iteminfo'].includes(currentPage)
                     ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
                     : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
                 }`}
@@ -321,12 +321,24 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                       onPageChange && onPageChange('rodinfo');
                       setGearDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
                       currentPage === 'rodinfo' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <Zap className="w-4 h-4 inline mr-2" />
                     Rod Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('iteminfo');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'iteminfo' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Item Info
                   </button>
                 </div>
               )}
@@ -596,6 +608,20 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                   >
                     <Zap className="w-4 h-4 mr-3" />
                     Rod Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('iteminfo');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'iteminfo' 
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 mr-3" />
+                    Item Info
                   </button>
                 </div>
               </div>
