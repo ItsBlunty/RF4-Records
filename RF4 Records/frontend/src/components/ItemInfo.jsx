@@ -6,6 +6,7 @@ const ItemInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('All');
   const [brandFilter, setBrandFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [colorFilter, setColorFilter] = useState('All');
@@ -162,7 +163,9 @@ const ItemInfo = () => {
     let filtered = items.filter(item => {
       const matchesSearch = !searchTerm || 
                           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          item.brand.toLowerCase().includes(searchTerm.toLowerCase());
+                          item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          item.category.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
       const matchesBrand = brandFilter === 'All' || item.brand === brandFilter;
       const matchesType = typeFilter === 'All' || item.type === typeFilter;
       const matchesColor = colorFilter === 'All' || item.color === colorFilter;
@@ -194,7 +197,7 @@ const ItemInfo = () => {
       const matchesPriceMin = !priceMinNum || item.price >= priceMinNum;
       const matchesPriceMax = !priceMaxNum || item.price <= priceMaxNum;
       
-      return matchesSearch && matchesBrand && matchesType && matchesColor && 
+      return matchesSearch && matchesCategory && matchesBrand && matchesType && matchesColor && 
              matchesLengthMin && matchesLengthMax && matchesDiameterMin && matchesDiameterMax &&
              matchesLoadCapacityMin && matchesLoadCapacityMax && matchesPriceMin && matchesPriceMax;
     });
@@ -243,12 +246,14 @@ const ItemInfo = () => {
 
   // No grouping needed - display all items in one table
 
+  const uniqueCategories = [...new Set(items.map(item => item.category))].sort();
   const uniqueBrands = [...new Set(items.map(item => item.brand))].sort();
   const uniqueTypes = [...new Set(items.map(item => item.type))].sort();
   const uniqueColors = [...new Set(items.map(item => item.color))].sort();
   
   const clearAllFilters = () => {
     setSearchTerm('');
+    setCategoryFilter('All');
     setBrandFilter('All');
     setTypeFilter('All');
     setColorFilter('All');
@@ -275,7 +280,7 @@ const ItemInfo = () => {
     setSelectedItems([]);
   };
   
-  const hasActiveFilters = searchTerm || brandFilter !== 'All' || typeFilter !== 'All' || 
+  const hasActiveFilters = searchTerm || categoryFilter !== 'All' || brandFilter !== 'All' || typeFilter !== 'All' || 
                           colorFilter !== 'All' || lengthMin || lengthMax || 
                           diameterMin || diameterMax || loadCapacityMin || loadCapacityMax ||
                           priceMin || priceMax;
@@ -362,6 +367,18 @@ const ItemInfo = () => {
               </div>
               <div className="sm:w-48">
                 <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                >
+                  <option value="All">All Categories</option>
+                  {uniqueCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:w-48">
+                <select
                   value={brandFilter}
                   onChange={(e) => setBrandFilter(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
@@ -400,6 +417,23 @@ const ItemInfo = () => {
             {showAdvancedFilters && (
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                  {/* Brand Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Brand
+                    </label>
+                    <select
+                      value={brandFilter}
+                      onChange={(e) => setBrandFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                    >
+                      <option value="All">All Brands</option>
+                      {uniqueBrands.map(brand => (
+                        <option key={brand} value={brand}>{brand}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Type Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -560,6 +594,9 @@ const ItemInfo = () => {
                       Select
                     </th>
                   )}
+                  <th onClick={() => handleSort('category')} className={`${getColumnHeaderClass('category')} whitespace-nowrap`}>
+                    Category {getSortIndicator('category')}
+                  </th>
                   <th onClick={() => handleSort('brand')} className={`${getColumnHeaderClass('brand')} whitespace-nowrap`}>
                     Brand {getSortIndicator('brand')}
                   </th>
@@ -606,6 +643,9 @@ const ItemInfo = () => {
                         />
                       </td>
                     )}
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {item.category}
+                    </td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                       {item.brand}
                     </td>
@@ -679,7 +719,7 @@ const ItemInfo = () => {
                       {item.name}
                     </h3>
                     <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {item.brand} | Level {item.playerLevel}
+                      {item.category} - {item.brand} | Level {item.playerLevel}
                     </div>
                   </div>
                 ))}
@@ -699,6 +739,7 @@ const ItemInfo = () => {
 
                   return (
                     <>
+                      {renderComparisonRow('Category', (item) => item.category)}
                       {renderComparisonRow('Brand', (item) => item.brand)}
                       {renderComparisonRow('Type', (item) => item.type)}
                       {renderComparisonRow('Color', (item) => item.color)}
