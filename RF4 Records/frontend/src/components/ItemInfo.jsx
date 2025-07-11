@@ -70,7 +70,7 @@ const ItemInfo = () => {
         loadCapacity: (values[7] || '').trim(),
         rating: parseFloat(values[8]) || 0,
         playerLevel: parseInt(values[9]) || 0,
-        price: parseFloat(values[10]) || 0
+        price: parseFloat((values[10] || '').replace(/[",\s]/g, '')) || 0
       };
       
       itemData.push(item);

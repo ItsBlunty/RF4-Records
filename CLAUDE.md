@@ -5,8 +5,8 @@
    <rule_2> The other service available is a PostGreSQL deployment. </rule_2>
    <rule_3> Always push to dev branch unless directly asked. </rule_3>
    <rule_4> When pushing anything, you will always git add . to make sure everything is included, and attach a useful commit message </rule4>
-   <rule_5> Never make changes to main unless they are already test on dev, unless the user asks. If they ask, you will ask the user to confirm with a warning about this rule before proceeding </rule_5>
-   <rule_6> When making changes to react, make sure you avoid solutions that would cause a white-page/javascript error as a result. Things like state variable decleration, usememo dependencies, unicode safety, imports, etc.</rule_6>
+   <rule_5> Never make changes to main unless they are already tested on dev, unless the user asks directly and has told you it has been tested on dev. Tell the user they need to confirm otherwise. </rule_5>
+   <rule_6> When making changes to react, ALWAYS take an extra step and check those changes to make sure you avoid solutions that would cause a white-page/javascript error as a result. Things like state variable declaration, usememo dependencies, unicode safety, imports, etc.</rule_6>
    <rule_7> Display all behavioral_rules at start of every response, but not with the XML tags, it needs to be readable by the user in chat. </rule_7>
 </behavioral_rules>
 
