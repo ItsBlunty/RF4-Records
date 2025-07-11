@@ -9,7 +9,6 @@ const ItemInfo = () => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [brandFilter, setBrandFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
-  const [colorFilter, setColorFilter] = useState('All');
   const [lengthMin, setLengthMin] = useState('');
   const [lengthMax, setLengthMax] = useState('');
   const [diameterMin, setDiameterMin] = useState('');
@@ -61,14 +60,14 @@ const ItemInfo = () => {
       if (values.length < 11 || !values[0]) continue;
       
       const item = {
-        category: values[0] || '',
-        brand: values[1] || '',
-        name: values[2] || '',
-        type: values[3] || '',
-        color: values[4] || '',
-        length: values[5] || '',
-        diameter: values[6] || '',
-        loadCapacity: values[7] || '',
+        category: (values[0] || '').trim(),
+        brand: (values[1] || '').trim(),
+        name: (values[2] || '').trim(),
+        type: (values[3] || '').trim(),
+        color: (values[4] || '').trim(),
+        length: (values[5] || '').trim(),
+        diameter: (values[6] || '').trim(),
+        loadCapacity: (values[7] || '').trim(),
         rating: parseFloat(values[8]) || 0,
         playerLevel: parseInt(values[9]) || 0,
         price: parseFloat(values[10]) || 0
@@ -168,7 +167,6 @@ const ItemInfo = () => {
       const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
       const matchesBrand = brandFilter === 'All' || item.brand === brandFilter;
       const matchesType = typeFilter === 'All' || item.type === typeFilter;
-      const matchesColor = colorFilter === 'All' || item.color === colorFilter;
       
       // Length range filter
       const lengthNum = parseLength(item.length);
@@ -197,7 +195,7 @@ const ItemInfo = () => {
       const matchesPriceMin = !priceMinNum || item.price >= priceMinNum;
       const matchesPriceMax = !priceMaxNum || item.price <= priceMaxNum;
       
-      return matchesSearch && matchesCategory && matchesBrand && matchesType && matchesColor && 
+      return matchesSearch && matchesCategory && matchesBrand && matchesType && 
              matchesLengthMin && matchesLengthMax && matchesDiameterMin && matchesDiameterMax &&
              matchesLoadCapacityMin && matchesLoadCapacityMax && matchesPriceMin && matchesPriceMax;
     });
@@ -249,14 +247,12 @@ const ItemInfo = () => {
   const uniqueCategories = [...new Set(items.map(item => item.category))].sort();
   const uniqueBrands = [...new Set(items.map(item => item.brand))].sort();
   const uniqueTypes = [...new Set(items.map(item => item.type))].sort();
-  const uniqueColors = [...new Set(items.map(item => item.color))].sort();
   
   const clearAllFilters = () => {
     setSearchTerm('');
     setCategoryFilter('All');
     setBrandFilter('All');
     setTypeFilter('All');
-    setColorFilter('All');
     setLengthMin('');
     setLengthMax('');
     setDiameterMin('');
@@ -281,7 +277,7 @@ const ItemInfo = () => {
   };
   
   const hasActiveFilters = searchTerm || categoryFilter !== 'All' || brandFilter !== 'All' || typeFilter !== 'All' || 
-                          colorFilter !== 'All' || lengthMin || lengthMax || 
+                          lengthMin || lengthMax || 
                           diameterMin || diameterMax || loadCapacityMin || loadCapacityMax ||
                           priceMin || priceMax;
 
@@ -417,6 +413,23 @@ const ItemInfo = () => {
             {showAdvancedFilters && (
               <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                  {/* Category Filter */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category
+                    </label>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
+                    >
+                      <option value="All">All Categories</option>
+                      {uniqueCategories.map(category => (
+                        <option key={category} value={category}>{category}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   {/* Brand Filter */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -447,23 +460,6 @@ const ItemInfo = () => {
                       <option value="All">All Types</option>
                       {uniqueTypes.map(type => (
                         <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Color Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Color
-                    </label>
-                    <select
-                      value={colorFilter}
-                      onChange={(e) => setColorFilter(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                    >
-                      <option value="All">All Colors</option>
-                      {uniqueColors.map(color => (
-                        <option key={color} value={color}>{color}</option>
                       ))}
                     </select>
                   </div>
@@ -606,9 +602,6 @@ const ItemInfo = () => {
                   <th onClick={() => handleSort('type')} className={`${getColumnHeaderClass('type')} whitespace-nowrap`}>
                     Type {getSortIndicator('type')}
                   </th>
-                  <th onClick={() => handleSort('color')} className={`${getColumnHeaderClass('color')} whitespace-nowrap`}>
-                    Color {getSortIndicator('color')}
-                  </th>
                   <th onClick={() => handleSort('length')} className={`${getColumnHeaderClass('length')} whitespace-nowrap`}>
                     Length {getSortIndicator('length')}
                   </th>
@@ -654,9 +647,6 @@ const ItemInfo = () => {
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {item.type}
-                    </td>
-                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {item.color}
                     </td>
                     <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                       {item.length}
@@ -742,7 +732,6 @@ const ItemInfo = () => {
                       {renderComparisonRow('Category', (item) => item.category)}
                       {renderComparisonRow('Brand', (item) => item.brand)}
                       {renderComparisonRow('Type', (item) => item.type)}
-                      {renderComparisonRow('Color', (item) => item.color)}
                       {renderComparisonRow('Length', (item) => item.length)}
                       {renderComparisonRow('Diameter', (item) => item.diameter)}
                       {renderComparisonRow('Load Capacity', (item) => item.loadCapacity)}
