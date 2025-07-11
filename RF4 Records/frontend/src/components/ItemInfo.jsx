@@ -133,7 +133,7 @@ const ItemInfo = () => {
   };
 
   const getColumnHeaderClass = (columnKey) => {
-    const baseClass = "px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-600";
+    const baseClass = "px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-600";
     if (sortConfig.key === columnKey) {
       return `${baseClass} bg-gray-100 dark:bg-gray-600`;
     }
@@ -241,17 +241,7 @@ const ItemInfo = () => {
     });
   }, [items, searchTerm, brandFilter, typeFilter, colorFilter, lengthMin, lengthMax, diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax, sortConfig]);
 
-  // Group items by brand
-  const itemsByBrand = useMemo(() => {
-    const grouped = {};
-    filteredAndSortedItems.forEach(item => {
-      if (!grouped[item.brand]) {
-        grouped[item.brand] = [];
-      }
-      grouped[item.brand].push(item);
-    });
-    return grouped;
-  }, [filteredAndSortedItems]);
+  // No grouping needed - display all items in one table
 
   const uniqueBrands = [...new Set(items.map(item => item.brand))].sort();
   const uniqueTypes = [...new Set(items.map(item => item.type))].sort();
@@ -313,7 +303,7 @@ const ItemInfo = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
           {/* Header */}
           <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
@@ -560,98 +550,96 @@ const ItemInfo = () => {
             </div>
           </div>
 
-          {/* Item sections by brand */}
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Object.entries(itemsByBrand).map(([brand, brandItems]) => (
-              <div key={brand} className="px-6 py-6">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{brand}</h2>
-                
-                <div className="overflow-x-auto">
-                  <table className="w-full divide-y divide-gray-200 dark:divide-gray-700 table-auto">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        {compareMode && (
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
-                            Select
-                          </th>
-                        )}
-                        <th onClick={() => handleSort('name')} className={`${getColumnHeaderClass('name')} whitespace-nowrap`}>
-                          Item Name {getSortIndicator('name')}
-                        </th>
-                        <th onClick={() => handleSort('type')} className={`${getColumnHeaderClass('type')} whitespace-nowrap`}>
-                          Type {getSortIndicator('type')}
-                        </th>
-                        <th onClick={() => handleSort('color')} className={`${getColumnHeaderClass('color')} whitespace-nowrap`}>
-                          Color {getSortIndicator('color')}
-                        </th>
-                        <th onClick={() => handleSort('length')} className={`${getColumnHeaderClass('length')} whitespace-nowrap`}>
-                          Length {getSortIndicator('length')}
-                        </th>
-                        <th onClick={() => handleSort('diameter')} className={`${getColumnHeaderClass('diameter')} whitespace-nowrap`}>
-                          Diameter {getSortIndicator('diameter')}
-                        </th>
-                        <th onClick={() => handleSort('loadCapacity')} className={`${getColumnHeaderClass('loadCapacity')} whitespace-nowrap`}>
-                          Load Capacity {getSortIndicator('loadCapacity')}
-                        </th>
-                        <th onClick={() => handleSort('rating')} className={`${getColumnHeaderClass('rating')} whitespace-nowrap`}>
-                          Rating {getSortIndicator('rating')}
-                        </th>
-                        <th onClick={() => handleSort('playerLevel')} className={`${getColumnHeaderClass('playerLevel')} whitespace-nowrap`}>
-                          Player Level {getSortIndicator('playerLevel')}
-                        </th>
-                        <th onClick={() => handleSort('price')} className={`${getColumnHeaderClass('price')} whitespace-nowrap`}>
-                          Price {getSortIndicator('price')}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {brandItems.map((item, index) => (
-                        <tr key={`${item.name}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          {compareMode && (
-                            <td className="px-6 py-2.5 whitespace-nowrap text-center">
-                              <input
-                                type="checkbox"
-                                checked={selectedItems.some(i => i.name === item.name)}
-                                onChange={() => toggleItemSelection(item)}
-                                disabled={selectedItems.length === 5 && !selectedItems.some(i => i.name === item.name)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
-                              />
-                            </td>
-                          )}
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {item.name}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.type}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.color}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.length}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.diameter}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.loadCapacity}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap">
-                            {renderStars(item.rating)}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.playerLevel}
-                          </td>
-                          <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {item.price.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
+          {/* Single table for all items */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  {compareMode && (
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider whitespace-nowrap">
+                      Select
+                    </th>
+                  )}
+                  <th onClick={() => handleSort('brand')} className={`${getColumnHeaderClass('brand')} whitespace-nowrap`}>
+                    Brand {getSortIndicator('brand')}
+                  </th>
+                  <th onClick={() => handleSort('name')} className={`${getColumnHeaderClass('name')} whitespace-nowrap`}>
+                    Item Name {getSortIndicator('name')}
+                  </th>
+                  <th onClick={() => handleSort('type')} className={`${getColumnHeaderClass('type')} whitespace-nowrap`}>
+                    Type {getSortIndicator('type')}
+                  </th>
+                  <th onClick={() => handleSort('color')} className={`${getColumnHeaderClass('color')} whitespace-nowrap`}>
+                    Color {getSortIndicator('color')}
+                  </th>
+                  <th onClick={() => handleSort('length')} className={`${getColumnHeaderClass('length')} whitespace-nowrap`}>
+                    Length {getSortIndicator('length')}
+                  </th>
+                  <th onClick={() => handleSort('diameter')} className={`${getColumnHeaderClass('diameter')} whitespace-nowrap`}>
+                    Diameter {getSortIndicator('diameter')}
+                  </th>
+                  <th onClick={() => handleSort('loadCapacity')} className={`${getColumnHeaderClass('loadCapacity')} whitespace-nowrap`}>
+                    Load Capacity {getSortIndicator('loadCapacity')}
+                  </th>
+                  <th onClick={() => handleSort('rating')} className={`${getColumnHeaderClass('rating')} whitespace-nowrap`}>
+                    Rating {getSortIndicator('rating')}
+                  </th>
+                  <th onClick={() => handleSort('playerLevel')} className={`${getColumnHeaderClass('playerLevel')} whitespace-nowrap`}>
+                    Player Level {getSortIndicator('playerLevel')}
+                  </th>
+                  <th onClick={() => handleSort('price')} className={`${getColumnHeaderClass('price')} whitespace-nowrap`}>
+                    Price {getSortIndicator('price')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredAndSortedItems.map((item, index) => (
+                  <tr key={`${item.name}-${index}`} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    {compareMode && (
+                      <td className="px-4 py-2.5 whitespace-nowrap text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedItems.some(i => i.name === item.name)}
+                          onChange={() => toggleItemSelection(item)}
+                          disabled={selectedItems.length === 5 && !selectedItems.some(i => i.name === item.name)}
+                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:opacity-50"
+                        />
+                      </td>
+                    )}
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {item.brand}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {item.name}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.type}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.color}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.length}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.diameter}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.loadCapacity}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap">
+                      {renderStars(item.rating)}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.playerLevel}
+                    </td>
+                    <td className="px-4 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                      {item.price.toFixed(2)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
           {filteredAndSortedItems.length === 0 && (
