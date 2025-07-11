@@ -240,7 +240,7 @@ const ItemInfo = () => {
       }
       return 0;
     });
-  }, [items, searchTerm, brandFilter, typeFilter, colorFilter, lengthMin, lengthMax, diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax, sortConfig]);
+  }, [items, searchTerm, categoryFilter, brandFilter, typeFilter, lengthMin, lengthMax, diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax, sortConfig]);
 
   // No grouping needed - display all items in one table
 
