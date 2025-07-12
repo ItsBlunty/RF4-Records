@@ -248,39 +248,41 @@ const CafeOrders = () => {
                     </h2>
                   </div>
                   
-                  {/* Five-column layout for fish */}
-                  <div className="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                    {locationOrders.map((fishGroup, index) => (
-                      <div key={index} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex flex-col">
-                        {/* Fish name header - centered at top */}
-                        <div className="text-center mb-3">
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {fishGroup.fish_name}
+                  {/* Ordered list layout for fish */}
+                  <div className="p-4">
+                    <ol className="space-y-3">
+                      {locationOrders.map((fishGroup, index) => (
+                        <li key={index} className="flex items-start">
+                          {/* List number */}
+                          <span className="flex-shrink-0 w-8 h-6 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-semibold flex items-center justify-center mr-3 mt-0.5">
+                            {index + 1}
                           </span>
-                        </div>
-                        
-                        {/* Order variants - two mini columns */}
-                        <div className="space-y-2">
-                          {fishGroup.orderVariants.map((variant, variantIndex) => (
-                            <div key={variantIndex} className="flex items-center justify-between text-xs">
-                              {/* Left mini-column: order details */}
-                              <div className="flex-1 text-center">
-                                <span className="text-gray-700 dark:text-gray-300 font-medium">
-                                  {variant.quantity} × {variant.mass}
-                                </span>
-                              </div>
-                              
-                              {/* Right mini-column: silver price/range */}
-                              <div className="flex-1 text-center">
-                                <span className="text-gray-600 dark:text-gray-400 font-medium">
-                                  {variant.priceRange}
-                                </span>
-                              </div>
+                          
+                          {/* Fish content */}
+                          <div className="flex-1 min-w-0">
+                            {/* Fish name */}
+                            <div className="font-semibold text-gray-900 dark:text-white mb-1">
+                              {fishGroup.fish_name}
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                            
+                            {/* Order variants inline */}
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
+                              {fishGroup.orderVariants.map((variant, variantIndex) => (
+                                <span key={variantIndex} className="whitespace-nowrap">
+                                  <span className="font-medium text-gray-700 dark:text-gray-300">
+                                    {variant.quantity} × {variant.mass}
+                                  </span>
+                                  <span className="text-gray-500 dark:text-gray-500 mx-1">•</span>
+                                  <span className="font-medium text-green-600 dark:text-green-400">
+                                    {variant.priceRange}
+                                  </span>
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
                   </div>
                 </div>
               ))}
