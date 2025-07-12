@@ -248,16 +248,11 @@ const CafeOrders = () => {
                     </h2>
                   </div>
                   
-                  {/* Ordered list layout for fish */}
+                  {/* Two-column list layout for fish */}
                   <div className="p-4">
-                    <ol className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3">
                       {locationOrders.map((fishGroup, index) => (
-                        <li key={index} className="flex items-start">
-                          {/* List number */}
-                          <span className="flex-shrink-0 w-8 h-6 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-xs font-semibold flex items-center justify-center mr-3 mt-0.5">
-                            {index + 1}
-                          </span>
-                          
+                        <div key={index} className="flex items-start">
                           {/* Fish content */}
                           <div className="flex-1 min-w-0">
                             {/* Fish name */}
@@ -280,9 +275,9 @@ const CafeOrders = () => {
                               ))}
                             </div>
                           </div>
-                        </li>
+                        </div>
                       ))}
-                    </ol>
+                    </div>
                   </div>
                 </div>
               ))}
