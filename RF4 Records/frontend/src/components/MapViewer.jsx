@@ -549,7 +549,7 @@ const MapViewer = () => {
             </select>
             
             {/* Coordinate Input */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1">
               <input
                 type="number"
                 step="0.1"
@@ -557,8 +557,10 @@ const MapViewer = () => {
                 value={coordInputX}
                 onChange={(e) => setCoordInputX(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && coordInputX && coordInputY && handleCoordinateInput()}
-                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                className="w-12 px-1 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center appearance-none"
+                style={{ MozAppearance: 'textfield' }}
               />
+              <span className="text-gray-500 dark:text-gray-400">:</span>
               <input
                 type="number"
                 step="0.1"
@@ -566,7 +568,8 @@ const MapViewer = () => {
                 value={coordInputY}
                 onChange={(e) => setCoordInputY(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && coordInputX && coordInputY && handleCoordinateInput()}
-                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                className="w-12 px-1 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-center appearance-none"
+                style={{ MozAppearance: 'textfield' }}
               />
               <button
                 onClick={handleCoordinateInput}
