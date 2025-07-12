@@ -360,38 +360,14 @@ const MapViewer = () => {
     
     const mapCoords = { x, y };
     
-    if (!currentMeasurement) {
-      // Start new measurement - clear previous markers and measurements
-      const newMarker = { 
-        id: Date.now(), 
-        mapCoords: mapCoords
-      };
-      setMarkers([newMarker]);
-      setMeasurements([]);
-      setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
-    } else {
-      // Complete measurement
-      const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
-      const newMeasurement = {
-        id: Date.now(),
-        start: currentMeasurement.start,
-        end: { mapCoords },
-        distance: distance
-      };
-      
-      // Add second marker and complete the measurement
-      const endMarker = {
-        id: Date.now() + 1,
-        mapCoords: mapCoords
-      };
-      
-      setMarkers([currentMeasurement.startMarker, endMarker]);
-      setMeasurements([newMeasurement]);
-      setCurrentMeasurement(null);
-      
-      // Update URL with coordinates
-      updateURLWithMeasurement(currentMeasurement.start.mapCoords, mapCoords);
-    }
+    // Always start a new measurement - clear previous markers and measurements
+    const newMarker = { 
+      id: Date.now(), 
+      mapCoords: mapCoords
+    };
+    setMarkers([newMarker]);
+    setMeasurements([]);
+    setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
     
     // Clear input fields
     setCoordInputX('');
