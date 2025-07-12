@@ -42,6 +42,10 @@ const MapViewer = () => {
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [devCoords, setDevCoords] = useState(null);
   
+  // Coordinate input state
+  const [coordInputX, setCoordInputX] = useState('');
+  const [coordInputY, setCoordInputY] = useState('');
+  
   // Use dev coordinates if available, otherwise use parsed map bounds
   const effectiveBounds = devCoords || mapBounds;
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
@@ -335,6 +339,65 @@ const MapViewer = () => {
     }
   };
 
+  // Handle coordinate input submission
+  const handleCoordinateInput = () => {
+    const x = parseFloat(coordInputX);
+    const y = parseFloat(coordInputY);
+    
+    // Validate inputs
+    if (isNaN(x) || isNaN(y)) {
+      alert('Please enter valid numeric coordinates');
+      return;
+    }
+    
+    // Validate coordinates are within map bounds
+    if (!effectiveBounds || 
+        x < effectiveBounds.minX || x > effectiveBounds.maxX ||
+        y < effectiveBounds.minY || y > effectiveBounds.maxY) {
+      alert(`Coordinates must be within map bounds: ${effectiveBounds?.minX || 0}-${effectiveBounds?.maxX || 0} (X), ${effectiveBounds?.minY || 0}-${effectiveBounds?.maxY || 0} (Y)`);
+      return;
+    }
+    
+    const mapCoords = { x, y };
+    
+    if (!currentMeasurement) {
+      // Start new measurement - clear previous markers and measurements
+      const newMarker = { 
+        id: Date.now(), 
+        mapCoords: mapCoords
+      };
+      setMarkers([newMarker]);
+      setMeasurements([]);
+      setCurrentMeasurement({ start: { mapCoords }, startMarker: newMarker });
+    } else {
+      // Complete measurement
+      const distance = calculateDistance(currentMeasurement.start.mapCoords, mapCoords);
+      const newMeasurement = {
+        id: Date.now(),
+        start: currentMeasurement.start,
+        end: { mapCoords },
+        distance: distance
+      };
+      
+      // Add second marker and complete the measurement
+      const endMarker = {
+        id: Date.now() + 1,
+        mapCoords: mapCoords
+      };
+      
+      setMarkers([currentMeasurement.startMarker, endMarker]);
+      setMeasurements([newMeasurement]);
+      setCurrentMeasurement(null);
+      
+      // Update URL with coordinates
+      updateURLWithMeasurement(currentMeasurement.start.mapCoords, mapCoords);
+    }
+    
+    // Clear input fields
+    setCoordInputX('');
+    setCoordInputY('');
+  };
+
   // Handle wheel zoom
   const handleWheel = useCallback((e) => {
     // Only handle wheel events when mouse is over the map
@@ -509,6 +572,40 @@ const MapViewer = () => {
               ))}
             </select>
             
+            {/* Coordinate Input */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                step="0.1"
+                placeholder="X"
+                value={coordInputX}
+                onChange={(e) => setCoordInputX(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && coordInputX && coordInputY && handleCoordinateInput()}
+                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              />
+              <input
+                type="number"
+                step="0.1"
+                placeholder="Y"
+                value={coordInputY}
+                onChange={(e) => setCoordInputY(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && coordInputX && coordInputY && handleCoordinateInput()}
+                className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+              />
+              <button
+                onClick={handleCoordinateInput}
+                disabled={!coordInputX || !coordInputY}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  coordInputX && coordInputY
+                    ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                    : 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                }`}
+                title="Mark coordinate on map"
+              >
+                Mark
+              </button>
+            </div>
+
             {/* Share Spot Button */}
             <button
               onClick={handleShareSpot}
