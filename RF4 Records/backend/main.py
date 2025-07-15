@@ -37,10 +37,65 @@ logging.getLogger('uvicorn.access').setLevel(logging.WARNING)
 # Initialize scheduler but don't start it yet
 scheduler = BackgroundScheduler()
 
+# Track server startup time for uptime calculation
+server_start_time = None
+
+def get_git_commit_info():
+    """Get current git commit information"""
+    try:
+        import subprocess
+        
+        # Get current commit hash
+        commit_hash = subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], 
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            universal_newlines=True
+        ).strip()
+        
+        # Get commit message
+        commit_message = subprocess.check_output(
+            ['git', 'log', '-1', '--pretty=%s'], 
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            universal_newlines=True
+        ).strip()
+        
+        # Get commit date
+        commit_date = subprocess.check_output(
+            ['git', 'log', '-1', '--pretty=%ci'], 
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            universal_newlines=True
+        ).strip()
+        
+        # Get current branch
+        branch = subprocess.check_output(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'], 
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            universal_newlines=True
+        ).strip()
+        
+        return {
+            "commit_hash": commit_hash[:7],  # Short hash
+            "commit_hash_full": commit_hash,
+            "commit_message": commit_message,
+            "commit_date": commit_date,
+            "branch": branch
+        }
+    except Exception as e:
+        logger.warning(f"Could not get git commit info: {e}")
+        return {
+            "commit_hash": "unknown",
+            "commit_hash_full": "unknown",
+            "commit_message": "Git info not available",
+            "commit_date": "unknown",
+            "branch": "unknown"
+        }
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Modern lifespan event handler for startup and shutdown"""
     # Startup
+    global server_start_time
+    server_start_time = datetime.now()
     print("=== SERVER STARTUP ===", flush=True)
     print("🚀 FastAPI server is starting up...", flush=True)
     
@@ -1556,6 +1611,26 @@ def get_status():
         frequency = current_period
         next_change, next_frequency = get_next_schedule_change()
         
+        # Calculate uptime
+        uptime_info = {}
+        if server_start_time:
+            current_time = datetime.now()
+            uptime_delta = current_time - server_start_time
+            uptime_info = {
+                "server_start_time": server_start_time.isoformat(),
+                "uptime_seconds": uptime_delta.total_seconds(),
+                "uptime_formatted": str(uptime_delta).split('.')[0]  # Remove microseconds
+            }
+        else:
+            uptime_info = {
+                "server_start_time": "unknown",
+                "uptime_seconds": 0,
+                "uptime_formatted": "unknown"
+            }
+        
+        # Get git commit information
+        git_info = get_git_commit_info()
+        
         return {
             "server_status": "running",
             "scheduler_active": scheduler.running,
@@ -1567,7 +1642,9 @@ def get_status():
             "memory_usage_mb": round(memory_mb, 2),
             "memory_percent": round(process.memory_percent(), 2),
             "last_update": datetime.now().isoformat(),
-            "environment": os.getenv("RAILWAY_ENVIRONMENT", "development")
+            "environment": os.getenv("RAILWAY_ENVIRONMENT", "development"),
+            **uptime_info,
+            "git_info": git_info
         }
     except Exception as e:
         logger.error(f"Error getting status: {e}")

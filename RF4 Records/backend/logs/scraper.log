@@ -19554,3 +19554,52 @@ FROM records) AS anon_1]
 2025-06-30 10:27:22,761 - INFO - [AGGRESSIVE CLEANUP] No Chrome processes to kill (checked 0 Chrome processes)
 2025-06-30 10:27:24,763 - INFO - Final memory cleanup...
 2025-06-30 10:27:25,690 - INFO - Memory after cleanup: 60.4MB (freed 0.0MB)
+2025-07-15 17:19:38,507 - ERROR - Error initializing Q&A data: (sqlite3.OperationalError) no such column: qa_dataset.original_poster
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT qa_dataset.id AS qa_dataset_id, qa_dataset.question AS qa_dataset_question, qa_dataset.answer AS qa_dataset_answer, qa_dataset.topic AS qa_dataset_topic, qa_dataset.tags AS qa_dataset_tags, qa_dataset.source AS qa_dataset_source, qa_dataset.original_poster AS qa_dataset_original_poster, qa_dataset.post_link AS qa_dataset_post_link, qa_dataset.date_added AS qa_dataset_date_added, qa_dataset.created_at AS qa_dataset_created_at 
+FROM qa_dataset) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-07-15 17:19:38,510 - INFO - 🎣 Generating top baits cache...
+2025-07-15 17:19:38,516 - INFO - 🎣 Analyzing top baits for periods:
+2025-07-15 17:19:38,516 - INFO -   This Week: 2025-07-13 18:00 - Present
+2025-07-15 17:19:38,516 - INFO -   Last Week: 2025-07-06 18:00 - 2025-07-13 18:00
+2025-07-15 17:19:38,516 - INFO -   3 Weeks Ago: 2025-06-29 18:00 - 2025-07-06 18:00
+2025-07-15 17:19:38,518 - INFO - 📊 Retrieved 0 records in 0.001s
+2025-07-15 17:19:38,518 - INFO - 🐟 Analyzing 0 unique fish species
+2025-07-15 17:19:38,518 - INFO - 🎯 Top baits analysis completed:
+2025-07-15 17:19:38,518 - INFO -   Query time: 0.001s
+2025-07-15 17:19:38,518 - INFO -   Processing time: 0.000s
+2025-07-15 17:19:38,518 - INFO -   Total time: 0.001s
+2025-07-15 17:19:38,518 - INFO - ✅ Top baits cache generated in 0.009s
+2025-07-15 17:19:38,518 - INFO -    Records: 0, Fish: 0
+2025-07-15 17:19:38,522 - INFO - Memory monitoring started
+2025-07-15 17:19:48,085 - INFO - === SERVER SHUTDOWN ===
+2025-07-15 17:19:48,085 - INFO - Scheduler shutdown complete
+2025-07-15 17:19:53,086 - INFO - Memory monitoring stopped
+2025-07-15 17:19:59,919 - ERROR - Error initializing Q&A data: (sqlite3.OperationalError) no such column: qa_dataset.original_poster
+[SQL: SELECT count(*) AS count_1 
+FROM (SELECT qa_dataset.id AS qa_dataset_id, qa_dataset.question AS qa_dataset_question, qa_dataset.answer AS qa_dataset_answer, qa_dataset.topic AS qa_dataset_topic, qa_dataset.tags AS qa_dataset_tags, qa_dataset.source AS qa_dataset_source, qa_dataset.original_poster AS qa_dataset_original_poster, qa_dataset.post_link AS qa_dataset_post_link, qa_dataset.date_added AS qa_dataset_date_added, qa_dataset.created_at AS qa_dataset_created_at 
+FROM qa_dataset) AS anon_1]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+2025-07-15 17:19:59,919 - INFO - 🎣 Generating top baits cache...
+2025-07-15 17:19:59,919 - INFO - 🎣 Analyzing top baits for periods:
+2025-07-15 17:19:59,919 - INFO -   This Week: 2025-07-13 18:00 - Present
+2025-07-15 17:19:59,920 - INFO -   Last Week: 2025-07-06 18:00 - 2025-07-13 18:00
+2025-07-15 17:19:59,920 - INFO -   3 Weeks Ago: 2025-06-29 18:00 - 2025-07-06 18:00
+2025-07-15 17:19:59,921 - INFO - 📊 Retrieved 0 records in 0.001s
+2025-07-15 17:19:59,921 - INFO - 🐟 Analyzing 0 unique fish species
+2025-07-15 17:19:59,921 - INFO - 🎯 Top baits analysis completed:
+2025-07-15 17:19:59,921 - INFO -   Query time: 0.001s
+2025-07-15 17:19:59,921 - INFO -   Processing time: 0.000s
+2025-07-15 17:19:59,921 - INFO -   Total time: 0.002s
+2025-07-15 17:19:59,921 - INFO - ✅ Top baits cache generated in 0.002s
+2025-07-15 17:19:59,921 - INFO -    Records: 0, Fish: 0
+2025-07-15 17:19:59,923 - INFO - Memory monitoring started
+2025-07-15 17:20:54,089 - INFO - 📋 Filter Values API Response Complete:
+2025-07-15 17:20:54,089 - INFO -   Fish: 0 options
+2025-07-15 17:20:54,089 - INFO -   Waterbody: 0 options
+2025-07-15 17:20:54,089 - INFO -   Bait: 0 options
+2025-07-15 17:20:54,089 - INFO -   Total API time: 0.001s
+2025-07-15 17:22:19,723 - INFO - === SERVER SHUTDOWN ===
+2025-07-15 17:22:19,724 - INFO - Scheduler shutdown complete
+2025-07-15 17:22:24,724 - INFO - Memory monitoring stopped
