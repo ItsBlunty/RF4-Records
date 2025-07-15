@@ -22,10 +22,6 @@ const About = ({ onClose }) => {
             </p>
             
             <p>
-              This page should always be updated any time locations, baits, or fish are added or changed.
-            </p>
-            
-            <p>
               This site scrapes Russian Fishing 4 Records, including <span className="font-medium">Weekly Global</span>, 
               <span className="font-medium"> Ultralight</span>, <span className="font-medium">Light</span>, 
               <span className="font-medium"> Bottom Light</span>, and <span className="font-medium">Telescopic</span>. 
