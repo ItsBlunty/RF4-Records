@@ -353,7 +353,7 @@ def scheduled_scrape():
             try:
                 from database import SessionLocal
                 # Force database connection pool cleanup
-                SessionLocal.close_all()
+                SessionLocal.close_all_sessions()
             except Exception:
                 pass
             
@@ -544,7 +544,7 @@ def periodic_memory_cleanup():
             # Clear database session pools
             try:
                 from database import SessionLocal
-                SessionLocal.close_all()
+                SessionLocal.close_all_sessions()
             except Exception:
                 pass
             
