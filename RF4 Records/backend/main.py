@@ -41,8 +41,28 @@ scheduler = BackgroundScheduler()
 server_start_time = None
 
 def get_git_commit_info():
-    """Get current git commit information"""
+    """Get current git commit information from Railway environment variables or git"""
     try:
+        # Try Railway environment variables first (available when deployed via GitHub)
+        railway_commit_sha = os.getenv("RAILWAY_GIT_COMMIT_SHA")
+        railway_author = os.getenv("RAILWAY_GIT_AUTHOR") 
+        railway_branch = os.getenv("RAILWAY_GIT_BRANCH")
+        railway_repo_name = os.getenv("RAILWAY_GIT_REPO_NAME")
+        railway_repo_owner = os.getenv("RAILWAY_GIT_REPO_OWNER")
+        railway_commit_message = os.getenv("RAILWAY_GIT_COMMIT_MESSAGE")
+        
+        if railway_commit_sha:
+            return {
+                "commit_hash": railway_commit_sha[:7],  # Short hash
+                "commit_hash_full": railway_commit_sha,
+                "commit_message": railway_commit_message or "No message available",
+                "commit_date": "Railway deployment",  # Railway doesn't provide commit date
+                "branch": railway_branch or "unknown",
+                "author": railway_author or "unknown",
+                "repo": f"{railway_repo_owner}/{railway_repo_name}" if railway_repo_owner and railway_repo_name else "unknown"
+            }
+        
+        # Fallback to git commands for local development
         import subprocess
         
         # Get current commit hash
@@ -73,12 +93,21 @@ def get_git_commit_info():
             universal_newlines=True
         ).strip()
         
+        # Get author
+        author = subprocess.check_output(
+            ['git', 'log', '-1', '--pretty=%an'], 
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+            universal_newlines=True
+        ).strip()
+        
         return {
             "commit_hash": commit_hash[:7],  # Short hash
             "commit_hash_full": commit_hash,
             "commit_message": commit_message,
             "commit_date": commit_date,
-            "branch": branch
+            "branch": branch,
+            "author": author,
+            "repo": "local"
         }
     except Exception as e:
         logger.warning(f"Could not get git commit info: {e}")
@@ -87,7 +116,9 @@ def get_git_commit_info():
             "commit_hash_full": "unknown",
             "commit_message": "Git info not available",
             "commit_date": "unknown",
-            "branch": "unknown"
+            "branch": "unknown",
+            "author": "unknown",
+            "repo": "unknown"
         }
 
 @asynccontextmanager
