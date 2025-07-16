@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Filter, X, Scale } from 'lucide-react';
 
 const ReelInfo = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [reels, setReels] = useState([]);
   const [filteredReels, setFilteredReels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -102,6 +106,70 @@ const ReelInfo = () => {
 
     loadReels();
   }, []);
+
+  // URL parameter management
+  const updateURLParams = () => {
+    const params = new URLSearchParams();
+    
+    if (searchTerm) params.set('search', searchTerm);
+    if (saltwaterFilter !== 'All') params.set('saltwater', saltwaterFilter);
+    if (typeFilter !== 'All') params.set('type', typeFilter);
+    if (sizeFilter !== 'All') params.set('size', sizeFilter);
+    if (testWeightMin) params.set('testWeightMin', testWeightMin);
+    if (testWeightMax) params.set('testWeightMax', testWeightMax);
+    if (dragListedMin) params.set('dragListedMin', dragListedMin);
+    if (dragListedMax) params.set('dragListedMax', dragListedMax);
+    if (mechWeightMin) params.set('mechWeightMin', mechWeightMin);
+    if (mechWeightMax) params.set('mechWeightMax', mechWeightMax);
+    if (priceMin) params.set('priceMin', priceMin);
+    if (priceMax) params.set('priceMax', priceMax);
+    if (gearRatioMin) params.set('gearRatioMin', gearRatioMin);
+    if (gearRatioMax) params.set('gearRatioMax', gearRatioMax);
+    if (showAdvancedFilters) params.set('advanced', 'true');
+    if (sortConfig.key) {
+      params.set('sort', sortConfig.key);
+      params.set('sortDir', sortConfig.direction);
+    }
+    if (compareMode) params.set('compare', 'true');
+    
+    const newURL = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    navigate(newURL, { replace: true });
+  };
+
+  // Load URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    
+    if (params.get('search')) setSearchTerm(params.get('search'));
+    if (params.get('saltwater')) setSaltwaterFilter(params.get('saltwater'));
+    if (params.get('type')) setTypeFilter(params.get('type'));
+    if (params.get('size')) setSizeFilter(params.get('size'));
+    if (params.get('testWeightMin')) setTestWeightMin(params.get('testWeightMin'));
+    if (params.get('testWeightMax')) setTestWeightMax(params.get('testWeightMax'));
+    if (params.get('dragListedMin')) setDragListedMin(params.get('dragListedMin'));
+    if (params.get('dragListedMax')) setDragListedMax(params.get('dragListedMax'));
+    if (params.get('mechWeightMin')) setMechWeightMin(params.get('mechWeightMin'));
+    if (params.get('mechWeightMax')) setMechWeightMax(params.get('mechWeightMax'));
+    if (params.get('priceMin')) setPriceMin(params.get('priceMin'));
+    if (params.get('priceMax')) setPriceMax(params.get('priceMax'));
+    if (params.get('gearRatioMin')) setGearRatioMin(params.get('gearRatioMin'));
+    if (params.get('gearRatioMax')) setGearRatioMax(params.get('gearRatioMax'));
+    if (params.get('advanced') === 'true') setShowAdvancedFilters(true);
+    if (params.get('sort')) {
+      setSortConfig({
+        key: params.get('sort'),
+        direction: params.get('sortDir') || 'ascending'
+      });
+    }
+    if (params.get('compare') === 'true') setCompareMode(true);
+  }, [location.search]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURLParams();
+  }, [searchTerm, saltwaterFilter, typeFilter, sizeFilter, testWeightMin, testWeightMax,
+      dragListedMin, dragListedMax, mechWeightMin, mechWeightMax, priceMin, priceMax,
+      gearRatioMin, gearRatioMax, showAdvancedFilters, sortConfig, compareMode]);
 
   // Sorting functions
   const handleSort = (key) => {

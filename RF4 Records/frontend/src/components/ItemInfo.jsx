@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Star, Info, Filter, X, Scale } from 'lucide-react';
 
 const ItemInfo = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,6 +52,66 @@ const ItemInfo = () => {
 
     loadItemData();
   }, []);
+
+  // URL parameter management
+  const updateURLParams = () => {
+    const params = new URLSearchParams();
+    
+    if (searchTerm) params.set('search', searchTerm);
+    if (categoryFilter !== 'All') params.set('category', categoryFilter);
+    if (brandFilter !== 'All') params.set('brand', brandFilter);
+    if (typeFilter !== 'All') params.set('type', typeFilter);
+    if (lengthMin) params.set('lengthMin', lengthMin);
+    if (lengthMax) params.set('lengthMax', lengthMax);
+    if (diameterMin) params.set('diameterMin', diameterMin);
+    if (diameterMax) params.set('diameterMax', diameterMax);
+    if (loadCapacityMin) params.set('loadCapacityMin', loadCapacityMin);
+    if (loadCapacityMax) params.set('loadCapacityMax', loadCapacityMax);
+    if (priceMin) params.set('priceMin', priceMin);
+    if (priceMax) params.set('priceMax', priceMax);
+    if (showAdvancedFilters) params.set('advanced', 'true');
+    if (sortConfig.key) {
+      params.set('sort', sortConfig.key);
+      params.set('sortDir', sortConfig.direction);
+    }
+    if (compareMode) params.set('compare', 'true');
+    
+    const newURL = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    navigate(newURL, { replace: true });
+  };
+
+  // Load URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    
+    if (params.get('search')) setSearchTerm(params.get('search'));
+    if (params.get('category')) setCategoryFilter(params.get('category'));
+    if (params.get('brand')) setBrandFilter(params.get('brand'));
+    if (params.get('type')) setTypeFilter(params.get('type'));
+    if (params.get('lengthMin')) setLengthMin(params.get('lengthMin'));
+    if (params.get('lengthMax')) setLengthMax(params.get('lengthMax'));
+    if (params.get('diameterMin')) setDiameterMin(params.get('diameterMin'));
+    if (params.get('diameterMax')) setDiameterMax(params.get('diameterMax'));
+    if (params.get('loadCapacityMin')) setLoadCapacityMin(params.get('loadCapacityMin'));
+    if (params.get('loadCapacityMax')) setLoadCapacityMax(params.get('loadCapacityMax'));
+    if (params.get('priceMin')) setPriceMin(params.get('priceMin'));
+    if (params.get('priceMax')) setPriceMax(params.get('priceMax'));
+    if (params.get('advanced') === 'true') setShowAdvancedFilters(true);
+    if (params.get('sort')) {
+      setSortConfig({
+        key: params.get('sort'),
+        direction: params.get('sortDir') || 'ascending'
+      });
+    }
+    if (params.get('compare') === 'true') setCompareMode(true);
+  }, [location.search]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURLParams();
+  }, [searchTerm, categoryFilter, brandFilter, typeFilter, lengthMin, lengthMax,
+      diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax,
+      showAdvancedFilters, sortConfig, compareMode]);
 
   const parseCSVData = (text) => {
     const lines = text.trim().split('\n');

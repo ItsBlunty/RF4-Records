@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Star, Info, Filter, X, Scale } from 'lucide-react';
 
 const RodInfo = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [rods, setRods] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -49,6 +53,66 @@ const RodInfo = () => {
 
     loadRodData();
   }, []);
+
+  // URL parameter management
+  const updateURLParams = () => {
+    const params = new URLSearchParams();
+    
+    if (searchTerm) params.set('search', searchTerm);
+    if (typeFilter !== 'All') params.set('type', typeFilter);
+    if (powerFilter !== 'All') params.set('power', powerFilter);
+    if (actionFilter !== 'All') params.set('action', actionFilter);
+    if (stiffnessMin) params.set('stiffnessMin', stiffnessMin);
+    if (stiffnessMax) params.set('stiffnessMax', stiffnessMax);
+    if (lengthMin) params.set('lengthMin', lengthMin);
+    if (lengthMax) params.set('lengthMax', lengthMax);
+    if (lowTestMin) params.set('lowTestMin', lowTestMin);
+    if (lowTestMax) params.set('lowTestMax', lowTestMax);
+    if (highTestMin) params.set('highTestMin', highTestMin);
+    if (highTestMax) params.set('highTestMax', highTestMax);
+    if (showAdvancedFilters) params.set('advanced', 'true');
+    if (sortConfig.key) {
+      params.set('sort', sortConfig.key);
+      params.set('sortDir', sortConfig.direction);
+    }
+    if (compareMode) params.set('compare', 'true');
+    
+    const newURL = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    navigate(newURL, { replace: true });
+  };
+
+  // Load URL parameters on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    
+    if (params.get('search')) setSearchTerm(params.get('search'));
+    if (params.get('type')) setTypeFilter(params.get('type'));
+    if (params.get('power')) setPowerFilter(params.get('power'));
+    if (params.get('action')) setActionFilter(params.get('action'));
+    if (params.get('stiffnessMin')) setStiffnessMin(params.get('stiffnessMin'));
+    if (params.get('stiffnessMax')) setStiffnessMax(params.get('stiffnessMax'));
+    if (params.get('lengthMin')) setLengthMin(params.get('lengthMin'));
+    if (params.get('lengthMax')) setLengthMax(params.get('lengthMax'));
+    if (params.get('lowTestMin')) setLowTestMin(params.get('lowTestMin'));
+    if (params.get('lowTestMax')) setLowTestMax(params.get('lowTestMax'));
+    if (params.get('highTestMin')) setHighTestMin(params.get('highTestMin'));
+    if (params.get('highTestMax')) setHighTestMax(params.get('highTestMax'));
+    if (params.get('advanced') === 'true') setShowAdvancedFilters(true);
+    if (params.get('sort')) {
+      setSortConfig({
+        key: params.get('sort'),
+        direction: params.get('sortDir') || 'ascending'
+      });
+    }
+    if (params.get('compare') === 'true') setCompareMode(true);
+  }, [location.search]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURLParams();
+  }, [searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, 
+      lengthMin, lengthMax, lowTestMin, lowTestMax, highTestMin, highTestMax, 
+      showAdvancedFilters, sortConfig, compareMode]);
 
   const parseCSVData = (text) => {
     const lines = text.trim().split('\n');
