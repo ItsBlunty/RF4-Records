@@ -262,7 +262,9 @@ function AppContent() {
       setLastRefresh(new Date());
       
       // Save successful search to history
+      console.log('App.jsx: About to save search to history:', filtersToUse, 'Results:', filteredRecords.length);
       saveSearchToHistory(filtersToUse, filteredRecords.length);
+      console.log('App.jsx: saveSearchToHistory completed');
       
     } catch (err) {
       console.error('Error fetching filtered records:', err);

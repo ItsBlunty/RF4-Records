@@ -2,10 +2,15 @@ const SEARCH_HISTORY_KEY = 'rf4_search_history';
 const MAX_HISTORY_ITEMS = 15;
 
 export const saveSearchToHistory = (filters, resultCount = 0) => {
+  console.log('saveSearchToHistory called with:', filters, 'resultCount:', resultCount);
+  
   // Don't save empty searches
   if (!hasValidFilters(filters)) {
+    console.log('saveSearchToHistory: No valid filters, not saving');
     return;
   }
+  
+  console.log('saveSearchToHistory: Valid filters found, proceeding to save');
 
   const searchEntry = {
     id: Date.now(),
@@ -40,8 +45,10 @@ export const saveSearchToHistory = (filters, resultCount = 0) => {
   
   try {
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(trimmedHistory));
+    console.log('Search saved to history:', searchEntry.displayText, 'Total items:', trimmedHistory.length);
     // Dispatch custom event to notify components of history update
     window.dispatchEvent(new CustomEvent('searchHistoryUpdated'));
+    console.log('searchHistoryUpdated event dispatched');
   } catch (error) {
     console.warn('Failed to save search history:', error);
   }
