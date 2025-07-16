@@ -134,6 +134,14 @@ async def lifespan(app: FastAPI):
     print("=== SERVER STARTUP ===", flush=True)
     print("🚀 FastAPI server is starting up...", flush=True)
     
+    # Log git commit information for deployment tracking
+    git_info = get_git_commit_info()
+    if git_info:
+        print(f"📝 Git commit: {git_info['commit_hash']} ({git_info['branch']})", flush=True)
+        print(f"📦 Commit message: {git_info['commit_message']}", flush=True)
+        if git_info.get('author'):
+            print(f"👤 Author: {git_info['author']}", flush=True)
+    
     # Create/verify database tables first
     try:
         create_tables()

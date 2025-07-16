@@ -27,9 +27,10 @@
 - railway logs - shows the current deploy server logs live, ALWAYS use the timeout parameter
 
 ### MCP Tools Available
-- playwright - many ways to use a browser to view and check the project. Always use this to interact with the project at https://rf4-records-dev.up.railway.app/
+- playwright - many ways to use a browser to view and check the project. Use this to interact with the project at https://rf4-records-dev.up.railway.app/
 - fetch - imagefetch
 - sequential-thinking
+- zen mcp - talk to gemini 2.5 pro, with simple queries as longer token counts cost us more
 
 ### Map Viewer Implementation
 - Map files must be placed in `/RF4 Records/frontend/public/images/` directory
