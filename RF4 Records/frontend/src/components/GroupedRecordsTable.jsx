@@ -288,7 +288,10 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       )}
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      {formatWeight(largestFish?.weight)}
+                      <div className="flex items-center">
+                        {getTrophyIcon(largestFish?.trophy_class)}
+                        {formatWeight(largestFish?.weight)}
+                      </div>
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                       {largestFish?.waterbody || groupRecords[0]?.waterbody || '-'}
@@ -329,7 +332,10 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                        {formatWeight(record.weight)}
+                        <div className="flex items-center">
+                          {getTrophyIcon(record.trophy_class)}
+                          {formatWeight(record.weight)}
+                        </div>
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.waterbody || '-'}
