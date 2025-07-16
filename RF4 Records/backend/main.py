@@ -21,6 +21,9 @@ import sys
 import time
 import threading
 import os
+import aiosmtplib
+from email.message import EmailMessage
+from email.utils import formatdate
 
 # Set up logging to stdout (not stderr) to avoid red text in Railway
 logging.basicConfig(
@@ -268,6 +271,56 @@ async def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends
             headers={"WWW-Authenticate": "Bearer"},
         )
     return credentials.credentials
+
+async def send_feedback_email(feedback_data: dict):
+    """Send email notification for new feedback submissions"""
+    try:
+        admin_email = os.getenv("ADMIN_EMAIL")
+        if not admin_email:
+            logger.warning("ADMIN_EMAIL not configured, skipping email notification")
+            return
+        
+        # Create email message
+        message = EmailMessage()
+        message["From"] = "noreply@rf4records.com"
+        message["To"] = admin_email
+        message["Subject"] = f"New {feedback_data['type'].title()} Submission: {feedback_data['subject']}"
+        message["Date"] = formatdate(localtime=True)
+        
+        # Email body
+        body = f"""
+New {feedback_data['type'].title()} Submission Received
+
+Subject: {feedback_data['subject']}
+Type: {feedback_data['type'].title()}
+Message: {feedback_data['message']}
+
+Contact Info: {feedback_data.get('user_info', 'Not provided')}
+Page URL: {feedback_data.get('page_url', 'Unknown')}
+User Agent: {feedback_data.get('user_agent', 'Unknown')}
+IP Address: {feedback_data.get('ip_address', 'Unknown')}
+Submitted: {feedback_data.get('created_at', 'Unknown')}
+
+---
+RF4 Records Feedback System
+"""
+        
+        message.set_content(body)
+        
+        # Send email using Gmail SMTP
+        await aiosmtplib.send(
+            message,
+            hostname="smtp.gmail.com",
+            port=587,
+            start_tls=True,
+            username=admin_email,
+            password=os.getenv("GMAIL_APP_PASSWORD", "")
+        )
+        
+        logger.info(f"Email notification sent for feedback ID: {feedback_data.get('id', 'unknown')}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {str(e)}")
 
 # Rate limiting setup
 limiter = Limiter(key_func=get_remote_address)
@@ -2908,6 +2961,23 @@ async def submit_feedback(request: Request, feedback_data: dict):
         
         db.add(feedback)
         db.commit()
+        
+        # Send email notification asynchronously
+        feedback_dict = {
+            'id': feedback.id,
+            'type': feedback.type,
+            'subject': feedback.subject,
+            'message': feedback.message,
+            'user_info': feedback.user_info,
+            'page_url': feedback.page_url,
+            'user_agent': feedback.user_agent,
+            'ip_address': feedback.ip_address,
+            'created_at': feedback.created_at.isoformat() if feedback.created_at else None
+        }
+        
+        # Send email notification (don't await to avoid blocking the response)
+        import asyncio
+        asyncio.create_task(send_feedback_email(feedback_dict))
         
         return {
             "success": True,
