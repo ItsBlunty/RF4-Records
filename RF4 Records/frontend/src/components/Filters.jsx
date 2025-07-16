@@ -6,15 +6,15 @@ import SearchHistory from './SearchHistory.jsx';
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
 
   const handleHistorySelect = (historicalFilters) => {
-    // Update all filters with the historical search
-    Object.keys(historicalFilters).forEach(key => {
-      onChange(key, historicalFilters[key]);
-    });
-    
-    // Trigger search with the historical filters
+    // First trigger the search with historical filters
     if (onSubmitWithValues) {
       onSubmitWithValues(historicalFilters);
     }
+    
+    // Then update the UI state to reflect the selected filters
+    Object.keys(historicalFilters).forEach(key => {
+      onChange(key, historicalFilters[key]);
+    });
   };
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
