@@ -40,8 +40,10 @@ export const saveSearchToHistory = (filters, resultCount = 0) => {
   
   try {
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(trimmedHistory));
+    console.log('Search saved to history:', searchEntry.displayText, 'Total items:', trimmedHistory.length);
     // Dispatch custom event to notify components of history update
     window.dispatchEvent(new CustomEvent('searchHistoryUpdated'));
+    console.log('searchHistoryUpdated event dispatched');
   } catch (error) {
     console.warn('Failed to save search history:', error);
   }

@@ -21,6 +21,7 @@ const SearchHistory = ({ onSelectSearch, className = '' }) => {
     
     // Also listen for custom events from the same window (since storage events don't fire for same-origin changes)
     const handleHistoryUpdate = () => {
+      console.log('SearchHistory: received searchHistoryUpdated event, reloading history');
       loadHistory();
     };
     
@@ -44,7 +45,9 @@ const SearchHistory = ({ onSelectSearch, className = '' }) => {
   }, []);
 
   const loadHistory = () => {
-    setHistory(getSearchHistory());
+    const newHistory = getSearchHistory();
+    console.log('SearchHistory: loadHistory called, found', newHistory.length, 'items');
+    setHistory(newHistory);
   };
 
   const handleSelectSearch = (searchEntry) => {
