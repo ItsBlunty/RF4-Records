@@ -101,7 +101,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             <div className="flex flex-col gap-2 self-start">
               <button
                 onClick={() => onPageChange && onPageChange('topbaits')}
-                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
+                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
                 title="Top Baits"
               >
                 <Target className="w-3 h-3 mr-1" />
@@ -109,7 +109,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
               </button>
               <button
                 onClick={() => onPageChange && onPageChange('trophyweights')}
-                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
+                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
                 title="Trophy Weights"
               >
                 <Trophy className="w-3 h-3 mr-1" />
