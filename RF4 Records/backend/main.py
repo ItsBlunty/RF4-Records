@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, File, UploadFile, Depends, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -277,23 +276,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add compression middleware (should be added before CORS)
+# Add compression middleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
-
-# Add CORS middleware for frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Local development
-        "http://localhost:5173",  # Vite dev server
-        "https://rf4-records.vercel.app",  # Vercel frontend
-        "https://rf4-records-frontend.railway.app",  # Railway frontend
-        "*"  # Allow all origins for now (you can restrict this later)
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Serve static files (built frontend) in production
 frontend_dist_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
