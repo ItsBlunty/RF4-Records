@@ -9,6 +9,27 @@ const SearchHistory = ({ onSelectSearch, className = '' }) => {
 
   useEffect(() => {
     loadHistory();
+    
+    // Listen for storage changes to update history when new searches are saved
+    const handleStorageChange = (e) => {
+      if (e.key === 'rf4_search_history') {
+        loadHistory();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom events from the same window (since storage events don't fire for same-origin changes)
+    const handleHistoryUpdate = () => {
+      loadHistory();
+    };
+    
+    window.addEventListener('searchHistoryUpdated', handleHistoryUpdate);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('searchHistoryUpdated', handleHistoryUpdate);
+    };
   }, []);
 
   useEffect(() => {

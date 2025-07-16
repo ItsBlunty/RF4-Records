@@ -40,6 +40,8 @@ export const saveSearchToHistory = (filters, resultCount = 0) => {
   
   try {
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(trimmedHistory));
+    // Dispatch custom event to notify components of history update
+    window.dispatchEvent(new CustomEvent('searchHistoryUpdated'));
   } catch (error) {
     console.warn('Failed to save search history:', error);
   }
@@ -58,6 +60,8 @@ export const getSearchHistory = () => {
 export const clearSearchHistory = () => {
   try {
     localStorage.removeItem(SEARCH_HISTORY_KEY);
+    // Dispatch custom event to notify components of history update
+    window.dispatchEvent(new CustomEvent('searchHistoryUpdated'));
   } catch (error) {
     console.warn('Failed to clear search history:', error);
   }
@@ -69,6 +73,8 @@ export const removeSearchFromHistory = (searchId) => {
   
   try {
     localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(filteredHistory));
+    // Dispatch custom event to notify components of history update
+    window.dispatchEvent(new CustomEvent('searchHistoryUpdated'));
   } catch (error) {
     console.warn('Failed to remove search from history:', error);
   }
