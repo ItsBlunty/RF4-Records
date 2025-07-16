@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from database import SessionLocal, Record, QADataset, CafeOrder, create_tables
+from database import SessionLocal, Record, QADataset, CafeOrder, Feedback, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
 from unified_cleanup import periodic_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -2873,6 +2873,138 @@ def get_cafe_orders(location: str = None):
     except Exception as e:
         logger.error(f"Error getting cafe orders: {e}")
         raise HTTPException(status_code=500, detail=f"Error retrieving orders: {str(e)}")
+    finally:
+        db.close()
+
+# Feedback and Issues endpoints
+@app.post("/api/feedback")
+@limiter.limit("5/hour")  # Prevent spam while allowing legitimate feedback
+async def submit_feedback(request: Request, feedback_data: dict):
+    """Submit user feedback or issue report"""
+    db = SessionLocal()
+    try:
+        # Get client IP and user agent for spam detection and debugging
+        client_ip = getattr(request.client, 'host', 'unknown') if hasattr(request, 'client') else 'unknown'
+        user_agent = request.headers.get('user-agent', 'unknown')
+        
+        # Validate required fields
+        if not feedback_data.get('type') or feedback_data['type'] not in ['feedback', 'issue']:
+            raise HTTPException(status_code=400, detail="Type must be 'feedback' or 'issue'")
+        
+        if not feedback_data.get('subject') or not feedback_data.get('message'):
+            raise HTTPException(status_code=400, detail="Subject and message are required")
+        
+        # Create feedback record
+        feedback = Feedback(
+            type=feedback_data['type'],
+            subject=feedback_data['subject'][:200],  # Limit subject length
+            message=feedback_data['message'][:2000],  # Limit message length
+            user_info=feedback_data.get('user_info', '')[:100] if feedback_data.get('user_info') else None,
+            page_url=feedback_data.get('page_url', '')[:500] if feedback_data.get('page_url') else None,
+            user_agent=user_agent[:500],
+            ip_address=client_ip,
+            status='new'
+        )
+        
+        db.add(feedback)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": "Thank you for your feedback! We'll review it soon.",
+            "feedback_id": feedback.id
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit feedback")
+    finally:
+        db.close()
+
+@app.get("/admin/feedback")
+def get_feedback(token: str = Depends(verify_admin_token), status: str = None, type: str = None, limit: int = 50, offset: int = 0):
+    """Get feedback and issues (admin only)"""
+    db = SessionLocal()
+    try:
+        query = db.query(Feedback)
+        
+        # Filter by status if provided
+        if status and status in ['new', 'reviewing', 'resolved', 'closed']:
+            query = query.filter(Feedback.status == status)
+        
+        # Filter by type if provided
+        if type and type in ['feedback', 'issue']:
+            query = query.filter(Feedback.type == type)
+        
+        # Order by newest first
+        query = query.order_by(Feedback.created_at.desc())
+        
+        # Apply pagination
+        total_count = query.count()
+        feedback_items = query.offset(offset).limit(limit).all()
+        
+        return {
+            "feedback": [
+                {
+                    "id": item.id,
+                    "type": item.type,
+                    "subject": item.subject,
+                    "message": item.message,
+                    "user_info": item.user_info,
+                    "page_url": item.page_url,
+                    "user_agent": item.user_agent,
+                    "ip_address": item.ip_address,
+                    "status": item.status,
+                    "created_at": item.created_at.isoformat(),
+                    "updated_at": item.updated_at.isoformat() if item.updated_at else None
+                } for item in feedback_items
+            ],
+            "total_count": total_count,
+            "offset": offset,
+            "limit": limit
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting feedback: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve feedback")
+    finally:
+        db.close()
+
+@app.patch("/admin/feedback/{feedback_id}/status")
+def update_feedback_status(feedback_id: int, status_data: dict, token: str = Depends(verify_admin_token)):
+    """Update feedback status (admin only)"""
+    db = SessionLocal()
+    try:
+        new_status = status_data.get('status')
+        if not new_status or new_status not in ['new', 'reviewing', 'resolved', 'closed']:
+            raise HTTPException(status_code=400, detail="Invalid status")
+        
+        feedback = db.query(Feedback).filter(Feedback.id == feedback_id).first()
+        if not feedback:
+            raise HTTPException(status_code=404, detail="Feedback not found")
+        
+        feedback.status = new_status
+        feedback.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        
+        return {
+            "success": True,
+            "message": f"Feedback status updated to {new_status}",
+            "feedback_id": feedback_id,
+            "new_status": new_status
+        }
+        
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error updating feedback status: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update feedback status")
     finally:
         db.close()
 

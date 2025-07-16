@@ -65,6 +65,26 @@ class CafeOrder(Base):
         Index('idx_cafe_location_fish', 'location', 'fish_name'),
     )
 
+class Feedback(Base):
+    __tablename__ = 'feedback'
+    id = Column(Integer, primary_key=True)
+    type = Column(String, nullable=False, index=True)  # 'feedback' or 'issue'
+    subject = Column(String, nullable=False)
+    message = Column(Text, nullable=False)
+    user_info = Column(String)  # Optional user identifier/email
+    page_url = Column(String)  # Which page they were on
+    user_agent = Column(String)  # Browser info for debugging
+    ip_address = Column(String)  # For spam detection
+    status = Column(String, default='new', index=True)  # 'new', 'reviewing', 'resolved', 'closed'
+    created_at = Column(DateTime, server_default=func.now(), index=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    
+    # Index for common queries
+    __table_args__ = (
+        Index('idx_feedback_type_status', 'type', 'status'),
+        Index('idx_feedback_created', 'created_at'),
+    )
+
 # Database configuration
 def get_database_url():
     """Get database URL from environment or use default SQLite"""

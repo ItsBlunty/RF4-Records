@@ -23,6 +23,7 @@ import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
 import QAPage from './components/QAPage.jsx';
 import CafeOrders from './components/CafeOrders.jsx';
+import FeedbackButton from './components/FeedbackButton.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
@@ -691,6 +692,9 @@ function AppContent() {
       {showAbout && (
         <About onClose={handleAboutClose} />
       )}
+      
+      {/* Feedback Button - Always visible */}
+      <FeedbackButton />
     </div>
   );
 }
