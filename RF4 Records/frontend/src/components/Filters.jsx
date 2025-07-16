@@ -95,11 +95,10 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
       <div className="max-w-7xl mx-auto">
-        {/* Main Filter Row */}
-        <div className="flex gap-4 items-center">
-          {/* Quick Access Buttons */}
+        <div className="flex gap-4">
+          {/* Quick Access Buttons - Separate from main filter row */}
           {currentPage === 'records' && (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 self-start">
               <button
                 onClick={() => onPageChange && onPageChange('topbaits')}
                 className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
@@ -118,6 +117,9 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
               </button>
             </div>
           )}
+          
+          {/* Main Filter Row */}
+          <div className="flex gap-4 items-center flex-1">
           
           {/* Fish Filter */}
           <MultiSelectFilter
@@ -217,6 +219,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
               Clear All
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>
