@@ -105,7 +105,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
                 title="Top Baits"
               >
                 <Target className="w-3 h-3 mr-1" />
-                Top Baits
+                &nbsp;&nbsp;Top Baits
               </button>
               <button
                 onClick={() => onPageChange && onPageChange('trophyweights')}
