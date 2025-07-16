@@ -44,24 +44,28 @@ const SearchHistory = ({ onSelectSearch, className = '' }) => {
     setIsOpen(false);
   };
 
-  if (history.length === 0) {
-    return null;
-  }
+  // Always show the button, but disable it when there's no history
+  const hasHistory = history.length > 0;
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
-        title="Search History"
+        onClick={() => hasHistory && setIsOpen(!isOpen)}
+        disabled={!hasHistory}
+        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+          hasHistory 
+            ? 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' 
+            : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-not-allowed'
+        }`}
+        title={hasHistory ? "Search History" : "No search history yet"}
       >
         <History className="w-4 h-4 mr-2" />
         <span className="hidden sm:inline">History</span>
         <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {isOpen && (
+      {isOpen && hasHistory && (
         <div className="absolute top-full left-0 mt-1 w-96 max-w-[90vw] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-80 overflow-y-auto">
           <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center">

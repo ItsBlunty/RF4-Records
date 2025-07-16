@@ -8,7 +8,7 @@
 5. **Main Branch Protection**: Never make changes to main unless they are already tested on dev, unless the user asks directly and has confirmed it has been tested on dev.
 6. **React Safety**: When making changes to React, ALWAYS take an extra step to check for potential white-page/JavaScript errors (state variables, useMemo dependencies, unicode safety, imports, etc.).
 7. **Railway CLI**: Never push through railway CLI, always push through GitHub. When using "railway" commands, check with `railway status` to ensure you're on dev branch and "RF4-Records" project.
-8. **Deployment Verification**: After pushing to dev, sleep 120s and use `railway status` to check if the deployed commit matches your new commit hash. **CRITICAL**: Compare the commit hash from `railway status` with your latest `git log --oneline -1` - they must match! If they don't match, sleep another 120s (up to 5 times) until Railway deploys your new commit. Only use `railway logs` to check for errors, NOT to verify deployment timing. Only when commit hashes match should you test with Playwright at https://rf4-records-dev.up.railway.app/. Don't stop until issue is solved and request fulfilled.
+8. **Deployment Verification**: After pushing to dev, sleep 120s and use `timeout 10s railway logs` to check the deployed commit hash in the logs. **CRITICAL**: Look for your commit hash (from `git log --oneline -1`) in the railway logs output - they must match! If the commit hash doesn't appear in logs, sleep another 120s (up to 5 times) until Railway deploys your new commit. Only when your commit hash appears in the logs should you test with Playwright at https://rf4-records-dev.up.railway.app/. Don't stop until issue is solved and request fulfilled.
 9. **Command Timeouts**: Always consider adding timeouts to commands to prevent getting stuck.
 10. **Rule Display**: Display all behavioral rules at start of every 3rd response (readable format, not XML).
 
@@ -19,10 +19,10 @@
 
 ## Deployment & Testing
 - Always deploy to Railway dev branch first, never push directly to main
-- After pushing, wait 120s and use `railway status` to check deployed commit hash
-- **CRITICAL**: Compare commit hash from `railway status` with `git log --oneline -1` - they MUST match!
-- If commit hashes don't match, the new code hasn't deployed yet - wait longer!
-- Only use `railway logs` to check for errors, NOT to verify deployment timing
+- After pushing, wait 120s and use `timeout 10s railway logs` to check deployed commit hash
+- **CRITICAL**: Look for your commit hash (from `git log --oneline -1`) in the railway logs - they MUST match!
+- If commit hash doesn't appear in logs, the new code hasn't deployed yet - wait longer!
+- Use `railway logs` to verify deployment timing by checking for your commit hash
 - Test implementation at https://rf4-records-dev.up.railway.app/ using Playwright
 - Use `railway status` to confirm you're on dev branch and RF4-Records project
 
