@@ -217,6 +217,16 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                 return largest;
               }, null);
               
+              // Count trophies and super trophies in this group
+              const trophyCounts = groupRecords.reduce((counts, record) => {
+                if (record.trophy_class === 'trophy') {
+                  counts.trophies++;
+                } else if (record.trophy_class === 'record') {
+                  counts.records++;
+                }
+                return counts;
+              }, { trophies: 0, records: 0 });
+              
               return (
                 <React.Fragment key={fish}>
                   {/* Group Header Row */}
@@ -239,9 +249,27 @@ const FishGroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                       {largestFish?.bait_display || largestFish?.bait || groupRecords[0]?.bait_display || groupRecords[0]?.bait || '-'}
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
-                      <div className="flex items-center">
-                        {getTrophyIcon(largestFish?.trophy_class)}
-                        {formatWeight(largestFish?.weight)}
+                      <div className="flex items-center space-x-2">
+                        <div className="flex items-center">
+                          {getTrophyIcon(largestFish?.trophy_class)}
+                          {formatWeight(largestFish?.weight)}
+                        </div>
+                        {(trophyCounts.trophies > 0 || trophyCounts.records > 0) && (
+                          <div className="flex items-center space-x-1">
+                            {trophyCounts.records > 0 && (
+                              <div className="flex items-center">
+                                <img src={superTrophyIcon} alt="Super Trophy" className="inline-block" style={{ height: '16px', objectFit: 'contain' }} />
+                                <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 ml-0.5">{trophyCounts.records}</span>
+                              </div>
+                            )}
+                            {trophyCounts.trophies > 0 && (
+                              <div className="flex items-center">
+                                <img src={trophyIcon} alt="Trophy" className="inline-block" style={{ height: '16px', objectFit: 'contain' }} />
+                                <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 ml-0.5">{trophyCounts.trophies}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
