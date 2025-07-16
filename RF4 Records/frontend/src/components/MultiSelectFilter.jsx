@@ -9,9 +9,9 @@ const MultiSelectFilter = ({
   onChange, 
   onKeyPress,
   onAddAndSearch,
+  onSearchTriggered,
   className = '' 
-}) => {
-  const [inputValue, setInputValue] = useState('');
+}) => {  const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredValues, setFilteredValues] = useState([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
@@ -161,6 +161,38 @@ const MultiSelectFilter = ({
     addValue(value);
   };
 
+  // Function to handle search trigger from parent (Search button click)
+  const handleSearchTrigger = () => {
+    if (inputValue.trim() && !selectedValues.includes(inputValue.trim())) {
+      // Add current input value to selected values and trigger search
+      const exactMatch = values.find(v => 
+        v.toLowerCase() === inputValue.toLowerCase() && 
+        !selectedValues.includes(v)
+      );
+      const valueToAdd = exactMatch || inputValue.trim();
+      const newValues = [...selectedValues, valueToAdd];
+      
+      setInputValue('');
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+      
+      // Update parent with new values
+      onChange(newValues);
+      
+      // Return the new values so parent can use them for search
+      return newValues;
+    }
+    
+    // No input value to add, return current selected values
+    return selectedValues;
+  };
+
+  // Expose the handleSearchTrigger function to parent via callback
+  React.useEffect(() => {
+    if (onSearchTriggered) {
+      onSearchTriggered(handleSearchTrigger);
+    }
+  }, [inputValue, selectedValues, values, onSearchTriggered]);
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div className="flex items-center justify-between mb-1">

@@ -4,6 +4,10 @@ import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
 
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
+  // Refs to store search trigger functions from MultiSelectFilter components
+  const fishSearchTriggerRef = React.useRef(null);
+  const waterbodySearchTriggerRef = React.useRef(null);
+  const baitSearchTriggerRef = React.useRef(null);
 
   const handleHistorySelect = (historicalFilters) => {
     // First trigger the search with historical filters
@@ -63,6 +67,27 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
 
   const handleSubmit = (e) => {
     e.preventDefault(); // Prevent actual form submission
+    
+    // Trigger search with any pending input values from MultiSelectFilter components
+    const updatedFilters = { ...filters };
+    
+    // Get updated values from each MultiSelectFilter component
+    if (fishSearchTriggerRef.current) {
+      updatedFilters.fish = fishSearchTriggerRef.current();
+    }
+    if (waterbodySearchTriggerRef.current) {
+      updatedFilters.waterbody = waterbodySearchTriggerRef.current();
+    }
+    if (baitSearchTriggerRef.current) {
+      updatedFilters.bait = baitSearchTriggerRef.current();
+    }
+    
+    // Use the updated filters for search
+    if (onSubmitWithValues) {
+      onSubmitWithValues(updatedFilters);
+    } else {
+      onSubmit();
+    }
   };
 
 
@@ -103,6 +128,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             onChange={(values) => handleInputChange('fish', values)}
             onKeyPress={handleKeyPress}
             onAddAndSearch={handleAddAndSearch('fish')}
+            onSearchTriggered={(triggerFn) => { fishSearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
@@ -115,6 +141,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             onChange={(values) => handleInputChange('waterbody', values)}
             onKeyPress={handleKeyPress}
             onAddAndSearch={handleAddAndSearch('waterbody')}
+            onSearchTriggered={(triggerFn) => { waterbodySearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
@@ -127,6 +154,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             onChange={(values) => handleInputChange('bait', values)}
             onKeyPress={handleKeyPress}
             onAddAndSearch={handleAddAndSearch('bait')}
+            onSearchTriggered={(triggerFn) => { baitSearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
@@ -169,7 +197,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
           <div className="flex-shrink-0">
             <button
               type="button"
-              onClick={onSubmit}
+              onClick={handleSubmit}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-6 flex items-center space-x-2"
             >
               <Search className="h-4 w-4" />
