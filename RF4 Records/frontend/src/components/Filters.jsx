@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
 import { X, Clock, Search, Target, Trophy } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
+import SearchHistory from './SearchHistory.jsx';
 
 const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
+
+  const handleHistorySelect = (historicalFilters) => {
+    // Update all filters with the historical search
+    Object.keys(historicalFilters).forEach(key => {
+      onChange(key, historicalFilters[key]);
+    });
+    
+    // Trigger search with the historical filters
+    if (onSubmitWithValues) {
+      onSubmitWithValues(historicalFilters);
+    }
+  };
 
   // Check if any of the main text fields (fish, waterbody, bait) have content
   const hasTextContent = () => {
@@ -162,6 +175,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
               <Search className="h-4 w-4" />
               <span>Search</span>
             </button>
+          </div>
+
+          {/* Search History */}
+          <div className="flex-shrink-0 mt-6">
+            <SearchHistory onSelectSearch={handleHistorySelect} />
           </div>
 
           {/* Clear Button */}

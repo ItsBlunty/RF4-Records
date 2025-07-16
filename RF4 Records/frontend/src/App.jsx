@@ -26,6 +26,7 @@ import CafeOrders from './components/CafeOrders.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
+import { saveSearchToHistory } from './utils/searchHistory.js';
 import trophyIcon from './assets/trophy-clean.png';
 import superTrophyIcon from './assets/super-trophy-clean.png';
 
@@ -259,6 +260,9 @@ function AppContent() {
       setTotalRecords(total_filtered);
       setCachedRecordCount(filteredRecords.length); // Track cached records
       setLastRefresh(new Date());
+      
+      // Save successful search to history
+      saveSearchToHistory(filtersToUse, filteredRecords.length);
       
     } catch (err) {
       console.error('Error fetching filtered records:', err);
