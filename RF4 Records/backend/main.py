@@ -1,9 +1,10 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from database import SessionLocal, Record, QADataset, CafeOrder, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
@@ -247,6 +248,26 @@ async def lifespan(app: FastAPI):
             logger.info("Memory monitoring stopped")
     except Exception as e:
         logger.error(f"Error stopping memory monitoring: {e}")
+
+# Authentication setup
+security = HTTPBearer()
+
+async def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Verify admin authentication token"""
+    admin_token = os.getenv("ADMIN_TOKEN")
+    if not admin_token:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Admin authentication not configured"
+        )
+    
+    if credentials.credentials != admin_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid admin token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return credentials.credentials
 
 # Create FastAPI app with lifespan handler
 app = FastAPI(
@@ -875,7 +896,7 @@ def get_top_baits():
         return {"error": "Failed to retrieve top baits data"}
 
 @app.post("/admin/regenerate-top-baits-cache")
-def regenerate_top_baits_cache():
+def regenerate_top_baits_cache(token: str = Depends(verify_admin_token)):
     """Manually regenerate the top baits cache"""
     try:
         from top_baits_cache import generate_top_baits_cache, get_cache_info
@@ -1092,7 +1113,7 @@ def refresh_info():
     }
 
 @app.post("/refresh")
-def refresh():
+def refresh(token: str = Depends(verify_admin_token)):
     """Manually trigger a scrape"""
     global is_scraping
     
@@ -1129,7 +1150,7 @@ def refresh():
             logger.error(f"Error scheduling next scrape after manual refresh: {e}")
 
 @app.post("/optimize")
-def run_database_optimizations():
+def run_database_optimizations(token: str = Depends(verify_admin_token)):
     """Manually run database performance optimizations including indexes"""
     try:
         # Run performance migration to add indexes
@@ -1164,7 +1185,7 @@ def run_database_optimizations():
         return {"error": "Database optimization failed", "details": str(e)}
 
 @app.post("/migrate-trophy-classification")
-def migrate_trophy_classification():
+def migrate_trophy_classification(token: str = Depends(verify_admin_token)):
     """Run trophy classification migration to add trophy_class column and backfill existing records"""
     try:
         # Import and run the migration script
@@ -1229,7 +1250,7 @@ def migrate_trophy_classification():
         }
 
 @app.post("/vacuum")
-def vacuum_database():
+def vacuum_database(token: str = Depends(verify_admin_token)):
     """Manually run VACUUM to reclaim space from deleted records"""
     try:
         from database import get_database_url
@@ -1296,7 +1317,7 @@ def vacuum_database():
         }
 
 @app.post("/vacuum/full")
-def vacuum_full_database():
+def vacuum_full_database(token: str = Depends(verify_admin_token)):
     """Run VACUUM FULL to completely rebuild the database and reclaim maximum space"""
     try:
         from database import get_database_url
@@ -1410,7 +1431,7 @@ def check_merge_status():
         }
 
 @app.post("/merge-duplicates")
-def merge_duplicate_records():
+def merge_duplicate_records(token: str = Depends(verify_admin_token)):
     """Merge duplicate records and combine categories - BATCH PROCESSING (5K groups per run)"""
     try:
         # Import and run the merger script
@@ -1460,7 +1481,7 @@ def merge_duplicate_records():
         }
 
 @app.post("/merge-duplicates/rollback")
-def rollback_duplicate_merge():
+def rollback_duplicate_merge(token: str = Depends(verify_admin_token)):
     """Emergency rollback of duplicate merge operation"""
     try:
         from database import get_database_url
@@ -1582,7 +1603,7 @@ def rollback_duplicate_merge():
         }
 
 @app.post("/cleanup")
-def force_cleanup():
+def force_cleanup(token: str = Depends(verify_admin_token)):
     """Force garbage collection and process cleanup for memory management"""
     try:
         import gc
@@ -1845,7 +1866,7 @@ def analyze_database_size():
         }
 
 @app.post("/checkpoint")
-def force_checkpoint():
+def force_checkpoint(token: str = Depends(verify_admin_token)):
     """Force PostgreSQL checkpoint to clean up WAL files"""
     try:
         from database import get_database_url
@@ -2423,7 +2444,7 @@ def add_qa_item(qa_data: dict):
         return {"error": "Failed to add Q&A item"}
 
 @app.delete("/admin/qa/{item_id}")
-def delete_qa_item(item_id: int):
+def delete_qa_item(item_id: int, token: str = Depends(verify_admin_token)):
     """Delete a Q&A item by ID (admin only)"""
     try:
         db = SessionLocal()
@@ -2448,7 +2469,7 @@ def delete_qa_item(item_id: int):
         return {"error": "Failed to delete Q&A item"}
 
 @app.post("/admin/add-more-qa-entries")
-def add_more_qa_entries():
+def add_more_qa_entries(token: str = Depends(verify_admin_token)):
     """Add 6 more Q&A entries from Dev FAQ 2024"""
     try:
         db = SessionLocal()
@@ -2562,7 +2583,7 @@ def add_more_qa_entries():
         }
 
 @app.post("/admin/create-qa-table")
-def create_qa_table():
+def create_qa_table(token: str = Depends(verify_admin_token)):
     """Manually create the Q&A table for troubleshooting"""
     try:
         from database import create_tables, get_database_url
@@ -2895,7 +2916,7 @@ def get_cafe_orders(location: str = None):
 
 # Enhanced memory profiling endpoints
 @app.post("/admin/memory/profile/start")
-def start_memory_profiling():
+def start_memory_profiling(token: str = Depends(verify_admin_token)):
     """Start detailed memory profiling with tracemalloc"""
     try:
         from memory_profiler import memory_profiler
@@ -2948,7 +2969,7 @@ def get_sqlalchemy_analysis():
         return {"error": str(e)}
 
 @app.post("/admin/memory/profile/gc-collect")
-def force_gc_collect():
+def force_gc_collect(token: str = Depends(verify_admin_token)):
     """Force garbage collection and return stats"""
     try:
         import gc
@@ -3021,7 +3042,7 @@ def compare_with_railway(railway_mb: float):
         return {"error": str(e)}
 
 @app.post("/admin/memory/cleanup/beautifulsoup")
-def force_beautifulsoup_cleanup():
+def force_beautifulsoup_cleanup(token: str = Depends(verify_admin_token)):
     """Force clear BeautifulSoup cache to free memory"""
     try:
         from unified_cleanup import clear_beautifulsoup_cache, get_memory_usage
@@ -3048,7 +3069,7 @@ def force_beautifulsoup_cleanup():
         return {"error": str(e)}
 
 @app.post("/admin/memory/system/release")
-def force_system_memory_release():
+def force_system_memory_release(token: str = Depends(verify_admin_token)):
     """Force system-level memory release to combat container memory growth"""
     try:
         from unified_cleanup import post_scrape_cleanup
@@ -3212,7 +3233,7 @@ def serve_frontend(path: str):
         return {"message": "Frontend not available - API only mode", "path": path}
 
 @app.post("/test-trophy-classification")
-def test_trophy_classification(fish_name: str, weight: int):
+def test_trophy_classification(fish_name: str, weight: int, token: str = Depends(verify_admin_token)):
     """Test the trophy classification system"""
     try:
         from trophy_classifier import classify_trophy
@@ -3232,7 +3253,7 @@ def test_trophy_classification(fish_name: str, weight: int):
         return {"error": str(e)}
 
 @app.post("/force-reclassify-trophies")
-def force_reclassify_trophies():
+def force_reclassify_trophies(token: str = Depends(verify_admin_token)):
     """Force reclassification of all trophy records (ignores current classification)"""
     try:
         import time
