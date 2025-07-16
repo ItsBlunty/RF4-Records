@@ -61,6 +61,20 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
       } else if (sortConfig.key === 'weight') {
         aValue = largestA?.weight || 0;
         bValue = largestB?.weight || 0;
+      } else if (sortConfig.key === 'trophies') {
+        // Sort by total trophy count (records + trophies)
+        const trophyCountsA = groupA.reduce((counts, record) => {
+          if (record.trophy_class === 'trophy') counts.trophies++;
+          else if (record.trophy_class === 'record') counts.records++;
+          return counts;
+        }, { trophies: 0, records: 0 });
+        const trophyCountsB = groupB.reduce((counts, record) => {
+          if (record.trophy_class === 'trophy') counts.trophies++;
+          else if (record.trophy_class === 'record') counts.records++;
+          return counts;
+        }, { trophies: 0, records: 0 });
+        aValue = trophyCountsA.trophies + trophyCountsA.records;
+        bValue = trophyCountsB.trophies + trophyCountsB.records;
       } else if (sortConfig.key === 'waterbody') {
         aValue = largestA?.waterbody || groupA[0]?.waterbody || '';
         bValue = largestB?.waterbody || groupB[0]?.waterbody || '';
@@ -169,6 +183,13 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
               </th>
               <th 
                 scope="col" 
+                className={getColumnHeaderClass('trophies')}
+                onClick={() => onSort('trophies')}
+              >
+                Trophies <span className="ml-1">{getSortIndicator('trophies')}</span>
+              </th>
+              <th 
+                scope="col" 
                 className={getColumnHeaderClass('weight')}
                 onClick={() => onSort('weight')}
               >
@@ -248,6 +269,24 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                       {bait}
                     </td>
+                    <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                      {(trophyCounts.trophies > 0 || trophyCounts.records > 0) && (
+                        <div className="flex items-center space-x-1">
+                          {trophyCounts.records > 0 && (
+                            <div className="flex items-center">
+                              <img src={superTrophyIcon} alt="Super Trophy" className="inline-block" style={{ height: '16px', objectFit: 'contain' }} />
+                              <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 ml-0.5">{trophyCounts.records}</span>
+                            </div>
+                          )}
+                          {trophyCounts.trophies > 0 && (
+                            <div className="flex items-center">
+                              <img src={trophyIcon} alt="Trophy" className="inline-block" style={{ height: '16px', objectFit: 'contain' }} />
+                              <span className="text-xs font-medium text-yellow-600 dark:text-yellow-400 ml-0.5">{trophyCounts.trophies}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                       <div className="flex items-center space-x-2">
                         <div className="flex items-center">
@@ -304,10 +343,11 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         {record.fish || '-'}
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                        -
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.bait_display || '-'}
+                      </td>
+                      <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                         <div className="flex items-center">

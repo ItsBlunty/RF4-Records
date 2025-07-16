@@ -18,6 +18,32 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
     return <span className="w-3 mr-1 inline-block"></span>;
   };
 
+  // Group records by fish+bait combination and determine which should show group indicator
+  const getGroupedRecords = (records) => {
+    const grouped = {};
+    const result = [];
+    
+    records.forEach((record, index) => {
+      const groupKey = `${record.fish || ''}-${record.bait_display || ''}`;
+      
+      if (!grouped[groupKey]) {
+        grouped[groupKey] = true;
+        result.push({ ...record, showGroupIndicator: true, originalIndex: index });
+      } else {
+        result.push({ ...record, showGroupIndicator: false, originalIndex: index });
+      }
+    });
+    
+    return result;
+  };
+
+  const getGroupIndicator = (showIndicator) => {
+    if (showIndicator) {
+      return <span className="text-blue-600 dark:text-blue-400 font-bold text-lg">★</span>;
+    }
+    return <span className="w-4 inline-block"></span>;
+  };
+
   const getSortIndicator = (columnKey) => {
     if (sortConfig.key !== columnKey) return '↕';
     if (sortConfig.direction === 'ascending') return '↑';
@@ -63,6 +89,13 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
               </th>
               <th 
                 scope="col" 
+                className="px-6 py-2 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider"
+                style={{ width: '60px' }}
+              >
+                Group
+              </th>
+              <th 
+                scope="col" 
                 className={getColumnHeaderClass('weight')}
                 onClick={() => onSort('weight')}
               >
@@ -99,7 +132,7 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
-            {visibleRecords.map((record, idx) => (
+            {getGroupedRecords(visibleRecords).map((record, idx) => (
               <tr
                 key={idx}
                 className={
@@ -110,18 +143,21 @@ const RecordsTable = ({ records, sortConfig, onSort }) => {
                   }`
                 }
               >
-                            <td className="px-6 py-2.5 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">{record.fish || '-'}</td>
-            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.bait_display || '-'}</td>
-            <td className="px-6 py-2.5 whitespace-nowrap font-semibold text-blue-800 dark:text-blue-400">
-              <div className="flex items-center">
-                {getTrophyIcon(record.trophy_class)}
-                {formatWeight(record.weight)}
-              </div>
-            </td>
-            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.waterbody || '-'}</td>
-            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.date || '-'}</td>
-            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.player || '-'}</td>
-            <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.region || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100">{record.fish || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.bait_display || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-center">
+                  {getGroupIndicator(record.showGroupIndicator)}
+                </td>
+                <td className="px-6 py-2.5 whitespace-nowrap font-semibold text-blue-800 dark:text-blue-400">
+                  <div className="flex items-center">
+                    {getTrophyIcon(record.trophy_class)}
+                    {formatWeight(record.weight)}
+                  </div>
+                </td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.waterbody || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.date || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.player || '-'}</td>
+                <td className="px-6 py-2.5 whitespace-nowrap text-gray-700 dark:text-gray-300">{record.region || '-'}</td>
               </tr>
             ))}
           </tbody>
