@@ -325,13 +325,11 @@ const GroupedRecordsTable = ({ records, sortConfig, onSort }) => {
                         {record.fish || '-'}
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                        -
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
                         {record.bait_display || '-'}
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                        -
                       </td>
                       <td className="px-6 py-2.5 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-gray-100">
                         <div className="flex items-center">
