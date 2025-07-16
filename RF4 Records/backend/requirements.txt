@@ -10,6 +10,4 @@ webdriver-manager==4.0.1
 psutil==5.9.6
 schedule==1.2.0
 python-multipart==0.0.6
-pytesseract==0.3.13
-opencv-python==4.11.0.86
-Pillow==11.2.1 
+slowapi==0.1.9 

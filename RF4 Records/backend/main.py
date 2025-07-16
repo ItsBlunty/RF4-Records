@@ -1,10 +1,13 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, File, UploadFile, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from database import SessionLocal, Record, QADataset, CafeOrder, create_tables
 from scraper import scrape_and_update_records, should_stop_scraping
 from unified_cleanup import periodic_cleanup, get_memory_usage
@@ -18,8 +21,6 @@ import sys
 import time
 import threading
 import os
-import tempfile
-import shutil
 
 # Set up logging to stdout (not stderr) to avoid red text in Railway
 logging.basicConfig(
@@ -268,6 +269,10 @@ async def verify_admin_token(credentials: HTTPAuthorizationCredentials = Depends
         )
     return credentials.credentials
 
+# Rate limiting setup
+limiter = Limiter(key_func=get_remote_address)
+rate_limit_state = {}
+
 # Create FastAPI app with lifespan handler
 app = FastAPI(
     title="RF4 Records API",
@@ -275,6 +280,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add rate limiting
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Add compression middleware
 app.add_middleware(GZipMiddleware, minimum_size=1000)
@@ -763,7 +772,9 @@ def get_older_records():
 
 @app.get("/records/filtered")
 @app.get("/api/records/filtered")
+@limiter.limit("30/minute")  # Allow normal usage but prevent abuse
 def get_filtered_records_endpoint(
+    request: Request,
     fish: str = None,
     waterbody: str = None, 
     bait: str = None,
@@ -912,7 +923,7 @@ def regenerate_top_baits_cache(token: str = Depends(verify_admin_token)):
         }
 
 @app.get("/admin/top-baits-cache-info")
-def get_top_baits_cache_info():
+def get_top_baits_cache_info(token: str = Depends(verify_admin_token)):
     """Get information about the top baits cache status"""
     try:
         from top_baits_cache import get_cache_info
@@ -931,7 +942,7 @@ def get_top_baits_cache_info():
         }
 
 @app.get("/admin/debug-top-baits-dates")
-def debug_top_baits_dates():
+def debug_top_baits_dates(token: str = Depends(verify_admin_token)):
     """Debug endpoint to check Top Baits date ranges and data availability"""
     try:
         from simplified_records import get_last_record_reset_date, get_two_resets_ago_date, get_three_resets_ago_date, get_four_resets_ago_date
@@ -1097,7 +1108,8 @@ def refresh_info():
     }
 
 @app.post("/refresh")
-def refresh(token: str = Depends(verify_admin_token)):
+@limiter.limit("3/minute")  # Admin operations should be infrequent
+def refresh(request: Request, token: str = Depends(verify_admin_token)):
     """Manually trigger a scrape"""
     global is_scraping
     
@@ -1134,7 +1146,8 @@ def refresh(token: str = Depends(verify_admin_token)):
             logger.error(f"Error scheduling next scrape after manual refresh: {e}")
 
 @app.post("/optimize")
-def run_database_optimizations(token: str = Depends(verify_admin_token)):
+@limiter.limit("2/hour")  # Heavy database operations
+def run_database_optimizations(request: Request, token: str = Depends(verify_admin_token)):
     """Manually run database performance optimizations including indexes"""
     try:
         # Run performance migration to add indexes
@@ -1687,7 +1700,7 @@ def get_status():
         return {"error": "Failed to get status"}
 
 @app.get("/database/analysis")
-def analyze_database_size():
+def analyze_database_size(token: str = Depends(verify_admin_token)):
     """Comprehensive database size analysis to identify space usage"""
     try:
         from database import get_database_url
@@ -1944,7 +1957,7 @@ def force_checkpoint(token: str = Depends(verify_admin_token)):
         }
 
 @app.get("/database/investigation")
-def investigate_database_space():
+def investigate_database_space(token: str = Depends(verify_admin_token)):
     """Deep investigation of database space usage to find hidden space consumers"""
     try:
         from database import get_database_url
@@ -2117,7 +2130,7 @@ def investigate_database_space():
         }
 
 @app.get("/database/volume-analysis")
-def analyze_volume_usage():
+def analyze_volume_usage(token: str = Depends(verify_admin_token)):
     """Comprehensive analysis of all files in PostgreSQL data directory"""
     try:
         from database import get_database_url
@@ -2394,7 +2407,8 @@ def search_qa_dataset(q: str = None, topic: str = None):
         return {"error": "Failed to search Q&A dataset"}
 
 @app.post("/api/qa")
-def add_qa_item(qa_data: dict):
+@limiter.limit("10/hour")  # Reasonable limit for adding Q&A items
+def add_qa_item(request: Request, qa_data: dict):
     """Add a new Q&A item"""
     try:
         db = SessionLocal()
@@ -2637,7 +2651,7 @@ def create_qa_table(token: str = Depends(verify_admin_token)):
 
 # Memory monitoring endpoints
 @app.get("/admin/memory/start")
-def start_memory_monitoring():
+def start_memory_monitoring(token: str = Depends(verify_admin_token)):
     """Start memory monitoring"""
     try:
         from memory_tracker import memory_tracker
@@ -2655,7 +2669,7 @@ def start_memory_monitoring():
         return {"error": str(e), "status": "error"}
 
 @app.get("/admin/memory/stop")
-def stop_memory_monitoring():
+def stop_memory_monitoring(token: str = Depends(verify_admin_token)):
     """Stop memory monitoring"""
     try:
         from memory_tracker import memory_tracker
@@ -2673,7 +2687,7 @@ def stop_memory_monitoring():
         return {"error": str(e), "status": "error"}
 
 @app.get("/admin/memory/status")
-def get_memory_monitoring_status():
+def get_memory_monitoring_status(token: str = Depends(verify_admin_token)):
     """Get memory monitoring status"""
     try:
         from memory_tracker import memory_tracker
@@ -2688,7 +2702,7 @@ def get_memory_monitoring_status():
         return {"error": str(e)}
 
 @app.get("/admin/memory/stats")
-def get_memory_stats():
+def get_memory_stats(token: str = Depends(verify_admin_token)):
     """Get memory usage statistics"""
     try:
         from memory_tracker import memory_tracker
@@ -2700,7 +2714,7 @@ def get_memory_stats():
         return {"error": str(e)}
 
 @app.get("/admin/memory/recent")
-def get_recent_memory_snapshots(minutes: int = 60):
+def get_recent_memory_snapshots(minutes: int = 60, token: str = Depends(verify_admin_token)):
     """Get recent memory snapshots"""
     try:
         from memory_tracker import memory_tracker
@@ -2716,7 +2730,7 @@ def get_recent_memory_snapshots(minutes: int = 60):
         return {"error": str(e)}
 
 @app.get("/admin/memory/all")
-def get_all_memory_snapshots():
+def get_all_memory_snapshots(token: str = Depends(verify_admin_token)):
     """Get all memory snapshots"""
     try:
         from memory_tracker import memory_tracker
@@ -2730,43 +2744,6 @@ def get_all_memory_snapshots():
         logger.error(f"Error getting all memory snapshots: {e}")
         return {"error": str(e)}
 
-@app.post("/api/scrape-image")
-async def scrape_fish_image(file: UploadFile = File(...)):
-    """Scrape fish data from uploaded image"""
-    try:
-        # Validate file type
-        if not file.content_type.startswith('image/'):
-            raise HTTPException(status_code=400, detail="File must be an image")
-        
-        # Create temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as temp_file:
-            # Copy uploaded file to temporary file
-            shutil.copyfileobj(file.file, temp_file)
-            temp_file_path = temp_file.name
-        
-        try:
-            # Import and use the image scraper
-            from image_scraper_api import FishImageScraper
-            
-            scraper = FishImageScraper()
-            fish_data = scraper.scrape_image(temp_file_path)
-            
-            return {
-                "success": True,
-                "filename": file.filename,
-                "fish_data": fish_data,
-                "count": len(fish_data),
-                "requires_confirmation": True
-            }
-            
-        finally:
-            # Clean up temporary file
-            if os.path.exists(temp_file_path):
-                os.unlink(temp_file_path)
-                
-    except Exception as e:
-        logger.error(f"Error scraping image: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing image: {str(e)}")
 
 @app.post("/api/cafe-orders/confirm")
 async def confirm_cafe_orders(orders: list[dict]):
@@ -2810,7 +2787,8 @@ async def confirm_cafe_orders(orders: list[dict]):
         db.close()
 
 @app.post("/api/cafe-orders/add")
-async def add_cafe_orders(orders: list[dict]):
+@limiter.limit("20/hour")  # Reasonable limit for adding cafe orders
+async def add_cafe_orders(request: Request, orders: list[dict]):
     """Add new cafe orders to database (simplified endpoint)"""
     db = SessionLocal()
     try:
@@ -2915,7 +2893,7 @@ def start_memory_profiling(token: str = Depends(verify_admin_token)):
         return {"error": str(e)}
 
 @app.get("/admin/memory/profile/current")
-def get_current_memory_profile():
+def get_current_memory_profile(token: str = Depends(verify_admin_token)):
     """Get detailed current memory profile"""
     try:
         from memory_profiler import memory_profiler
@@ -2974,7 +2952,7 @@ def force_gc_collect(token: str = Depends(verify_admin_token)):
 
 # System-wide memory monitoring endpoints
 @app.get("/admin/memory/system/breakdown")
-def get_system_memory_breakdown():
+def get_system_memory_breakdown(token: str = Depends(verify_admin_token)):
     """Get comprehensive memory breakdown for all processes"""
     try:
         from system_monitor import system_monitor
@@ -3079,7 +3057,7 @@ def force_system_memory_release(token: str = Depends(verify_admin_token)):
         return {"error": str(e)}
 
 @app.get("/admin/system/info")
-def get_system_info():
+def get_system_info(token: str = Depends(verify_admin_token)):
     """Get system information including C library details"""
     try:
         import platform
