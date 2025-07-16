@@ -194,7 +194,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
           </div>
 
           {/* Action Buttons Group */}
-          <div className="flex-shrink-0 flex gap-3 items-center mt-6">
+          <div className="flex-shrink-0 flex gap-3 items-center">
             {/* Search Button */}
             <button
               type="button"
