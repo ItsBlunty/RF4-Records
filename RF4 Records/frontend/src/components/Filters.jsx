@@ -193,29 +193,26 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             </div>
           </div>
 
-          {/* Search Button */}
-          <div className="flex-shrink-0">
+          {/* Action Buttons Group */}
+          <div className="flex-shrink-0 flex gap-3 items-center mt-6">
+            {/* Search Button */}
             <button
               type="button"
               onClick={handleSubmit}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mt-6 flex items-center space-x-2"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center space-x-2"
             >
               <Search className="h-4 w-4" />
               <span>Search</span>
             </button>
-          </div>
 
-          {/* Search History */}
-          <div className="flex-shrink-0 mt-6">
+            {/* Search History */}
             <SearchHistory onSelectSearch={handleHistorySelect} />
-          </div>
 
-          {/* Clear Button */}
-          <div className="flex-shrink-0">
+            {/* Clear Button */}
             <button
               type="button"
               onClick={onClear}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 mt-6"
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               Clear All
             </button>
