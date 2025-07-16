@@ -96,7 +96,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
       <div className="max-w-7xl mx-auto">
         {/* Main Filter Row */}
-        <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex gap-4 items-center">
           {/* Quick Access Buttons */}
           {currentPage === 'records' && (
             <div className="flex flex-col gap-2">
