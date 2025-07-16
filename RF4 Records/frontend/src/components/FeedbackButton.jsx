@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send, AlertCircle } from 'lucide-react';
 
-const FeedbackButton = () => {
-  const [isOpen, setIsOpen] = useState(false);
+const FeedbackButton = ({ isOpen = false, onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState(null);
   const [formData, setFormData] = useState({
@@ -49,7 +48,7 @@ const FeedbackButton = () => {
           user_info: ''
         });
         setTimeout(() => {
-          setIsOpen(false);
+          if (onClose) onClose();
           setSubmitStatus(null);
         }, 2000);
       } else {
@@ -64,15 +63,6 @@ const FeedbackButton = () => {
 
   return (
     <>
-      {/* Feedback Button */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 z-40"
-        title="Send Feedback or Report Issue"
-      >
-        <MessageSquare className="w-5 h-5" />
-      </button>
-
       {/* Feedback Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -83,7 +73,7 @@ const FeedbackButton = () => {
                 Send Feedback
               </h3>
               <button
-                onClick={() => setIsOpen(false)}
+                onClick={() => onClose && onClose()}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -193,7 +183,7 @@ const FeedbackButton = () => {
               <div className="flex justify-end space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => onClose && onClose()}
                   className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
                 >
                   Cancel

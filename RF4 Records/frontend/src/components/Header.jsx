@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X } from 'lucide-react';
+import FeedbackButton from './FeedbackButton.jsx';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
+  // Feedback modal state
+  const [showFeedback, setShowFeedback] = useState(false);
   // Check if we're in development/staging environment
   const isDevelopment = window.location.hostname !== 'rf4records.com';
   
@@ -67,6 +70,15 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
                 Created by ItsBlunty
               </span>
+              
+              {/* Feedback Button */}
+              <button
+                onClick={() => setShowFeedback(true)}
+                className="px-3 py-1.5 text-xs sm:text-sm bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                title="Submit Feedback or Report Issue"
+              >
+                Submit Feedback
+              </button>
               
               {/* Dark Mode Toggle */}
               {onToggleDarkMode && (
@@ -365,6 +377,15 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                 Created by ItsBlunty
               </span>
               
+              {/* Mobile Feedback Button */}
+              <button
+                onClick={() => setShowFeedback(true)}
+                className="px-2 py-1 text-xs bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
+                title="Submit Feedback or Report Issue"
+              >
+                Feedback
+              </button>
+              
               {/* Mobile Dark Mode Toggle */}
               {onToggleDarkMode && (
                 <button
@@ -641,6 +662,11 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               )}
             </div>
           </div>
+        )}
+        
+        {/* Feedback Modal */}
+        {showFeedback && (
+          <FeedbackButton isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
         )}
       </div>
     </header>
