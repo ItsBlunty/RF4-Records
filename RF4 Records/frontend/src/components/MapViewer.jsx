@@ -833,9 +833,7 @@ const MapViewer = () => {
                     maxWidth: 'none',
                     maxHeight: 'none',
                     opacity: overlayReady ? 0.6 : 0,
-                    transition: 'opacity 0.2s ease-in-out',
-                    width: mapImageRef.current?.offsetWidth || 'auto',
-                    height: mapImageRef.current?.offsetHeight || 'auto'
+                    transition: 'opacity 0.2s ease-in-out'
                   }}
                   onLoad={() => setOverlayReady(true)}
                   onError={(e) => {
