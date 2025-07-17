@@ -398,27 +398,27 @@ const MapViewer = () => {
     }));
   }, [isMouseOverMap]);
 
-  // Global mouse event listeners - TESTING: Comment out body to check for infinite loop
+  // Global mouse event listeners
   useEffect(() => {
-    // if (isDragging) {
-    //   const handleGlobalMouseMove = (e) => {
-    //     handleMouseMove(e);
-    //   };
-    //   
-    //   const handleGlobalMouseUp = (e) => {
-    //     handleMouseUp();
-    //   };
-    //   
-    //   document.addEventListener('mousemove', handleGlobalMouseMove);
-    //   document.addEventListener('mouseup', handleGlobalMouseUp);
-    //   document.body.style.cursor = 'grabbing';
-    //   
-    //   return () => {
-    //     document.removeEventListener('mousemove', handleGlobalMouseMove);
-    //     document.removeEventListener('mouseup', handleGlobalMouseUp);
-    //     document.body.style.cursor = 'default';
-    //   };
-    // }
+    if (isDragging) {
+      const handleGlobalMouseMove = (e) => {
+        handleMouseMove(e);
+      };
+      
+      const handleGlobalMouseUp = (e) => {
+        handleMouseUp();
+      };
+      
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.body.style.cursor = 'grabbing';
+      
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+        document.body.style.cursor = 'default';
+      };
+    }
   }, [isDragging, handleMouseMove, handleMouseUp]);
   // Add wheel event listener to map container
   useEffect(() => {
@@ -504,15 +504,17 @@ const MapViewer = () => {
 
   // Update map bounds when map changes
   useEffect(() => {
-    const bounds = parseMapBounds(currentMap);
-    setMapBounds(bounds);
-    resetView(); // Reset view when switching maps
-    setImageReady(false); // Hide image while new one loads
-    setOverlayReady(false); // Hide overlay while new one loads
-    // Only clear measurements if not loading from URL
-    if (!searchParams.get('from') || !searchParams.get('to')) {
-      clearMeasurements(); // Clear measurements when switching maps
-    }
+    console.log('Map update useEffect triggered'); // Debug
+    // TESTING: Comment out body to check if this causes infinite loop
+    // const bounds = parseMapBounds(currentMap);
+    // setMapBounds(bounds);
+    // resetView(); // Reset view when switching maps
+    // setImageReady(false); // Hide image while new one loads
+    // setOverlayReady(false); // Hide overlay while new one loads
+    // // Only clear measurements if not loading from URL
+    // if (!searchParams.get('from') || !searchParams.get('to')) {
+    //   clearMeasurements(); // Clear measurements when switching maps
+    // }
   }, [currentMap]);
   if (!effectiveBounds) {
     return (
