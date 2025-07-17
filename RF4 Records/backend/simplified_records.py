@@ -848,14 +848,22 @@ def get_filter_values():
                 waterbody_set.add(record.waterbody)
 
             # Include both bait1 and bait2 individually (no sandwich baits) in autocomplete
-            # Add bait1 or legacy bait field
+            # Add bait1 or legacy bait field, splitting any semicolon-separated values
             bait1_display = record.bait1 or record.bait or ""
             if bait1_display and bait1_display.strip():
-                bait_set.add(bait1_display.strip())
+                # Split on semicolon and add each individual bait
+                for bait in bait1_display.split(";"):
+                    bait = bait.strip()
+                    if bait:
+                        bait_set.add(bait)
 
-            # Add bait2 separately if it exists
+            # Add bait2 separately if it exists, splitting any semicolon-separated values
             if record.bait2 and record.bait2.strip():
-                bait_set.add(record.bait2.strip())
+                # Split on semicolon and add each individual bait
+                for bait in record.bait2.split(";"):
+                    bait = bait.strip()
+                    if bait:
+                        bait_set.add(bait)
 
         total_time = time.time() - start_time
 
