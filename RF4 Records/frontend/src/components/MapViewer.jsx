@@ -783,22 +783,23 @@ const MapViewer = () => {
             }}
             className="absolute inset-0 flex items-center justify-center"
           >
-            <>
-              {/* Loading indicator */}
-              {!imageReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-                  <div className="flex flex-col items-center space-y-3">
-                    <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">Loading map...</span>
-                  </div>
+            {/* Loading indicator */}
+            {!imageReady && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+                <div className="flex flex-col items-center space-y-3">
+                  <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Loading map...</span>
                 </div>
-              )}
-              
+              </div>
+            )}
+            
+            {/* Inner container for positioning - shrinks to fit image */}
+            <div className="relative">
               <img
                 ref={mapImageRef}
                 src={`/images/${currentMap}`}
                 alt={`Map: ${effectiveBounds.name || mapBounds?.name}`}
-                className="max-w-none select-none"
+                className="max-w-none select-none block"
                 style={{
                   imageRendering: 'pixelated', // Preserve crisp edges when zoomed
                   maxWidth: 'none',
@@ -838,8 +839,7 @@ const MapViewer = () => {
                     top: 0,
                     left: 0,
                     width: '100%',
-                    height: '100%',
-                    objectFit: 'contain'
+                    height: '100%'
                   }}
                   onLoad={() => setOverlayReady(true)}
                   onError={(e) => {
@@ -849,10 +849,8 @@ const MapViewer = () => {
                   onDragStart={(e) => e.preventDefault()}
                 />
               )}
-            </>
-            
-            
-          </div>        </div>
+            </div>
+          </div>
 
         
         {/* Click markers - positioned relative to map container */}
