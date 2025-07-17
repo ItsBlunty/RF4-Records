@@ -35,6 +35,11 @@ const MapViewer = () => {
     return Object.values(availableMaps)[0];
   };
 
+  // Check if current map is Copper Lake (has overlay available)
+  const isMapWithOverlay = () => {
+    const bounds = parseMapBounds(currentMap);
+    return bounds?.name?.toLowerCase().includes('copper') || mapName?.toLowerCase().includes('copper');
+  };
   const [currentMap, setCurrentMap] = useState(getCurrentMapFile());
   const [mapBounds, setMapBounds] = useState(() => parseMapBounds(getCurrentMapFile()));
   
@@ -42,6 +47,8 @@ const MapViewer = () => {
   const [showDevPanel, setShowDevPanel] = useState(false);
   const [devCoords, setDevCoords] = useState(null);
   
+  // Overlay state
+  const [showOverlay, setShowOverlay] = useState(true);  
   // Coordinate input state
   const [coordInputX, setCoordInputX] = useState('');
   const [coordInputY, setCoordInputY] = useState('');
@@ -70,14 +77,14 @@ const MapViewer = () => {
   
   // Track if image is loaded and sized to prevent flash
   const [imageReady, setImageReady] = useState(false);
-  
+  const [overlayReady, setOverlayReady] = useState(false);  
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartTransform, setDragStartTransform] = useState({ translateX: 0, translateY: 0 });
   
   const mapContainerRef = useRef(null);
   const mapImageRef = useRef(null);
-
+  const overlayImageRef = useRef(null);
   // Function to convert map coordinates to current screen position
   const mapCoordsToCurrentScreenPos = useCallback((mapCoords) => {
     if (!mapImageRef.current || !mapContainerRef.current || !effectiveBounds) {
@@ -503,12 +510,12 @@ const MapViewer = () => {
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
     setImageReady(false); // Hide image while new one loads
+    setOverlayReady(false); // Hide overlay while new one loads
     // Only clear measurements if not loading from URL
     if (!searchParams.get('from') || !searchParams.get('to')) {
       clearMeasurements(); // Clear measurements when switching maps
     }
   }, [currentMap]);
-
   if (!effectiveBounds) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -642,14 +649,36 @@ const MapViewer = () => {
               <Home className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
+            {isMapWithOverlay() && (
+              <button
+                onClick={() => setShowOverlay(!showOverlay)}
+                className={`p-2 rounded-md transition-colors ${
+                  showOverlay 
+                    ? 'bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={showOverlay ? "Hide Bottom Layer" : "Show Bottom Layer"}
+              >
+                <div className={`w-5 h-5 rounded border-2 ${
+                  showOverlay 
+                    ? 'bg-blue-600 border-blue-600' 
+                    : 'border-gray-400 dark:border-gray-500'
+                }`}>
+                  {showOverlay && (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-sm"></div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            )}
             <button
               onClick={clearMeasurements}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
               title="Clear Measurements"
             >
               <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-            </button>
-          </div>
+            </button>          </div>
           
           {/* Zoom Level Indicator */}
           <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
@@ -791,11 +820,35 @@ const MapViewer = () => {
                 onMouseLeave={() => setIsMouseOverImage(false)}
                 onDragStart={(e) => e.preventDefault()} // Prevent image drag
               />
+
+              {/* Overlay layer for Copper Lake */}
+              {isMapWithOverlay() && showOverlay && (
+                <img
+                  ref={overlayImageRef}
+                  src="/images/copperbottomsolidtransbg.png"
+                  alt="Copper Lake Bottom Layer"
+                  className="absolute top-0 left-0 max-w-none select-none pointer-events-none"
+                  style={{
+                    imageRendering: 'pixelated',
+                    maxWidth: 'none',
+                    maxHeight: 'none',
+                    opacity: overlayReady ? 0.6 : 0,
+                    transition: 'opacity 0.2s ease-in-out',
+                    width: mapImageRef.current?.offsetWidth || 'auto',
+                    height: mapImageRef.current?.offsetHeight || 'auto'
+                  }}
+                  onLoad={() => setOverlayReady(true)}
+                  onError={(e) => {
+                    console.error('Failed to load overlay image:', e);
+                    setOverlayReady(true);
+                  }}
+                  onDragStart={(e) => e.preventDefault()}
+                />
+              )}
             </>
             
             
-          </div>
-        </div>
+          </div>        </div>
 
         
         {/* Click markers - positioned relative to map container */}
