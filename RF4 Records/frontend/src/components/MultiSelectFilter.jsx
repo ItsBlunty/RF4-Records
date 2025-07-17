@@ -52,8 +52,7 @@ const MultiSelectFilter = ({
         
         // Finally, sort alphabetically
         return a.localeCompare(b);
-      })
-      .slice(0, 10); // Limit to 10 suggestions
+      }); // No limit - show all matching suggestions with scrolling
     setFilteredValues(filtered);
     setIsOpen(filtered.length > 0);
     setHighlightedIndex(-1);
