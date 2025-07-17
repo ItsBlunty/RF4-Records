@@ -398,29 +398,28 @@ const MapViewer = () => {
     }));
   }, [isMouseOverMap]);
 
-  // Global mouse event listeners
+  // Global mouse event listeners - TESTING: Comment out body to check for infinite loop
   useEffect(() => {
-    if (isDragging) {
-      const handleGlobalMouseMove = (e) => {
-        handleMouseMove(e);
-      };
-      
-      const handleGlobalMouseUp = (e) => {
-        handleMouseUp();
-      };
-      
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-      document.body.style.cursor = 'grabbing';
-      
-      return () => {
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
-        document.body.style.cursor = 'default';
-      };
-    }
+    // if (isDragging) {
+    //   const handleGlobalMouseMove = (e) => {
+    //     handleMouseMove(e);
+    //   };
+    //   
+    //   const handleGlobalMouseUp = (e) => {
+    //     handleMouseUp();
+    //   };
+    //   
+    //   document.addEventListener('mousemove', handleGlobalMouseMove);
+    //   document.addEventListener('mouseup', handleGlobalMouseUp);
+    //   document.body.style.cursor = 'grabbing';
+    //   
+    //   return () => {
+    //     document.removeEventListener('mousemove', handleGlobalMouseMove);
+    //     document.removeEventListener('mouseup', handleGlobalMouseUp);
+    //     document.body.style.cursor = 'default';
+    //   };
+    // }
   }, [isDragging, handleMouseMove, handleMouseUp]);
-
   // Add wheel event listener to map container
   useEffect(() => {
     const mapContainer = mapContainerRef.current;
@@ -438,17 +437,16 @@ const MapViewer = () => {
   }, [handleWheel]);
 
   // Force marker and measurement updates when transform changes
-  // TEMPORARILY DISABLED - Testing if this causes infinite loop
-  // useEffect(() => {
-  //   // Use double requestAnimationFrame to ensure CSS transforms have been applied
-  //   const updateMarkers = () => {
-  //     requestAnimationFrame(() => {
-  //       setTransformKey(prev => prev + 1);
-  //     });
-  //   };
-  //   
-  //   requestAnimationFrame(updateMarkers);
-  // }, [transform]);
+  useEffect(() => {
+    // Use double requestAnimationFrame to ensure CSS transforms have been applied
+    const updateMarkers = () => {
+      requestAnimationFrame(() => {
+        setTransformKey(prev => prev + 1);
+      });
+    };
+    
+    requestAnimationFrame(updateMarkers);
+  }, [transform]);
   // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
     const fromParam = searchParams.get('from');
