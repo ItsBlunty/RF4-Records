@@ -24,6 +24,7 @@
 - If commit hash doesn't appear in logs, the new code hasn't deployed yet - wait longer!
 - Use `railway logs` to verify deployment timing by checking for your commit hash
 - Test implementation at https://rf4-records-dev.up.railway.app/ using Playwright
+- **Production URL**: https://rf4records.com/
 - Use `railway status` to confirm you're on dev branch and RF4-Records project
 
 ## Code Style Guidelines
