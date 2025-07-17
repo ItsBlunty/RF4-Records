@@ -4,8 +4,8 @@ import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2, Loader2 } from 'lucide-rea
 import { availableMaps } from '../config/maps.js';
 
 const MapViewer = () => {
-  const { mapName } = useParams();
-  const navigate = useNavigate();
+  console.log('MapViewer rendering'); // Debug: check for infinite loop
+  const { mapName } = useParams();  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   // Parse filename to extract coordinate bounds
@@ -49,8 +49,8 @@ const MapViewer = () => {
   
   // Overlay state
   const [showOverlay, setShowOverlay] = useState(true);  
-  // Coordinate input state
-  const [coordInputX, setCoordInputX] = useState('');
+  const [overlayOpacity, setOverlayOpacity] = useState(40); // Test with disabled useEffect
+  // Coordinate input state  const [coordInputX, setCoordInputX] = useState('');
   const [coordInputY, setCoordInputY] = useState('');
   
   // Use dev coordinates if available, otherwise use parsed map bounds
@@ -438,17 +438,17 @@ const MapViewer = () => {
   }, [handleWheel]);
 
   // Force marker and measurement updates when transform changes
-  useEffect(() => {
-    // Use double requestAnimationFrame to ensure CSS transforms have been applied
-    const updateMarkers = () => {
-      requestAnimationFrame(() => {
-        setTransformKey(prev => prev + 1);
-      });
-    };
-    
-    requestAnimationFrame(updateMarkers);
-  }, [transform]);
-
+  // TEMPORARILY DISABLED - Testing if this causes infinite loop
+  // useEffect(() => {
+  //   // Use double requestAnimationFrame to ensure CSS transforms have been applied
+  //   const updateMarkers = () => {
+  //     requestAnimationFrame(() => {
+  //       setTransformKey(prev => prev + 1);
+  //     });
+  //   };
+  //   
+  //   requestAnimationFrame(updateMarkers);
+  // }, [transform]);
   // Load coordinates from URL parameters (only on initial page load)
   useEffect(() => {
     const fromParam = searchParams.get('from');
