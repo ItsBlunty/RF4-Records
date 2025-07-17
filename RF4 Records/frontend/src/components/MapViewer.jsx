@@ -827,13 +827,19 @@ const MapViewer = () => {
                   ref={overlayImageRef}
                   src="/images/copperbottomsolidtransbg.png"
                   alt="Copper Lake Bottom Layer"
-                  className="absolute top-0 left-0 max-w-none select-none pointer-events-none"
+                  className="max-w-none select-none pointer-events-none"
                   style={{
                     imageRendering: 'pixelated',
                     maxWidth: 'none',
                     maxHeight: 'none',
                     opacity: overlayReady ? 0.6 : 0,
-                    transition: 'opacity 0.2s ease-in-out'
+                    transition: 'opacity 0.2s ease-in-out',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain'
                   }}
                   onLoad={() => setOverlayReady(true)}
                   onError={(e) => {
