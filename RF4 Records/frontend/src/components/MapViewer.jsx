@@ -666,9 +666,26 @@ const MapViewer = () => {
           </div>
         </div>
 
+        {/* Bottom Types Control - only show for Copper Lake */}
+        {window.location.pathname.includes('copper') && (
+          <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="bottom-types-toggle"
+                checked={showOverlay}
+                onChange={(e) => setShowOverlay(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="bottom-types-toggle" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Bottom Types
+              </label>
+            </div>
+          </div>
+        )}
+
         {/* Dev Panel - only show on dev environment */}
-        {window.location.hostname.includes('dev') && (
-        <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
+        {window.location.hostname.includes('dev') && (        <div className="absolute top-20 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
           <button
             onClick={() => setShowDevPanel(!showDevPanel)}
             className="text-xs text-gray-500 dark:text-gray-400"
