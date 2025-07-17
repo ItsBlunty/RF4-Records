@@ -684,18 +684,52 @@ def get_filtered_records_optimized(
         # Start with base query
         query = db.query(Record)
 
-        # Apply fish filter (support multiple values)
+        # Apply fish filter (support multiple values with smart exact/partial matching)
         if fish:
             if isinstance(fish, list):
-                # Multiple fish - use OR condition
-                fish_conditions = [
-                    Record.fish.ilike(f"%{f.strip()}%") for f in fish if f.strip()
-                ]
+                # Multiple fish - use OR condition with smart matching
+                fish_conditions = []
+                for f in fish:
+                    if f.strip():
+                        # Get all available fish names for exact matching check
+                        all_fish_names = (
+                            db.query(distinct(Record.fish))
+                            .filter(Record.fish.isnot(None), Record.fish != "")
+                            .all()
+                        )
+                        available_fish = [
+                            name[0].lower() for name in all_fish_names if name[0]
+                        ]
+
+                        # Check if search term exactly matches any available fish name
+                        search_term_lower = f.strip().lower()
+                        if search_term_lower in available_fish:
+                            # Exact match found - use exact matching only
+                            fish_conditions.append(Record.fish.ilike(f.strip()))
+                        else:
+                            # No exact match - use partial matching
+                            fish_conditions.append(Record.fish.ilike(f"%{f.strip()}%"))
+
                 if fish_conditions:
                     query = query.filter(or_(*fish_conditions))
             else:
-                # Single fish (backward compatibility)
-                query = query.filter(Record.fish.ilike(f"%{fish}%"))
+                # Single fish (backward compatibility) with smart matching
+                # Get all available fish names for exact matching check
+                all_fish_names = (
+                    db.query(distinct(Record.fish))
+                    .filter(Record.fish.isnot(None), Record.fish != "")
+                    .all()
+                )
+                available_fish = [name[0].lower() for name in all_fish_names if name[0]]
+
+                # Check if search term exactly matches any available fish name
+                search_term_lower = fish.strip().lower()
+                if search_term_lower in available_fish:
+                    # Exact match found - use exact matching only
+                    query = query.filter(Record.fish.ilike(fish.strip()))
+                else:
+                    # No exact match - use partial matching
+                    query = query.filter(Record.fish.ilike(f"%{fish}%"))
 
         # Apply waterbody filter (support multiple values)
         if waterbody:
