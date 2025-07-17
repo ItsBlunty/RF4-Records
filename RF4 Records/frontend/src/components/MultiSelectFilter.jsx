@@ -33,8 +33,27 @@ const MultiSelectFilter = ({
         value.toLowerCase().includes(inputValue.toLowerCase()) &&
         !selectedValues.includes(value)
       )
+      .sort((a, b) => {
+        const aLower = a.toLowerCase();
+        const bLower = b.toLowerCase();
+        const inputLower = inputValue.toLowerCase();
+        
+        // Prioritize exact matches first
+        const aExact = aLower === inputLower;
+        const bExact = bLower === inputLower;
+        if (aExact && !bExact) return -1;
+        if (!aExact && bExact) return 1;
+        
+        // Then prioritize matches that start with the input
+        const aStarts = aLower.startsWith(inputLower);
+        const bStarts = bLower.startsWith(inputLower);
+        if (aStarts && !bStarts) return -1;
+        if (!aStarts && bStarts) return 1;
+        
+        // Finally, sort alphabetically
+        return a.localeCompare(b);
+      })
       .slice(0, 10); // Limit to 10 suggestions
-
     setFilteredValues(filtered);
     setIsOpen(filtered.length > 0);
     setHighlightedIndex(-1);
