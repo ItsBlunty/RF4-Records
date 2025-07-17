@@ -649,29 +649,7 @@ const MapViewer = () => {
               <Home className="w-5 h-5 text-gray-600 dark:text-gray-400" />
             </button>
             <div className="border-t border-gray-200 dark:border-gray-600 my-2"></div>
-            {isMapWithOverlay() && (
-              <button
-                onClick={() => setShowOverlay(!showOverlay)}
-                className={`p-2 rounded-md transition-colors ${
-                  showOverlay 
-                    ? 'bg-blue-100 dark:bg-blue-900 hover:bg-blue-200 dark:hover:bg-blue-800' 
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={showOverlay ? "Hide Bottom Layer" : "Show Bottom Layer"}
-              >
-                <div className={`w-5 h-5 rounded border-2 ${
-                  showOverlay 
-                    ? 'bg-blue-600 border-blue-600' 
-                    : 'border-gray-400 dark:border-gray-500'
-                }`}>
-                  {showOverlay && (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-sm"></div>
-                    </div>
-                  )}
-                </div>
-              </button>
-            )}
+
             <button
               onClick={clearMeasurements}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
