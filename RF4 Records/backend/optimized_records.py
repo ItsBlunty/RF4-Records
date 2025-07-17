@@ -26,15 +26,21 @@ def get_filter_values_optimized():
         )
 
         # For bait, we need to handle single baits only (no sandwich baits)
+        # Include both bait1 and bait2 fields individually, but not combinations
         # Use raw SQL for better performance with complex bait logic
         bait_query = db.execute(
             text("""
-            SELECT DISTINCT 
-                COALESCE(bait1, bait, '') as bait_display
-            FROM records 
-            WHERE (bait1 IS NOT NULL AND bait1 != '') 
-               OR (bait IS NOT NULL AND bait != '')
-            AND (bait2 IS NULL OR bait2 = '')
+            SELECT DISTINCT bait_display FROM (
+                SELECT COALESCE(bait1, bait, '') as bait_display
+                FROM records 
+                WHERE (bait1 IS NOT NULL AND bait1 != '') 
+                   OR (bait IS NOT NULL AND bait != '')
+                UNION
+                SELECT bait2 as bait_display
+                FROM records 
+                WHERE bait2 IS NOT NULL AND bait2 != ''
+            ) combined_baits
+            WHERE bait_display != ''
             ORDER BY bait_display
         """)
         )

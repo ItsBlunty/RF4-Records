@@ -847,15 +847,15 @@ def get_filter_values():
             if record.waterbody:
                 waterbody_set.add(record.waterbody)
 
-            # Only include single baits (no sandwich baits) in autocomplete
+            # Include both bait1 and bait2 individually (no sandwich baits) in autocomplete
+            # Add bait1 or legacy bait field
+            bait1_display = record.bait1 or record.bait or ""
+            if bait1_display and bait1_display.strip():
+                bait_set.add(bait1_display.strip())
+
+            # Add bait2 separately if it exists
             if record.bait2 and record.bait2.strip():
-                # Skip sandwich baits - don't add to autocomplete
-                pass
-            else:
-                # Single bait only
-                bait_display = record.bait1 or record.bait or ""
-                if bait_display and bait_display.strip():
-                    bait_set.add(bait_display.strip())
+                bait_set.add(record.bait2.strip())
 
         total_time = time.time() - start_time
 
