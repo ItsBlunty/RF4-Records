@@ -833,7 +833,7 @@ const MapViewer = () => {
                     imageRendering: 'pixelated',
                     maxWidth: 'none',
                     maxHeight: 'none',
-                    opacity: overlayReady ? 0.6 : 0,
+                    opacity: overlayReady ? 0.4 : 0,
                     transition: 'opacity 0.2s ease-in-out',
                     position: 'absolute',
                     top: 0,
