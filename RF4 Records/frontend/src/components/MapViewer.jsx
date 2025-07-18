@@ -46,7 +46,7 @@ const MapViewer = () => {
   
   // Overlay state
   const [showOverlay, setShowOverlay] = useState(true);  
-  const [overlayOpacity, setOverlayOpacity] = useState(40); // Test with disabled useEffect
+  const [overlayOpacity, setOverlayOpacity] = useState(70);
   
   // Coordinate input state
   const [coordInputX, setCoordInputX] = useState('');
