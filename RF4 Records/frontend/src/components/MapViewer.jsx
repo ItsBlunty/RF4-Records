@@ -679,18 +679,53 @@ const MapViewer = () => {
               
               {/* Opacity Slider - now dynamic */}
               {showOverlay && (
-                <div className="space-y-1">
-                  <label className="text-xs text-gray-500 dark:text-gray-400">
-                    Opacity: {overlayOpacity}%
-                  </label>
-                  <input
-                    type="range"
-                    min="10"
-                    max="100"
-                    value={overlayOpacity}
-                    onChange={(e) => setOverlayOpacity(parseInt(e.target.value))}
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                  />
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs text-gray-500 dark:text-gray-400">
+                      Opacity: {overlayOpacity}%
+                    </label>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      value={overlayOpacity}
+                      onChange={(e) => setOverlayOpacity(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                    />
+                  </div>
+                  
+                  {/* Legend */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      Legend
+                    </label>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#969388' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Clay</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#7B7677' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Sludge</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#E8D05B' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Sand</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#2CAAC8' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Sand-Pebble</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#A4C488' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Weeds</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 rounded-sm border border-gray-400" style={{ backgroundColor: '#F1ECE4' }}></div>
+                        <span className="text-gray-700 dark:text-gray-300">Shell</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
