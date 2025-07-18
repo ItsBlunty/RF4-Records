@@ -4,7 +4,6 @@ import { ZoomIn, ZoomOut, RotateCcw, Home, X, Share2, Loader2 } from 'lucide-rea
 import { availableMaps } from '../config/maps.js';
 
 const MapViewer = () => {
-  console.log('MapViewer rendering'); // Debug: check for infinite loop
   const { mapName } = useParams();  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -50,9 +49,10 @@ const MapViewer = () => {
   // Overlay state
   const [showOverlay, setShowOverlay] = useState(true);  
   const [overlayOpacity, setOverlayOpacity] = useState(40); // Test with disabled useEffect
-  // Coordinate input state  const [coordInputX, setCoordInputX] = useState('');
-  const [coordInputY, setCoordInputY] = useState('');
   
+  // Coordinate input state
+  const [coordInputX, setCoordInputX] = useState('');
+  const [coordInputY, setCoordInputY] = useState('');  
   // Use dev coordinates if available, otherwise use parsed map bounds
   const effectiveBounds = devCoords || mapBounds;
   const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
@@ -487,35 +487,30 @@ const MapViewer = () => {
       }
     }
   }, [searchParams, effectiveBounds, calculateDistance, measurements.length, markers.length]);
-
   // Handle URL map changes and redirect if no map specified
   useEffect(() => {
-    console.log('URL/navigation useEffect triggered'); // Debug
-    // TESTING: Comment out body to check if this causes infinite loop
-    // // If we're on /maps without a specific map, redirect to default map
-    // if (location.pathname === '/maps' && !mapName) {
-    //   navigate('/maps/elklake', { replace: true });
-    //   return;
-    // }
+    // If we're on /maps without a specific map, redirect to default map
+    if (location.pathname === '/maps' && !mapName) {
+      navigate('/maps/elklake', { replace: true });
+      return;
+    }
     
-    // const newMapFile = getCurrentMapFile();
-    // if (newMapFile !== currentMap) {
-    //   setCurrentMap(newMapFile);
-    // }
+    const newMapFile = getCurrentMapFile();
+    if (newMapFile !== currentMap) {
+      setCurrentMap(newMapFile);
+    }
   }, [mapName, navigate]);
   // Update map bounds when map changes
   useEffect(() => {
-    console.log('Map update useEffect triggered'); // Debug
-    // TESTING: Comment out body to check if this causes infinite loop
-    // const bounds = parseMapBounds(currentMap);
-    // setMapBounds(bounds);
-    // resetView(); // Reset view when switching maps
-    // setImageReady(false); // Hide image while new one loads
-    // setOverlayReady(false); // Hide overlay while new one loads
-    // // Only clear measurements if not loading from URL
-    // if (!searchParams.get('from') || !searchParams.get('to')) {
-    //   clearMeasurements(); // Clear measurements when switching maps
-    // }
+    const bounds = parseMapBounds(currentMap);
+    setMapBounds(bounds);
+    resetView(); // Reset view when switching maps
+    setImageReady(false); // Hide image while new one loads
+    setOverlayReady(false); // Hide overlay while new one loads
+    // Only clear measurements if not loading from URL
+    if (!searchParams.get('from') || !searchParams.get('to')) {
+      clearMeasurements(); // Clear measurements when switching maps
+    }
   }, [currentMap]);
   if (!effectiveBounds) {
     return (
@@ -685,18 +680,18 @@ const MapViewer = () => {
                 </label>
               </div>
               
-              {/* Opacity Slider - static for now */}
+              {/* Opacity Slider - now dynamic */}
               {showOverlay && (
                 <div className="space-y-1">
                   <label className="text-xs text-gray-500 dark:text-gray-400">
-                    Opacity: 40%
+                    Opacity: {overlayOpacity}%
                   </label>
                   <input
                     type="range"
                     min="10"
                     max="100"
-                    value="40"
-                    readOnly
+                    value={overlayOpacity}
+                    onChange={(e) => setOverlayOpacity(parseInt(e.target.value))}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                   />
                 </div>
@@ -849,7 +844,7 @@ const MapViewer = () => {
                     imageRendering: 'pixelated',
                     maxWidth: 'none',
                     maxHeight: 'none',
-                    opacity: overlayReady ? 0.4 : 0,
+                    opacity: overlayReady ? (overlayOpacity / 100) : 0,
                     transition: 'opacity 0.2s ease-in-out',
                     position: 'absolute',
                     top: 0,
