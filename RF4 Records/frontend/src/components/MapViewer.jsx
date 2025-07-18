@@ -490,18 +490,19 @@ const MapViewer = () => {
 
   // Handle URL map changes and redirect if no map specified
   useEffect(() => {
-    // If we're on /maps without a specific map, redirect to default map
-    if (location.pathname === '/maps' && !mapName) {
-      navigate('/maps/elklake', { replace: true });
-      return;
-    }
+    console.log('URL/navigation useEffect triggered'); // Debug
+    // TESTING: Comment out body to check if this causes infinite loop
+    // // If we're on /maps without a specific map, redirect to default map
+    // if (location.pathname === '/maps' && !mapName) {
+    //   navigate('/maps/elklake', { replace: true });
+    //   return;
+    // }
     
-    const newMapFile = getCurrentMapFile();
-    if (newMapFile !== currentMap) {
-      setCurrentMap(newMapFile);
-    }
+    // const newMapFile = getCurrentMapFile();
+    // if (newMapFile !== currentMap) {
+    //   setCurrentMap(newMapFile);
+    // }
   }, [mapName, navigate]);
-
   // Update map bounds when map changes
   useEffect(() => {
     console.log('Map update useEffect triggered'); // Debug
