@@ -42,9 +42,7 @@ const MapViewer = () => {
   const [currentMap, setCurrentMap] = useState(getCurrentMapFile());
   const [mapBounds, setMapBounds] = useState(() => parseMapBounds(getCurrentMapFile()));
   
-  // Dev panel state
-  const [showDevPanel, setShowDevPanel] = useState(false);
-  const [devCoords, setDevCoords] = useState(null);
+
   
   // Overlay state
   const [showOverlay, setShowOverlay] = useState(true);  
@@ -53,9 +51,8 @@ const MapViewer = () => {
   // Coordinate input state
   const [coordInputX, setCoordInputX] = useState('');
   const [coordInputY, setCoordInputY] = useState('');  
-  // Use dev coordinates if available, otherwise use parsed map bounds
-  const effectiveBounds = devCoords || mapBounds;
-  const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
+  // Use parsed map bounds
+  const effectiveBounds = mapBounds;  const [mouseCoords, setMouseCoords] = useState({ x: 0, y: 0 });
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMouseOverMap, setIsMouseOverMap] = useState(false);
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
@@ -700,81 +697,6 @@ const MapViewer = () => {
           </div>
         )}
 
-        {/* Dev Panel - only show on dev environment */}
-        {window.location.hostname.includes('dev') && (        <div className="absolute top-20 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2">
-          <button
-            onClick={() => setShowDevPanel(!showDevPanel)}
-            className="text-xs text-gray-500 dark:text-gray-400"
-          >
-            {showDevPanel ? 'Hide' : 'Show'} Dev
-          </button>
-          
-          {showDevPanel && (
-            <div className="mt-2 space-y-1">
-              <div className="grid grid-cols-2 gap-1 text-xs">
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Min X"
-                  value={devCoords?.minX || ''}
-                  className="px-1 py-1 text-xs border rounded"
-                  onChange={(e) => setDevCoords({
-                    ...(devCoords || mapBounds),
-                    minX: parseFloat(e.target.value) || 0
-                  })}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Min Y"
-                  value={devCoords?.minY || ''}
-                  className="px-1 py-1 text-xs border rounded"
-                  onChange={(e) => setDevCoords({
-                    ...(devCoords || mapBounds),
-                    minY: parseFloat(e.target.value) || 0
-                  })}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Max X"
-                  value={devCoords?.maxX || ''}
-                  className="px-1 py-1 text-xs border rounded"
-                  onChange={(e) => setDevCoords({
-                    ...(devCoords || mapBounds),
-                    maxX: parseFloat(e.target.value) || 0
-                  })}
-                />
-                <input
-                  type="number"
-                  step="0.1"
-                  placeholder="Max Y"
-                  value={devCoords?.maxY || ''}
-                  className="px-1 py-1 text-xs border rounded"
-                  onChange={(e) => setDevCoords({
-                    ...(devCoords || mapBounds),
-                    maxY: parseFloat(e.target.value) || 0
-                  })}
-                />
-              </div>
-              <div className="flex gap-1">
-                <button
-                  onClick={() => setDevCoords({...mapBounds})}
-                  className="text-xs bg-blue-500 text-white px-2 py-1 rounded"
-                >
-                  Reset
-                </button>
-                <button
-                  onClick={() => setDevCoords(null)}
-                  className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        )}
 
         {/* Map Display */}
         <div 
