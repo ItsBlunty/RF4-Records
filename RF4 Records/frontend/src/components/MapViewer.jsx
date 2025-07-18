@@ -503,12 +503,22 @@ const MapViewer = () => {
     setMapBounds(bounds);
     resetView(); // Reset view when switching maps
     setImageReady(false); // Hide image while new one loads
-    setOverlayReady(false); // Hide overlay while new one loads
+    
+    // Reset overlay state based on whether new map has overlay
+    const newMapHasOverlay = bounds?.name?.toLowerCase().includes('copper') || mapName?.toLowerCase().includes('copper');
+    if (newMapHasOverlay) {
+      // For maps with overlay, reset overlayReady to false so it can be set to true when image loads
+      setOverlayReady(false);
+    } else {
+      // For maps without overlay, set overlayReady to false and keep it that way
+      setOverlayReady(false);
+    }
+    
     // Only clear measurements if not loading from URL
     if (!searchParams.get('from') || !searchParams.get('to')) {
       clearMeasurements(); // Clear measurements when switching maps
     }
-  }, [currentMap]);
+  }, [currentMap, mapName]);
   if (!effectiveBounds) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
@@ -793,6 +803,7 @@ const MapViewer = () => {
               {/* Overlay layer for Copper Lake */}
               {isMapWithOverlay() && showOverlay && (
                 <img
+                  key={`overlay-${currentMap}`} // Force re-render when map changes
                   ref={overlayImageRef}
                   src="/images/copperbottomsolidtransbg.png"
                   alt="Copper Lake Bottom Layer"
