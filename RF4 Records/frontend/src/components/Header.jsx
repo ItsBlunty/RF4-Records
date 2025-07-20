@@ -74,12 +74,10 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             <button
               onClick={() => setShowPoll(true)}
               className="hidden md:flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
-              title="Click to participate in our community poll"
+              title="What type of fishing would you like to see added to RF4?"
             >
               <Vote className="w-4 h-4 mr-2" />
-              <span className="max-w-[200px] lg:max-w-[300px] truncate">
-                What type of fishing would you like to see added to RF4?
-              </span>
+              <span>POLL: Fishing Types</span>
             </button>
             
             <div className="hidden sm:flex items-center space-x-3">
@@ -397,7 +395,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setShowPoll(true)}
                 className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 transition-all duration-200"
-                title="Community Poll"
+                title="POLL: Fishing Types"
               >
                 Poll
               </button>
