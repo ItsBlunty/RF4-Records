@@ -238,6 +238,10 @@ async def lifespan(app: FastAPI):
     )
     print("   GET  /status   - Server and DB status", flush=True)
     print("   GET  /docs     - Interactive API documentation", flush=True)
+    print("   GET  /api/poll/current - Get current poll", flush=True)
+    print("   POST /api/poll/vote - Submit poll vote", flush=True)
+    print("   GET  /api/poll/results - Get poll results", flush=True)
+    print("   GET  /api/poll/check-voted - Check if voted", flush=True)
     print("✅ Server ready! Frontend can connect to this URL", flush=True)
 
     # Show current schedule
