@@ -8,7 +8,15 @@ from sqlalchemy.orm import Session
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from database import SessionLocal, Record, QADataset, CafeOrder, Feedback, create_tables
+from database import (
+    SessionLocal,
+    Record,
+    QADataset,
+    CafeOrder,
+    Feedback,
+    PollVote,
+    create_tables,
+)
 from scraper import scrape_and_update_records, should_stop_scraping
 from unified_cleanup import periodic_cleanup, get_memory_usage
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -3910,6 +3918,174 @@ def force_reclassify_trophies(token: str = Depends(verify_admin_token)):
             "details": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+
+# Poll endpoints
+@app.get("/api/poll/current")
+def get_current_poll():
+    """Get the current active poll"""
+    try:
+        # For now, return the hardcoded poll
+        # In the future, this could be stored in database
+        return {
+            "poll": {
+                "id": "fishing_type_2025",
+                "title": "What type of fishing would you like to see added to Russian Fishing 4?",
+                "choices": ["Fly Fishing", "Ice Fishing", "Netting", "Something Else"],
+                "active": True,
+                "created_at": "2025-01-20T00:00:00Z",
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting current poll: {e}")
+        return {"error": "Failed to get current poll"}
+
+
+@app.post("/api/poll/vote")
+@limiter.limit("1/hour")  # One vote per hour per IP
+async def submit_poll_vote(request: Request, vote_data: dict):
+    """Submit a vote for the current poll"""
+    db = SessionLocal()
+    try:
+        # Get client IP for duplicate prevention
+        client_ip = (
+            getattr(request.client, "host", "unknown")
+            if hasattr(request, "client")
+            else "unknown"
+        )
+        user_agent = request.headers.get("user-agent", "unknown")
+
+        # Validate vote data
+        poll_id = vote_data.get("poll_id")
+        choice = vote_data.get("choice")
+
+        if not poll_id or not choice:
+            raise HTTPException(
+                status_code=400, detail="Poll ID and choice are required"
+            )
+
+        # Check if this IP has already voted for this poll
+        existing_vote = (
+            db.query(PollVote)
+            .filter(PollVote.poll_id == poll_id, PollVote.ip_address == client_ip)
+            .first()
+        )
+
+        if existing_vote:
+            raise HTTPException(
+                status_code=409, detail="You have already voted in this poll"
+            )
+
+        # Validate choice is one of the allowed options
+        valid_choices = ["Fly Fishing", "Ice Fishing", "Netting", "Something Else"]
+        if choice not in valid_choices:
+            raise HTTPException(status_code=400, detail="Invalid choice")
+
+        # Create new vote
+        new_vote = PollVote(
+            poll_id=poll_id,
+            choice=choice,
+            ip_address=client_ip,
+            user_agent=user_agent[:500] if user_agent else None,
+        )
+
+        db.add(new_vote)
+        db.commit()
+
+        return {
+            "success": True,
+            "message": "Vote submitted successfully",
+            "choice": choice,
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error submitting poll vote: {e}")
+        raise HTTPException(status_code=500, detail="Failed to submit vote")
+    finally:
+        db.close()
+
+
+@app.get("/api/poll/results")
+def get_poll_results(poll_id: str = "fishing_type_2025"):
+    """Get poll results"""
+    db = SessionLocal()
+    try:
+        from sqlalchemy import func
+
+        # Get vote counts by choice
+        results = (
+            db.query(PollVote.choice, func.count(PollVote.id).label("vote_count"))
+            .filter(PollVote.poll_id == poll_id)
+            .group_by(PollVote.choice)
+            .all()
+        )
+
+        # Calculate total votes
+        total_votes = sum(result.vote_count for result in results)
+
+        # Format results with percentages
+        formatted_results = []
+        for result in results:
+            percentage = (
+                (result.vote_count / total_votes * 100) if total_votes > 0 else 0
+            )
+            formatted_results.append(
+                {
+                    "choice": result.choice,
+                    "votes": result.vote_count,
+                    "percentage": round(percentage, 1),
+                }
+            )
+
+        # Sort by vote count descending
+        formatted_results.sort(key=lambda x: x["votes"], reverse=True)
+
+        return {
+            "poll_id": poll_id,
+            "total_votes": total_votes,
+            "results": formatted_results,
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting poll results: {e}")
+        return {"error": "Failed to get poll results"}
+    finally:
+        db.close()
+
+
+@app.get("/api/poll/check-voted")
+async def check_if_voted(request: Request, poll_id: str = "fishing_type_2025"):
+    """Check if the current IP has already voted"""
+    db = SessionLocal()
+    try:
+        # Get client IP
+        client_ip = (
+            getattr(request.client, "host", "unknown")
+            if hasattr(request, "client")
+            else "unknown"
+        )
+
+        # Check if this IP has voted
+        existing_vote = (
+            db.query(PollVote)
+            .filter(PollVote.poll_id == poll_id, PollVote.ip_address == client_ip)
+            .first()
+        )
+
+        return {
+            "has_voted": existing_vote is not None,
+            "choice": existing_vote.choice if existing_vote else None,
+        }
+
+    except Exception as e:
+        logger.error(f"Error checking vote status: {e}")
+        return {"error": "Failed to check vote status"}
+    finally:
+        db.close()
 
 
 @app.get("/check-fish-name-matches")
