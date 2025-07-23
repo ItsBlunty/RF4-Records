@@ -67,19 +67,19 @@ const Lures = () => {
       if (values.length < 5 || !values[0]) continue;
       
       const lure = {
-        name: (values[0] || '').trim(),
-        category: (values[1] || '').trim(),
-        brand: (values[2] || '').trim(),
+        category: (values[0] || '').trim(),
+        brand: (values[1] || '').trim(),
+        name: (values[2] || '').trim(),
         type: (values[3] || '').trim(),
         size: (values[4] || '').trim(),
         mass: (values[5] || '').trim(),
         minHookSize: (values[6] || '').trim(),
         maxHookSize: (values[7] || '').trim(),
         depth: (values[8] || '').trim(),
-        price: (values[9] || '').trim(),
-        rating: parseFloat(values[10]) || 0,
-        components: (values[11] || '').trim(),
-        restrictions: (values[12] || '').trim()
+        components: (values[9] || '').trim(),
+        restrictions: (values[10] || '').trim(),
+        rating: parseFloat(values[11]) || 0,
+        price: (values[12] || '').trim()
       };
       
       lureData.push(lure);
