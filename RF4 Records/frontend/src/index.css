@@ -23,6 +23,11 @@ input[type=number]::-webkit-inner-spin-button {
   margin: 0;
 }
 
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
 /* Mobile-specific improvements */
 @media (max-width: 640px) {
   /* Prevent horizontal overflow */
