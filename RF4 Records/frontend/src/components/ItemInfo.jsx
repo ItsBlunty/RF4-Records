@@ -1,171 +1,74 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Star, Info, Filter, X, Scale } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Settings, ChevronRight } from 'lucide-react';
 
 const ItemInfo = () => {
-  const location = useLocation();
   const navigate = useNavigate();
-  
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
-  const [brandFilter, setBrandFilter] = useState('All');
-  const [typeFilter, setTypeFilter] = useState('All');
-  const [lengthMin, setLengthMin] = useState('');
-  const [lengthMax, setLengthMax] = useState('');
-  const [diameterMin, setDiameterMin] = useState('');
-  const [diameterMax, setDiameterMax] = useState('');
-  const [loadCapacityMin, setLoadCapacityMin] = useState('');
-  const [loadCapacityMax, setLoadCapacityMax] = useState('');
-  const [priceMin, setPriceMin] = useState('');
-  const [priceMax, setPriceMax] = useState('');
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-  const [compareMode, setCompareMode] = useState(false);
-  const [selectedItems, setSelectedItems] = useState([]);
-  const [showComparison, setShowComparison] = useState(false);
 
-  useEffect(() => {
-    const loadItemData = async () => {
-      try {
-        setLoading(true);
-        
-        const response = await fetch('/LinesData.csv');
-        if (!response.ok) {
-          throw new Error(`Failed to fetch item data: ${response.status}`);
-        }
-        
-        const text = await response.text();
-        const parsedItems = parseCSVData(text);
-        
-        console.log(`Loaded ${parsedItems.length} items`);
-        setItems(parsedItems);
-      } catch (err) {
-        console.error('Error loading item data:', err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700">
+          {/* Header */}
+          <div className="px-6 py-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Item Information</h1>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">
+                Choose a category to view detailed item specifications
+              </p>
+            </div>
+          </div>
 
-    loadItemData();
-  }, []);
-
-  // URL parameter management
-  const updateURLParams = () => {
-    const params = new URLSearchParams();
-    
-    if (searchTerm) params.set('search', searchTerm);
-    if (categoryFilter !== 'All') params.set('category', categoryFilter);
-    if (brandFilter !== 'All') params.set('brand', brandFilter);
-    if (typeFilter !== 'All') params.set('type', typeFilter);
-    if (lengthMin) params.set('lengthMin', lengthMin);
-    if (lengthMax) params.set('lengthMax', lengthMax);
-    if (diameterMin) params.set('diameterMin', diameterMin);
-    if (diameterMax) params.set('diameterMax', diameterMax);
-    if (loadCapacityMin) params.set('loadCapacityMin', loadCapacityMin);
-    if (loadCapacityMax) params.set('loadCapacityMax', loadCapacityMax);
-    if (priceMin) params.set('priceMin', priceMin);
-    if (priceMax) params.set('priceMax', priceMax);
-    if (showAdvancedFilters) params.set('advanced', 'true');
-    if (sortConfig.key) {
-      params.set('sort', sortConfig.key);
-      params.set('sortDir', sortConfig.direction);
-    }
-    if (compareMode) params.set('compare', 'true');
-    
-    const newURL = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
-    navigate(newURL, { replace: true });
-  };
-
-  // Load URL parameters on component mount
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    
-    if (params.get('search')) setSearchTerm(params.get('search'));
-    if (params.get('category')) setCategoryFilter(params.get('category'));
-    if (params.get('brand')) setBrandFilter(params.get('brand'));
-    if (params.get('type')) setTypeFilter(params.get('type'));
-    if (params.get('lengthMin')) setLengthMin(params.get('lengthMin'));
-    if (params.get('lengthMax')) setLengthMax(params.get('lengthMax'));
-    if (params.get('diameterMin')) setDiameterMin(params.get('diameterMin'));
-    if (params.get('diameterMax')) setDiameterMax(params.get('diameterMax'));
-    if (params.get('loadCapacityMin')) setLoadCapacityMin(params.get('loadCapacityMin'));
-    if (params.get('loadCapacityMax')) setLoadCapacityMax(params.get('loadCapacityMax'));
-    if (params.get('priceMin')) setPriceMin(params.get('priceMin'));
-    if (params.get('priceMax')) setPriceMax(params.get('priceMax'));
-    if (params.get('advanced') === 'true') setShowAdvancedFilters(true);
-    if (params.get('sort')) {
-      setSortConfig({
-        key: params.get('sort'),
-        direction: params.get('sortDir') || 'ascending'
-      });
-    }
-    if (params.get('compare') === 'true') setCompareMode(true);
-  }, [location.search]);
-
-  // Update URL when filters change
-  useEffect(() => {
-    updateURLParams();
-  }, [searchTerm, categoryFilter, brandFilter, typeFilter, lengthMin, lengthMax,
-      diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax,
-      showAdvancedFilters, sortConfig, compareMode]);
-
-  const parseCSVData = (text) => {
-    const lines = text.trim().split('\n');
-    const itemData = [];
-    
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      const values = line.split(',');
-      
-      if (values.length < 11 || !values[0]) continue;
-      
-      const item = {
-        category: (values[0] || '').trim(),
-        brand: (values[1] || '').trim(),
-        name: (values[2] || '').trim(),
-        type: (values[3] || '').trim(),
-        color: (values[4] || '').trim(),
-        length: (values[5] || '').trim(),
-        diameter: (values[6] || '').trim(),
-        loadCapacity: (values[7] || '').trim(),
-        rating: parseFloat(values[8]) || 0,
-        playerLevel: parseInt(values[9]) || 0,
-        price: parseFloat(values[10]) || 0
-      };
-      
-      itemData.push(item);
-    }
-    
-    return itemData;
-  };
-
-  const renderStars = (stars) => {
-    const fullStars = Math.floor(stars);
-    const hasHalfStar = stars % 1 !== 0;
-    
-    return (
-      <div className="flex items-center">
-        {[1, 2, 3, 4, 5].map((starNum) => {
-          if (starNum <= fullStars) {
-            return (
-              <Star 
-                key={starNum}
-                className="w-4 h-4 text-yellow-500" 
-                fill="currentColor" 
-              />
-            );
-          } else if (starNum === fullStars + 1 && hasHalfStar) {
-            return (
-              <div key={starNum} className="relative w-4 h-4">
-                <Star className="w-4 h-4 text-gray-300 dark:text-gray-600" fill="currentColor" />
-                <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
-                  <Star className="w-4 h-4 text-yellow-500" fill="currentColor" />
+          {/* Content */}
+          <div className="px-6 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Lines Card */}
+              <div 
+                onClick={() => navigate('/iteminfo/lines')}
+                className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6 border border-blue-200 dark:border-blue-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-600 dark:bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Settings className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Lines</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Complete fishing line specifications, ratings, and comparisons
+                  </p>
+                  <div className="inline-flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                    View Lines
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </div>
                 </div>
               </div>
+
+              {/* Lures Card */}
+              <div 
+                onClick={() => navigate('/iteminfo/lures')}
+                className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-xl p-6 border border-green-200 dark:border-green-700 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-600 dark:bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Settings className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Lures</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Lure specifications and effectiveness data (Coming Soon)
+                  </p>
+                  <div className="inline-flex items-center text-green-600 dark:text-green-400 font-medium">
+                    View Lures
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
             );
           } else {
             return (

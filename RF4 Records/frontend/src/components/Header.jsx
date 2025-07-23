@@ -306,7 +306,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setGearDropdownOpen(!gearDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  ['wearcalc', 'reelinfo', 'rodinfo', 'iteminfo'].includes(currentPage)
+                  ['wearcalc', 'reelinfo', 'rodinfo', 'iteminfo', 'lines', 'lures'].includes(currentPage)
                     ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
                     : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
                 }`}
@@ -354,17 +354,33 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                     <Zap className="w-4 h-4 inline mr-2" />
                     Rod Info
                   </button>
+                  <div className="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                  <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    Item Info
+                  </div>
                   <button
                     onClick={() => {
-                      onPageChange && onPageChange('iteminfo');
+                      onPageChange && onPageChange('lines');
                       setGearDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
-                      currentPage === 'iteminfo' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    className={`w-full text-left px-6 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      currentPage === 'lines' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
                     }`}
                   >
                     <Settings className="w-4 h-4 inline mr-2" />
-                    Item Info
+                    Lines
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('lures');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-6 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors rounded-b-lg ${
+                      currentPage === 'lures' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Settings className="w-4 h-4 inline mr-2" />
+                    Lures
                   </button>
                 </div>
               )}
@@ -653,20 +669,39 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                     <Zap className="w-4 h-4 mr-3" />
                     Rod Info
                   </button>
-                  <button
-                    onClick={() => {
-                      onPageChange && onPageChange('iteminfo');
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                      currentPage === 'iteminfo' 
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
-                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    <Settings className="w-4 h-4 mr-3" />
+                  <div className="px-3 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Item Info
-                  </button>
+                  </div>
+                  <div className="ml-3 space-y-1">
+                    <button
+                      onClick={() => {
+                        onPageChange && onPageChange('lines');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                        currentPage === 'lines' 
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      Lines
+                    </button>
+                    <button
+                      onClick={() => {
+                        onPageChange && onPageChange('lures');
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                        currentPage === 'lures' 
+                          ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <Settings className="w-4 h-4 mr-3" />
+                      Lures
+                    </button>
+                  </div>
                 </div>
               </div>
 

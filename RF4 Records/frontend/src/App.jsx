@@ -18,6 +18,8 @@ import SkillTrees from './components/SkillTrees.jsx';
 import ReelInfo from './components/ReelInfo.jsx';
 import RodInfo from './components/RodInfo.jsx';
 import ItemInfo from './components/ItemInfo.jsx';
+import Lines from './components/Lines.jsx';
+import Lures from './components/Lures.jsx';
 import MapViewer from './components/MapViewer.jsx';
 import LureCraftingRecipes from './components/LureCraftingRecipes.jsx';
 import Timeline from './components/Timeline.jsx';
@@ -67,6 +69,8 @@ function AppContent() {
     if (location.pathname === '/reelinfo') return 'reelinfo';
     if (location.pathname === '/rodinfo') return 'rodinfo';
     if (location.pathname === '/iteminfo') return 'iteminfo';
+    if (location.pathname === '/iteminfo/lines') return 'lines';
+    if (location.pathname === '/iteminfo/lures') return 'lures';
     if (location.pathname === '/timeline') return 'timeline';
     if (location.pathname === '/qa') return 'qa';
     if (location.pathname === '/cafeorders') return 'cafeorders';
@@ -172,6 +176,10 @@ function AppContent() {
       navigate('/rodinfo');
     } else if (page === 'iteminfo') {
       navigate('/iteminfo');
+    } else if (page === 'lines') {
+      navigate('/iteminfo/lines');
+    } else if (page === 'lures') {
+      navigate('/iteminfo/lures');
     } else if (page === 'timeline') {
       navigate('/timeline');
     } else if (page === 'qa') {
@@ -681,6 +689,10 @@ function AppContent() {
         <RodInfo />
       ) : getCurrentPage() === 'iteminfo' ? (
         <ItemInfo />
+      ) : getCurrentPage() === 'lines' ? (
+        <Lines />
+      ) : getCurrentPage() === 'lures' ? (
+        <Lures />
       ) : getCurrentPage() === 'maps' ? (
         <MapViewer />
       ) : getCurrentPage() === 'lurecrafting' ? (
@@ -718,6 +730,8 @@ function App() {
         <Route path="/reelinfo" element={<AppContent />} />
         <Route path="/rodinfo" element={<AppContent />} />
         <Route path="/iteminfo" element={<AppContent />} />
+        <Route path="/iteminfo/lines" element={<AppContent />} />
+        <Route path="/iteminfo/lures" element={<AppContent />} />
         <Route path="/maps" element={<AppContent />} />
         <Route path="/maps/:mapName" element={<AppContent />} />
         <Route path="/lurecrafting" element={<AppContent />} />
