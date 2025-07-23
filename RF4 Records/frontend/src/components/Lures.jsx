@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useMemo } from 'react';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Filter, Scale, X, Star } from 'lucide-react';
