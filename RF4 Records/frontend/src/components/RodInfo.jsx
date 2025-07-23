@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Star, Info, Filter, X, Scale } from 'lucide-react';
 
@@ -26,6 +26,10 @@ const RodInfo = () => {
   const [compareMode, setCompareMode] = useState(false);
   const [selectedRods, setSelectedRods] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
+  
+  // Track if we're updating URL programmatically to prevent loops
+  const isUpdatingURL = useRef(false);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
     const loadRodData = async () => {
@@ -78,11 +82,24 @@ const RodInfo = () => {
     if (compareMode) params.set('compare', 'true');
     
     const newURL = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
+    
+    // Set flag to prevent reading our own URL update
+    isUpdatingURL.current = true;
     navigate(newURL, { replace: true });
+    
+    // Reset flag after a brief delay to allow for URL change
+    setTimeout(() => {
+      isUpdatingURL.current = false;
+    }, 10);
   };
 
-  // Load URL parameters on component mount
+  // Load URL parameters on component mount and external URL changes only
   useEffect(() => {
+    // Skip if we're updating URL programmatically or if this is a programmatic navigation
+    if (isUpdatingURL.current) {
+      return;
+    }
+    
     const params = new URLSearchParams(location.search);
     
     if (params.get('search')) setSearchTerm(params.get('search'));
@@ -105,10 +122,17 @@ const RodInfo = () => {
       });
     }
     if (params.get('compare') === 'true') setCompareMode(true);
+    
+    hasInitialized.current = true;
   }, [location.search]);
 
-  // Update URL when filters change
+  // Update URL when filters change (but only after initial load)
   useEffect(() => {
+    // Don't update URL on initial mount before data is loaded
+    if (!hasInitialized.current) {
+      return;
+    }
+    
     updateURLParams();
   }, [searchTerm, typeFilter, powerFilter, actionFilter, stiffnessMin, stiffnessMax, 
       lengthMin, lengthMax, lowTestMin, lowTestMax, highTestMin, highTestMax, 
