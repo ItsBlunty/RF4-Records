@@ -1,6 +1,4 @@
-import React from 'react';
-
-const import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Papa from 'papaparse';
 
 const Lures = () => {
@@ -345,7 +343,7 @@ const Lures = () => {
               <option value="surface">Surface (0m)</option>
               <option value="shallow">Shallow (≤3m)</option>
               <option value="medium">Medium (3-10m)</option>
-              <option value="deep">Deep (>10m)</option>
+              <option value="deep">Deep (&gt;10m)</option>
             </select>
             
             <div className="flex gap-2">
@@ -521,8 +519,6 @@ const Lures = () => {
         </div>
       )}
     </div>
-  );
-};
   );
 };
 
