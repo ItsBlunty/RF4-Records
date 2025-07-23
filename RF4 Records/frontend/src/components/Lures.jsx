@@ -10,7 +10,6 @@ const Lures = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
   const [brandFilter, setBrandFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [sizeFilter, setSizeFilter] = useState('All');
@@ -112,7 +111,6 @@ const Lures = () => {
     const params = new URLSearchParams();
     
     if (searchTerm) params.set('search', searchTerm);
-    if (categoryFilter !== 'All') params.set('category', categoryFilter);
     if (brandFilter !== 'All') params.set('brand', brandFilter);
     if (typeFilter !== 'All') params.set('type', typeFilter);
     if (sizeFilter !== 'All') params.set('size', sizeFilter);
@@ -139,7 +137,6 @@ const Lures = () => {
     const params = new URLSearchParams(location.search);
     
     if (params.get('search')) setSearchTerm(params.get('search'));
-    if (params.get('category')) setCategoryFilter(params.get('category'));
     if (params.get('brand')) setBrandFilter(params.get('brand'));
     if (params.get('type')) setTypeFilter(params.get('type'));
     if (params.get('size')) setSizeFilter(params.get('size'));
@@ -163,7 +160,7 @@ const Lures = () => {
   // Update URL when filters change
   useEffect(() => {
     updateURLParams();
-  }, [searchTerm, categoryFilter, brandFilter, typeFilter, sizeFilter, minMass, maxMass,
+  }, [searchTerm, brandFilter, typeFilter, sizeFilter, minMass, maxMass,
       minHookSize, maxHookSize, depthFilter, minPrice, maxPrice, showAdvancedFilters, sortConfig, compareMode]);
 
   const parseWeight = (weightStr) => {
@@ -215,7 +212,6 @@ const Lures = () => {
         lure.components?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lure.restrictions?.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCategory = categoryFilter === 'All' || lure.category === categoryFilter;
       const matchesBrand = brandFilter === 'All' || lure.brand === brandFilter;
       const matchesType = typeFilter === 'All' || lure.type === typeFilter;
       const matchesSize = sizeFilter === 'All' || lure.size === sizeFilter;
@@ -239,7 +235,7 @@ const Lures = () => {
       const matchesMinPrice = !minPrice || lurePrice >= parseFloat(minPrice);
       const matchesMaxPrice = !maxPrice || lurePrice <= parseFloat(maxPrice);
 
-      return matchesSearch && matchesCategory && matchesBrand && matchesType && 
+      return matchesSearch && matchesBrand && matchesType && 
              matchesSize && matchesMinMass && matchesMaxMass && matchesMinHook && 
              matchesMaxHook && matchesDepth && matchesMinPrice && matchesMaxPrice;
     });
@@ -283,12 +279,11 @@ const Lures = () => {
       }
       return 0;
     });
-  }, [lures, searchTerm, categoryFilter, brandFilter, typeFilter, sizeFilter, 
+  }, [lures, searchTerm, brandFilter, typeFilter, sizeFilter, 
       minMass, maxMass, minHookSize, maxHookSize, depthFilter, minPrice, maxPrice, sortConfig]);
 
   const uniqueValues = useMemo(() => {
     return {
-      categories: [...new Set(lures.map(l => l.category).filter(Boolean))].sort(),
       brands: [...new Set(lures.map(l => l.brand).filter(Boolean))].sort(),
       types: [...new Set(lures.map(l => l.type).filter(Boolean))].sort(),
       sizes: [...new Set(lures.map(l => l.size).filter(Boolean))].sort()
@@ -310,7 +305,6 @@ const Lures = () => {
 
   const clearAllFilters = () => {
     setSearchTerm('');
-    setCategoryFilter('All');
     setBrandFilter('All');
     setTypeFilter('All');
     setSizeFilter('All');
@@ -369,7 +363,7 @@ const Lures = () => {
     return `${minHook}-${maxHook}`;
   };
 
-  const hasActiveFilters = searchTerm || categoryFilter !== 'All' || brandFilter !== 'All' || 
+  const hasActiveFilters = searchTerm || brandFilter !== 'All' || 
                           typeFilter !== 'All' || sizeFilter !== 'All' || minMass || maxMass || 
                           minHookSize || maxHookSize || depthFilter !== 'All' || minPrice || maxPrice;
 
@@ -453,18 +447,7 @@ const Lures = () => {
                   />
                 </div>
               </div>
-              <div className="sm:w-48">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                >
-                  <option value="All">All Categories</option>
-                  {uniqueValues.categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
@@ -638,61 +621,56 @@ const Lures = () => {
                       className={getColumnHeaderClass('name')}
                       onClick={() => handleSort('name')}
                     >
-                      Name {getSortIndicator('name')}
+                      Name
                     </th>
-                    <th 
-                      className={getColumnHeaderClass('category')}
-                      onClick={() => handleSort('category')}
-                    >
-                      Category {getSortIndicator('category')}
-                    </th>
+
                     <th 
                       className={getColumnHeaderClass('brand')}
                       onClick={() => handleSort('brand')}
                     >
-                      Brand {getSortIndicator('brand')}
+                      Brand
                     </th>
                     <th 
                       className={getColumnHeaderClass('type')}
                       onClick={() => handleSort('type')}
                     >
-                      Type {getSortIndicator('type')}
+                      Type
                     </th>
                     <th 
                       className={getColumnHeaderClass('size')}
                       onClick={() => handleSort('size')}
                     >
-                      Size {getSortIndicator('size')}
+                      Size
                     </th>
                     <th 
                       className={getColumnHeaderClass('mass')}
                       onClick={() => handleSort('mass')}
                     >
-                      Mass {getSortIndicator('mass')}
+                      Mass
                     </th>
                     <th 
                       className={getColumnHeaderClass('minHookSize')}
                       onClick={() => handleSort('minHookSize')}
                     >
-                      Hook Size {getSortIndicator('minHookSize')}
+                      Hook Size
                     </th>
                     <th 
                       className={getColumnHeaderClass('depth')}
                       onClick={() => handleSort('depth')}
                     >
-                      Depth {getSortIndicator('depth')}
+                      Depth
                     </th>
                     <th 
                       className={getColumnHeaderClass('price')}
                       onClick={() => handleSort('price')}
                     >
-                      Price {getSortIndicator('price')}
+                      Price
                     </th>
                     <th 
                       className={getColumnHeaderClass('rating')}
                       onClick={() => handleSort('rating')}
                     >
-                      Rating {getSortIndicator('rating')}
+                      Rating
                     </th>
                   </tr>
                 </thead>
@@ -713,9 +691,7 @@ const Lures = () => {
                       <td className="px-4 py-4 text-sm font-medium text-gray-900 dark:text-white">
                         {lure.name}
                       </td>
-                      <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">
-                        {lure.category}
-                      </td>
+
                       <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">
                         {lure.brand}
                       </td>
@@ -784,12 +760,7 @@ const Lures = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    <tr className="border-b border-gray-200 dark:border-gray-700">
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">Category</td>
-                      {selectedLures.map((lure, index) => (
-                        <td key={index} className="px-4 py-3 text-gray-700 dark:text-gray-300">{lure.category}</td>
-                      ))}
-                    </tr>
+
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white bg-gray-50 dark:bg-gray-800">Brand</td>
                       {selectedLures.map((lure, index) => (

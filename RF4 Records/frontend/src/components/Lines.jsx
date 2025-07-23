@@ -10,7 +10,6 @@ const Lines = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('All');
   const [brandFilter, setBrandFilter] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All');
   const [lengthMin, setLengthMin] = useState('');
@@ -58,7 +57,6 @@ const Lines = () => {
     const params = new URLSearchParams();
     
     if (searchTerm) params.set('search', searchTerm);
-    if (categoryFilter !== 'All') params.set('category', categoryFilter);
     if (brandFilter !== 'All') params.set('brand', brandFilter);
     if (typeFilter !== 'All') params.set('type', typeFilter);
     if (lengthMin) params.set('lengthMin', lengthMin);
@@ -85,7 +83,6 @@ const Lines = () => {
     const params = new URLSearchParams(location.search);
     
     if (params.get('search')) setSearchTerm(params.get('search'));
-    if (params.get('category')) setCategoryFilter(params.get('category'));
     if (params.get('brand')) setBrandFilter(params.get('brand'));
     if (params.get('type')) setTypeFilter(params.get('type'));
     if (params.get('lengthMin')) setLengthMin(params.get('lengthMin'));
@@ -109,7 +106,7 @@ const Lines = () => {
   // Update URL when filters change
   useEffect(() => {
     updateURLParams();
-  }, [searchTerm, categoryFilter, brandFilter, typeFilter, lengthMin, lengthMax,
+  }, [searchTerm, brandFilter, typeFilter, lengthMin, lengthMax,
       diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax,
       showAdvancedFilters, sortConfig, compareMode]);
 
@@ -228,7 +225,6 @@ const Lines = () => {
                           item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           item.category.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
       const matchesBrand = brandFilter === 'All' || item.brand === brandFilter;
       const matchesType = typeFilter === 'All' || item.type === typeFilter;
       
@@ -259,7 +255,7 @@ const Lines = () => {
       const matchesPriceMin = !priceMinNum || item.price >= priceMinNum;
       const matchesPriceMax = !priceMaxNum || item.price <= priceMaxNum;
       
-      return matchesSearch && matchesCategory && matchesBrand && matchesType && 
+      return matchesSearch && matchesBrand && matchesType && 
              matchesLengthMin && matchesLengthMax && matchesDiameterMin && matchesDiameterMax &&
              matchesLoadCapacityMin && matchesLoadCapacityMax && matchesPriceMin && matchesPriceMax;
     });
@@ -304,17 +300,15 @@ const Lines = () => {
       }
       return 0;
     });
-  }, [items, searchTerm, categoryFilter, brandFilter, typeFilter, lengthMin, lengthMax, diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax, sortConfig]);
+  }, [items, searchTerm, brandFilter, typeFilter, lengthMin, lengthMax, diameterMin, diameterMax, loadCapacityMin, loadCapacityMax, priceMin, priceMax, sortConfig]);
 
   // No grouping needed - display all items in one table
 
-  const uniqueCategories = [...new Set(items.map(item => item.category))].sort();
   const uniqueBrands = [...new Set(items.map(item => item.brand))].sort();
   const uniqueTypes = [...new Set(items.map(item => item.type))].sort();
   
   const clearAllFilters = () => {
     setSearchTerm('');
-    setCategoryFilter('All');
     setBrandFilter('All');
     setTypeFilter('All');
     setLengthMin('');
@@ -340,7 +334,7 @@ const Lines = () => {
     setSelectedItems([]);
   };
   
-  const hasActiveFilters = searchTerm || categoryFilter !== 'All' || brandFilter !== 'All' || typeFilter !== 'All' || 
+  const hasActiveFilters = searchTerm || brandFilter !== 'All' || typeFilter !== 'All' || 
                           lengthMin || lengthMax || 
                           diameterMin || diameterMax || loadCapacityMin || loadCapacityMax ||
                           priceMin || priceMax;
@@ -444,18 +438,7 @@ const Lines = () => {
                   />
                 </div>
               </div>
-              <div className="sm:w-48">
-                <select
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-                >
-                  <option value="All">All Categories</option>
-                  {uniqueCategories.map(category => (
-                    <option key={category} value={category}>{category}</option>
-                  ))}
-                </select>
-              </div>
+
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
