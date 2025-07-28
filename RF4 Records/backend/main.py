@@ -47,7 +47,14 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
 
 # Initialize scheduler but don't start it yet
-scheduler = BackgroundScheduler()
+# Configure with misfire grace time to handle timing issues better
+scheduler = BackgroundScheduler(
+    job_defaults={
+        'misfire_grace_time': 60,  # Allow jobs to run up to 60 seconds late
+        'coalesce': True,          # Combine multiple missed executions into one
+        'max_instances': 1         # Prevent multiple instances of same job
+    }
+)
 
 # Track server startup time for uptime calculation
 server_start_time = None
@@ -676,19 +683,46 @@ def update_schedule():
 def schedule_monitor():
     """Monitor and update schedule when needed (fallback check every hour)"""
     try:
-        # Check if we need to update the schedule
         now = datetime.now(timezone.utc)
-
-        # Get the next scheduled change time
+        
+        # First priority: Check if we need to update the schedule period
         next_change, _ = get_next_schedule_change()
-
-        # If we're past the change time and no update job exists, update now
         if now >= next_change and not scheduler.get_job("schedule_update_job"):
             logger.info("Schedule change detected, updating...")
             update_schedule()
-
+            return
+        
+        # Second priority: Check if scrape job exists (recovery from missed jobs)
+        scrape_job = scheduler.get_job("scrape_job")
+        if not scrape_job:
+            logger.warning("🚨 Scrape job missing! This likely means a job was missed. Recreating...")
+            schedule_next_scrape()
+            return
+        
+        # Third priority: Check if scrape job is overdue (indicates missed execution)
+        if scrape_job.next_run_time:
+            # Allow 2 minute grace period for job execution
+            overdue_threshold = scrape_job.next_run_time + timedelta(minutes=2)
+            if now > overdue_threshold and not is_scraping:
+                logger.warning(f"🚨 Scrape job overdue by {now - scrape_job.next_run_time}. Rescheduling...")
+                scheduler.remove_job("scrape_job")
+                schedule_next_scrape()
+                return
+        
+        # Log healthy status occasionally for debugging
+        if scrape_job and scrape_job.next_run_time:
+            time_until_next = scrape_job.next_run_time - now
+            logger.info(f"✅ Schedule monitor: Next scrape in {time_until_next}")
+        
     except Exception as e:
         logger.error(f"Error in schedule monitor: {e}")
+        # Emergency recovery: ensure we have a scrape job scheduled
+        try:
+            if not scheduler.get_job("scrape_job") and not is_scraping:
+                logger.warning("Emergency recovery: scheduling scrape job")
+                schedule_next_scrape()
+        except Exception as recovery_error:
+            logger.error(f"Emergency recovery failed: {recovery_error}")
 
 
 def periodic_memory_cleanup():
