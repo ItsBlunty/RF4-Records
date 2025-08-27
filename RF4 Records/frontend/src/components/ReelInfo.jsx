@@ -351,18 +351,51 @@ const ReelInfo = () => {
         aValue = ratioA ? parseFloat(ratioA[1]) : 0;
         bValue = ratioB ? parseFloat(ratioB[1]) : 0;
       }
-      // Handle drag values - extract the last number for listed drag
+      // Handle drag values - both columns use data from Drag_Real field
       else if (sortConfig.key === 'Drag_Real' || sortConfig.key === 'Drag_Claimed') {
-        const extractDrag = (str) => {
-          if (!str || str === '-') return 0;
-          const numbers = String(str).match(/\d+(\.\d+)?/g);
-          if (!numbers) return 0;
-          // For Drag_Real, get the last number (listed value)
-          // For Drag_Claimed, just get the first number
-          return parseFloat(numbers[numbers.length - 1]) || 0;
+        const extractDragValue = (reel, wantListed = false) => {
+          const dragString = reel.Drag_Real;
+          if (!dragString || dragString === '-') return 0;
+          
+          const trimmed = dragString.trim();
+          const parts = trimmed.split(/\s+/);
+          
+          if (parts.length === 1) {
+            // One number - goes to listed
+            return parseFloat(parts[0]) || 0;
+          }
+          
+          // Find the last part that looks like a standalone number (not part of a range)
+          let lastStandaloneIndex = -1;
+          for (let i = parts.length - 1; i >= 0; i--) {
+            const part = parts[i];
+            if (/^\d+(\.\d+)?$/.test(part) && (i === 0 || parts[i-1] !== '-')) {
+              lastStandaloneIndex = i;
+              break;
+            }
+          }
+          
+          if (lastStandaloneIndex > 0) {
+            // Split at the last standalone number
+            const tested = parts.slice(0, lastStandaloneIndex).join(' ');
+            const listed = parts[lastStandaloneIndex];
+            if (wantListed) return parseFloat(listed) || 0;
+            // For tested, get the last number from the tested part
+            const testedNumbers = tested.match(/\d+(\.\d+)?/g);
+            return testedNumbers ? parseFloat(testedNumbers[testedNumbers.length - 1]) || 0 : 0;
+          } else if (parts.length >= 2) {
+            // Fallback: treat first part as tested, last as listed
+            if (wantListed) return parseFloat(parts[parts.length - 1]) || 0;
+            return parseFloat(parts[0]) || 0;
+          }
+          
+          return parseFloat(parts[0]) || 0;
         };
-        aValue = extractDrag(aValue);
-        bValue = extractDrag(bValue);
+        
+        // For Drag_Real (Tested), extract tested value; for Drag_Claimed (Listed), extract listed value
+        const wantListed = sortConfig.key === 'Drag_Claimed';
+        aValue = extractDragValue(a, wantListed);
+        bValue = extractDragValue(b, wantListed);
       }
       // Handle string comparisons
       else if (typeof aValue === 'string' && typeof bValue === 'string') {
