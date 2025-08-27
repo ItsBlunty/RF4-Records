@@ -318,7 +318,27 @@ const ReelInfo = () => {
           aValue = parseFloat(String(aValue)) || 0;
           bValue = parseFloat(String(bValue)) || 0;
         }
-        // For Price and Mechanism_Weight, handle various formats
+        // For Price, handle various formats
+        else if (sortConfig.key === 'Price') {
+          aValue = parseFloat(String(aValue).replace(/[^\d.-]/g, '')) || 0;
+          bValue = parseFloat(String(bValue).replace(/[^\d.-]/g, '')) || 0;
+        }
+        // For Mechanism_Weight, handle special formats like ~120, 98 - 100, etc.
+        else if (sortConfig.key === 'Mechanism_Weight') {
+          const parseWeight = (val) => {
+            if (!val || val === '-') return 0;
+            const str = String(val);
+            // Handle ranges like "98 - 100" - take the first number
+            const rangeMatch = str.match(/(\d+(?:\.\d+)?)\s*-\s*\d+/);
+            if (rangeMatch) return parseFloat(rangeMatch[1]);
+            // Handle approximations like "~120" 
+            const approxMatch = str.match(/~?(\d+(?:\.\d+)?)/);
+            if (approxMatch) return parseFloat(approxMatch[1]);
+            return 0;
+          };
+          aValue = parseWeight(aValue);
+          bValue = parseWeight(bValue);
+        }
         else {
           aValue = parseFloat(String(aValue).replace(/[^\d.-]/g, '')) || 0;
           bValue = parseFloat(String(bValue).replace(/[^\d.-]/g, '')) || 0;
