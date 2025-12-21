@@ -2056,6 +2056,7 @@ def get_memory_cost_metrics():
     """
     Get memory cost metrics (MB-hours, GB-hours) for Railway billing analysis.
     This shows the memory-time product that Railway uses for billing.
+    Also includes percentile highs (like FPS "1% lows") to catch memory spikes.
     """
     try:
         from memory_tracker import memory_tracker
@@ -2068,10 +2069,15 @@ def get_memory_cost_metrics():
 
         # Extract cost metrics for easy display
         cost_metrics = stats.get("cost_metrics", {})
+        rss_stats = stats.get("rss", {})
 
         return {
-            "current_memory_mb": round(stats["rss"]["current"] / (1024 * 1024), 2),
+            "current_memory_mb": round(rss_stats.get("current", 0) / (1024 * 1024), 2),
             "avg_memory_mb": round(cost_metrics.get("avg_memory_mb", 0), 2),
+            "min_memory_mb": round(rss_stats.get("min", 0) / (1024 * 1024), 2),
+            "max_memory_mb": round(rss_stats.get("max", 0) / (1024 * 1024), 2),
+            "top_1_percent_mb": round(rss_stats.get("top_1_percent", 0) / (1024 * 1024), 2),
+            "top_0_1_percent_mb": round(rss_stats.get("top_0_1_percent", 0) / (1024 * 1024), 2),
             "tracking_period_hours": cost_metrics.get("time_period_hours", 0),
             "mb_hours_total": cost_metrics.get("mb_hours_total", 0),
             "mb_hours_per_day": cost_metrics.get("mb_hours_per_day", 0),
@@ -2079,6 +2085,7 @@ def get_memory_cost_metrics():
             "snapshots_count": stats.get("total_snapshots", 0),
             "first_snapshot": stats.get("first_snapshot"),
             "last_snapshot": stats.get("last_snapshot"),
+            "percentile_explanation": "top_1_percent = avg of worst 1% memory spikes, top_0_1_percent = avg of worst 0.1% spikes (catches outliers)"
         }
     except Exception as e:
         logger.error(f"Error getting memory cost metrics: {e}")

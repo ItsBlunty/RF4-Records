@@ -130,6 +130,10 @@ class MemoryTracker:
             # Calculate MB-hours (memory-time metric for cost analysis)
             mb_hours = self.calculate_mb_hours(snapshots)
 
+            # Calculate percentile highs (like FPS "1% lows" but for memory spikes)
+            rss_percentiles = self._calculate_percentile_highs(rss_values)
+            vms_percentiles = self._calculate_percentile_highs(vms_values)
+
             stats = {
                 "total_snapshots": len(snapshots),
                 "first_snapshot": snapshots[0]["timestamp"] if snapshots else None,
@@ -138,13 +142,17 @@ class MemoryTracker:
                     "current": rss_values[-1] if rss_values else 0,
                     "min": min(rss_values) if rss_values else 0,
                     "max": max(rss_values) if rss_values else 0,
-                    "avg": sum(rss_values) / len(rss_values) if rss_values else 0
+                    "avg": sum(rss_values) / len(rss_values) if rss_values else 0,
+                    "top_1_percent": rss_percentiles["top_1_percent"],
+                    "top_0_1_percent": rss_percentiles["top_0_1_percent"]
                 },
                 "vms": {
                     "current": vms_values[-1] if vms_values else 0,
                     "min": min(vms_values) if vms_values else 0,
-                    "max": max(vms_values) / len(vms_values) if vms_values else 0,
-                    "avg": sum(vms_values) / len(vms_values) if vms_values else 0
+                    "max": max(vms_values) if vms_values else 0,
+                    "avg": sum(vms_values) / len(vms_values) if vms_values else 0,
+                    "top_1_percent": vms_percentiles["top_1_percent"],
+                    "top_0_1_percent": vms_percentiles["top_0_1_percent"]
                 },
                 "cost_metrics": {
                     "mb_hours_total": mb_hours["total"],
@@ -161,6 +169,41 @@ class MemoryTracker:
         except Exception as e:
             logger.error(f"Error getting memory stats: {e}")
             return {"error": str(e)}
+
+    def _calculate_percentile_highs(self, values: list) -> Dict[str, float]:
+        """
+        Calculate top percentile values (like FPS "1% lows" but for memory spikes).
+        Shows worst-case memory usage that averages hide.
+
+        Returns:
+            - top_1_percent: Average of worst 1% of samples (memory spikes)
+            - top_0_1_percent: Average of worst 0.1% of samples (extreme spikes)
+        """
+        if not values or len(values) < 10:
+            return {
+                "top_1_percent": 0,
+                "top_0_1_percent": 0
+            }
+
+        # Sort values descending (highest first)
+        sorted_values = sorted(values, reverse=True)
+
+        # Calculate how many samples for each percentile
+        count_1_percent = max(1, int(len(values) * 0.01))  # Top 1%
+        count_0_1_percent = max(1, int(len(values) * 0.001))  # Top 0.1%
+
+        # Get top percentile samples
+        top_1_percent_samples = sorted_values[:count_1_percent]
+        top_0_1_percent_samples = sorted_values[:count_0_1_percent]
+
+        # Calculate averages
+        avg_top_1_percent = sum(top_1_percent_samples) / len(top_1_percent_samples)
+        avg_top_0_1_percent = sum(top_0_1_percent_samples) / len(top_0_1_percent_samples)
+
+        return {
+            "top_1_percent": avg_top_1_percent,
+            "top_0_1_percent": avg_top_0_1_percent
+        }
 
     def calculate_mb_hours(self, snapshots: List[Dict[str, Any]] = None) -> Dict[str, float]:
         """
