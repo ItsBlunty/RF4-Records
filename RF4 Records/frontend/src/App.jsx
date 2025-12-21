@@ -119,6 +119,9 @@ function AppContent() {
 
   // Add ref to prevent duplicate API calls in Strict Mode
   const hasFetched = useRef(false);
+
+  // Add ref to prevent duplicate API calls from URL changes triggered by programmatic navigation
+  const isNavigatingFromSubmit = useRef(false);
   
   // Auto-refresh state
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -358,9 +361,15 @@ function AppContent() {
 
   // Separate useEffect for URL parameter handling
   useEffect(() => {
+    // Skip if this URL change was triggered by a filter submit (to prevent duplicate API calls)
+    if (isNavigatingFromSubmit.current) {
+      isNavigatingFromSubmit.current = false;
+      return;
+    }
+
     // Check for URL parameters and load them into filters
     const urlParams = new URLSearchParams(location.search);
-    
+
     // Only update filters if there are URL parameters
     if (urlParams.get('fish') || urlParams.get('waterbody') || urlParams.get('bait') || urlParams.get('data_age')) {
       const urlFilters = {
@@ -369,12 +378,12 @@ function AppContent() {
         bait: urlParams.get('bait') ? urlParams.get('bait').split(',') : [],
         dataAge: urlParams.get('data_age') || '1-day'
       };
-      
+
       setFilters(prevFilters => ({
         ...prevFilters,
         ...urlFilters
       }));
-      
+
       // Force search execution since we know there are meaningful URL parameters
       setTimeout(() => {
         fetchFilteredRecordsWithFilters(urlFilters);
@@ -459,10 +468,9 @@ function AppContent() {
       params.append('bait', filtersToUse.bait.join(','));
     }
     if (filtersToUse.dataAge && filtersToUse.dataAge !== '1-day') params.append('data_age', filtersToUse.dataAge);
-    
+
     const newUrl = params.toString() ? `${location.pathname}?${params.toString()}` : location.pathname;
-    navigate(newUrl, { replace: true });
-    
+
     // Auto-switch view mode based on search filters (only when search is submitted)
     if (filtersToUse.bait && filtersToUse.bait.length > 0 && (!filtersToUse.fish || filtersToUse.fish.length === 0)) {
       // If only bait is searched, switch to fish grouping to see which fish work with that bait
@@ -472,7 +480,12 @@ function AppContent() {
       setViewMode('grouped');
     }
     // If both fish and bait are provided, don't auto-switch since both groupings show the same result
-    
+
+    // Set flag to prevent URL change useEffect from triggering duplicate API call
+    isNavigatingFromSubmit.current = true;
+    navigate(newUrl, { replace: true });
+
+    // Fetch records (only once, not from URL change listener)
     fetchFilteredRecordsWithFilters(filtersToUse);
   };
 
