@@ -163,7 +163,25 @@ def get_database_url():
 # Create engine and session
 database_url = get_database_url()
 print(f"🗄️  Using database: {database_url}")
-engine = create_engine(database_url)
+
+# Railway PostgreSQL connection pool configuration
+# Conservative settings for 512MB-1GB containers to prevent memory leaks
+if database_url.startswith('postgresql'):
+    pool_config = {
+        'pool_size': 5,              # Base connection pool size
+        'max_overflow': 5,           # Additional connections when pool exhausted (10 total max)
+        'pool_timeout': 30,          # Seconds to wait for connection from pool
+        'pool_recycle': 1800,        # Recycle connections after 30 minutes (prevents stale connections)
+        'pool_pre_ping': True,       # Test connections before using (prevents dead connection errors)
+        'echo_pool': False,          # Disable pool logging for production
+    }
+    engine = create_engine(database_url, **pool_config)
+    print(f"🔧 PostgreSQL pool configured: {pool_config['pool_size']} base + {pool_config['max_overflow']} overflow = {pool_config['pool_size'] + pool_config['max_overflow']} max connections")
+else:
+    # SQLite doesn't support connection pooling the same way
+    engine = create_engine(database_url)
+    print("📦 SQLite database (no pool configuration)")
+
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
