@@ -2051,6 +2051,66 @@ def get_status():
         return {"error": "Failed to get status"}
 
 
+@app.get("/memory/cost-metrics")
+def get_memory_cost_metrics():
+    """
+    Get memory cost metrics (MB-hours, GB-hours) for Railway billing analysis.
+    This shows the memory-time product that Railway uses for billing.
+    """
+    try:
+        from memory_tracker import memory_tracker
+
+        # Get current stats with MB-hours calculation
+        stats = memory_tracker.get_memory_stats()
+
+        if "error" in stats:
+            return {"error": stats["error"]}
+
+        # Extract cost metrics for easy display
+        cost_metrics = stats.get("cost_metrics", {})
+
+        return {
+            "current_memory_mb": round(stats["rss"]["current"] / (1024 * 1024), 2),
+            "avg_memory_mb": round(cost_metrics.get("avg_memory_mb", 0), 2),
+            "tracking_period_hours": cost_metrics.get("time_period_hours", 0),
+            "mb_hours_total": cost_metrics.get("mb_hours_total", 0),
+            "mb_hours_per_day": cost_metrics.get("mb_hours_per_day", 0),
+            "gb_hours_per_day": cost_metrics.get("gb_hours_per_day", 0),
+            "snapshots_count": stats.get("total_snapshots", 0),
+            "first_snapshot": stats.get("first_snapshot"),
+            "last_snapshot": stats.get("last_snapshot"),
+        }
+    except Exception as e:
+        logger.error(f"Error getting memory cost metrics: {e}")
+        return {"error": str(e)}
+
+
+@app.get("/memory/compare")
+def compare_memory_periods(hours_before: int = 24, hours_after: int = 24):
+    """
+    Compare memory usage between two time periods.
+    Useful for A/B testing memory leak fixes.
+
+    Args:
+        hours_before: Hours to look back for the "before" period (default 24)
+        hours_after: Hours to look back for the "after" period (default 24)
+
+    Returns comparison showing MB-hours saved and percent reduction
+    """
+    try:
+        from memory_tracker import memory_tracker
+
+        comparison = memory_tracker.compare_periods(hours_before, hours_after)
+
+        if "error" in comparison:
+            return {"error": comparison["error"]}
+
+        return comparison
+    except Exception as e:
+        logger.error(f"Error comparing memory periods: {e}")
+        return {"error": str(e)}
+
+
 @app.get("/database/analysis")
 def analyze_database_size(token: str = Depends(verify_admin_token)):
     """Comprehensive database size analysis to identify space usage"""

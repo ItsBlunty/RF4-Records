@@ -122,11 +122,14 @@ class MemoryTracker:
             snapshots = self.load_snapshots()
             if not snapshots:
                 return {"error": "No snapshots available"}
-            
+
             # Calculate stats
             rss_values = [s["process"]["rss"] for s in snapshots]
             vms_values = [s["process"]["vms"] for s in snapshots]
-            
+
+            # Calculate MB-hours (memory-time metric for cost analysis)
+            mb_hours = self.calculate_mb_hours(snapshots)
+
             stats = {
                 "total_snapshots": len(snapshots),
                 "first_snapshot": snapshots[0]["timestamp"] if snapshots else None,
@@ -140,15 +143,153 @@ class MemoryTracker:
                 "vms": {
                     "current": vms_values[-1] if vms_values else 0,
                     "min": min(vms_values) if vms_values else 0,
-                    "max": max(vms_values) if vms_values else 0,
+                    "max": max(vms_values) / len(vms_values) if vms_values else 0,
                     "avg": sum(vms_values) / len(vms_values) if vms_values else 0
+                },
+                "cost_metrics": {
+                    "mb_hours_total": mb_hours["total"],
+                    "mb_hours_per_day": mb_hours["per_day"],
+                    "gb_hours_total": mb_hours["total"] / 1024,
+                    "gb_hours_per_day": mb_hours["per_day"] / 1024,
+                    "avg_memory_mb": mb_hours["avg_mb"],
+                    "time_period_hours": mb_hours["hours"]
                 }
             }
-            
+
             return stats
-            
+
         except Exception as e:
             logger.error(f"Error getting memory stats: {e}")
+            return {"error": str(e)}
+
+    def calculate_mb_hours(self, snapshots: List[Dict[str, Any]] = None) -> Dict[str, float]:
+        """
+        Calculate MB-hours metric for cost analysis.
+        This is the key metric Railway uses for billing: Memory (MB) × Time (hours)
+
+        Returns:
+            - total: Total MB-hours for the snapshot period
+            - per_day: Projected MB-hours per 24-hour day
+            - avg_mb: Average memory usage in MB
+            - hours: Time period covered by snapshots in hours
+        """
+        try:
+            if snapshots is None:
+                snapshots = self.load_snapshots()
+
+            if len(snapshots) < 2:
+                return {
+                    "total": 0,
+                    "per_day": 0,
+                    "avg_mb": 0,
+                    "hours": 0
+                }
+
+            # Calculate time span (in hours)
+            first_time = datetime.fromisoformat(snapshots[0]["timestamp"].replace('Z', '+00:00'))
+            last_time = datetime.fromisoformat(snapshots[-1]["timestamp"].replace('Z', '+00:00'))
+            time_diff_hours = (last_time - first_time).total_seconds() / 3600
+
+            if time_diff_hours == 0:
+                time_diff_hours = len(snapshots) / 60  # Assume 1 snapshot per minute
+
+            # Calculate average memory in MB (using RSS - Resident Set Size)
+            total_rss_mb = sum(s["process"]["rss"] / (1024 * 1024) for s in snapshots)
+            avg_memory_mb = total_rss_mb / len(snapshots)
+
+            # Calculate MB-hours: Average Memory (MB) × Time (hours)
+            mb_hours_total = avg_memory_mb * time_diff_hours
+
+            # Project to 24-hour period for comparison
+            if time_diff_hours > 0:
+                mb_hours_per_day = (mb_hours_total / time_diff_hours) * 24
+            else:
+                mb_hours_per_day = 0
+
+            return {
+                "total": round(mb_hours_total, 2),
+                "per_day": round(mb_hours_per_day, 2),
+                "avg_mb": round(avg_memory_mb, 2),
+                "hours": round(time_diff_hours, 2)
+            }
+
+        except Exception as e:
+            logger.error(f"Error calculating MB-hours: {e}")
+            return {
+                "total": 0,
+                "per_day": 0,
+                "avg_mb": 0,
+                "hours": 0
+            }
+
+    def compare_periods(self, hours_1: int = 24, hours_2: int = 24) -> Dict[str, Any]:
+        """
+        Compare memory usage between two time periods for A/B testing fixes.
+
+        Args:
+            hours_1: Hours to look back for period 1 (older period)
+            hours_2: Hours to look back for period 2 (recent period)
+
+        Returns comparison of memory usage and cost metrics
+        """
+        try:
+            all_snapshots = self.load_snapshots()
+            if len(all_snapshots) < 2:
+                return {"error": "Not enough snapshots for comparison"}
+
+            now = datetime.now(timezone.utc).timestamp()
+
+            # Split snapshots into two periods
+            cutoff_2 = now - (hours_2 * 3600)
+            cutoff_1 = now - ((hours_1 + hours_2) * 3600)
+
+            period_1 = []  # Older period
+            period_2 = []  # Recent period
+
+            for snapshot in all_snapshots:
+                snapshot_time = datetime.fromisoformat(snapshot["timestamp"].replace('Z', '+00:00')).timestamp()
+
+                if cutoff_1 <= snapshot_time < cutoff_2:
+                    period_1.append(snapshot)
+                elif snapshot_time >= cutoff_2:
+                    period_2.append(snapshot)
+
+            if not period_1 or not period_2:
+                return {"error": "Not enough data in both periods"}
+
+            # Calculate MB-hours for both periods
+            mb_hours_1 = self.calculate_mb_hours(period_1)
+            mb_hours_2 = self.calculate_mb_hours(period_2)
+
+            # Calculate savings
+            mb_hours_saved = mb_hours_1["per_day"] - mb_hours_2["per_day"]
+            percent_reduction = ((mb_hours_1["per_day"] - mb_hours_2["per_day"]) / mb_hours_1["per_day"] * 100) if mb_hours_1["per_day"] > 0 else 0
+
+            return {
+                "period_1": {
+                    "label": f"Previous {hours_1} hours",
+                    "snapshots": len(period_1),
+                    "avg_memory_mb": mb_hours_1["avg_mb"],
+                    "mb_hours_per_day": mb_hours_1["per_day"],
+                    "gb_hours_per_day": mb_hours_1["per_day"] / 1024
+                },
+                "period_2": {
+                    "label": f"Recent {hours_2} hours",
+                    "snapshots": len(period_2),
+                    "avg_memory_mb": mb_hours_2["avg_mb"],
+                    "mb_hours_per_day": mb_hours_2["per_day"],
+                    "gb_hours_per_day": mb_hours_2["per_day"] / 1024
+                },
+                "comparison": {
+                    "mb_hours_saved_per_day": round(mb_hours_saved, 2),
+                    "gb_hours_saved_per_day": round(mb_hours_saved / 1024, 2),
+                    "percent_reduction": round(percent_reduction, 2),
+                    "avg_memory_reduction_mb": round(mb_hours_1["avg_mb"] - mb_hours_2["avg_mb"], 2)
+                }
+            }
+
+        except Exception as e:
+            logger.error(f"Error comparing periods: {e}")
             return {"error": str(e)}
     
     def _monitoring_loop(self):
