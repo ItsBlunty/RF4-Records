@@ -2070,8 +2070,9 @@ def get_memory_cost_metrics():
         # Extract cost metrics for easy display
         cost_metrics = stats.get("cost_metrics", {})
         rss_stats = stats.get("rss", {})
+        cgroups_stats = stats.get("cgroups", {})
 
-        return {
+        response = {
             "current_memory_mb": round(rss_stats.get("current", 0) / (1024 * 1024), 2),
             "avg_memory_mb": round(cost_metrics.get("avg_memory_mb", 0), 2),
             "min_memory_mb": round(rss_stats.get("min", 0) / (1024 * 1024), 2),
@@ -2087,6 +2088,19 @@ def get_memory_cost_metrics():
             "last_snapshot": stats.get("last_snapshot"),
             "percentile_explanation": "top_1_percent = avg of worst 1% memory spikes, top_0_1_percent = avg of worst 0.1% spikes (catches outliers)"
         }
+
+        # Add cgroups data if available (Railway billing metrics - continuous tracking!)
+        if cgroups_stats.get("available"):
+            response["railway_billing_metrics"] = {
+                "current_mb": round(cgroups_stats.get("current", 0) / (1024 * 1024), 2),
+                "max_ever_mb": round(cgroups_stats.get("max_ever", 0) / (1024 * 1024), 2),
+                "avg_mb": round(cgroups_stats.get("avg", 0) / (1024 * 1024), 2),
+                "top_1_percent_mb": round(cgroups_stats.get("top_1_percent", 0) / (1024 * 1024), 2),
+                "top_0_1_percent_mb": round(cgroups_stats.get("top_0_1_percent", 0) / (1024 * 1024), 2),
+                "explanation": "cgroups metrics = what Railway actually bills on (kernel-level continuous tracking, catches ALL spikes)"
+            }
+
+        return response
     except Exception as e:
         logger.error(f"Error getting memory cost metrics: {e}")
         return {"error": str(e)}

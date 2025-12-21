@@ -25,19 +25,22 @@ class MemoryTracker:
         self.max_snapshots = 1440  # Keep 24 hours of data (1440 minutes)
         
     def get_memory_snapshot(self) -> Dict[str, Any]:
-        """Get current memory usage snapshot"""
+        """Get current memory usage snapshot including cgroups data"""
         try:
             # Get process memory info
             process = psutil.Process()
             memory_info = process.memory_info()
             memory_percent = process.memory_percent()
-            
+
             # Get system memory info
             system_memory = psutil.virtual_memory()
-            
+
             # Get number of threads
             num_threads = process.num_threads()
-            
+
+            # Get cgroups memory data (what Railway actually bills on)
+            cgroups_data = self._get_cgroups_memory()
+
             snapshot = {
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "process": {
@@ -51,14 +54,71 @@ class MemoryTracker:
                     "available": system_memory.available,
                     "used": system_memory.used,
                     "percent": system_memory.percent
-                }
+                },
+                "cgroups": cgroups_data  # Railway billing metrics
             }
-            
+
             return snapshot
-            
+
         except Exception as e:
             logger.error(f"Error getting memory snapshot: {e}")
             return None
+
+    def _get_cgroups_memory(self) -> Dict[str, int]:
+        """
+        Read cgroups memory metrics - this is what Railway uses for billing!
+        These are kernel-level continuous metrics, not sampled.
+        """
+        cgroups_data = {
+            "usage_bytes": 0,
+            "max_usage_bytes": 0,  # Peak since container start
+            "limit_bytes": 0,
+            "available": False
+        }
+
+        try:
+            # Try cgroups v2 first (newer systems)
+            cgroups_v2_paths = {
+                "usage": "/sys/fs/cgroup/memory.current",
+                "max": "/sys/fs/cgroup/memory.peak",  # v2 uses memory.peak
+                "limit": "/sys/fs/cgroup/memory.max"
+            }
+
+            # Try cgroups v1 (Railway likely uses this)
+            cgroups_v1_paths = {
+                "usage": "/sys/fs/cgroup/memory/memory.usage_in_bytes",
+                "max": "/sys/fs/cgroup/memory/memory.max_usage_in_bytes",
+                "limit": "/sys/fs/cgroup/memory/memory.limit_in_bytes"
+            }
+
+            # Try v1 first (more common on Railway)
+            paths = cgroups_v1_paths
+            if not Path(paths["usage"]).exists():
+                paths = cgroups_v2_paths
+
+            # Read current usage
+            if Path(paths["usage"]).exists():
+                with open(paths["usage"], 'r') as f:
+                    cgroups_data["usage_bytes"] = int(f.read().strip())
+                cgroups_data["available"] = True
+
+            # Read max usage (peak since container start)
+            if Path(paths["max"]).exists():
+                with open(paths["max"], 'r') as f:
+                    cgroups_data["max_usage_bytes"] = int(f.read().strip())
+
+            # Read limit
+            if Path(paths["limit"]).exists():
+                with open(paths["limit"], 'r') as f:
+                    limit_str = f.read().strip()
+                    # Handle "max" value (unlimited)
+                    if limit_str.isdigit():
+                        cgroups_data["limit_bytes"] = int(limit_str)
+
+        except Exception as e:
+            logger.debug(f"Could not read cgroups memory (not on Railway?): {e}")
+
+        return cgroups_data
     
     def save_snapshot(self, snapshot: Dict[str, Any]):
         """Save snapshot to storage"""
@@ -127,12 +187,21 @@ class MemoryTracker:
             rss_values = [s["process"]["rss"] for s in snapshots]
             vms_values = [s["process"]["vms"] for s in snapshots]
 
+            # Extract cgroups data (Railway billing metrics)
+            cgroups_values = [s.get("cgroups", {}).get("usage_bytes", 0) for s in snapshots if s.get("cgroups", {}).get("available")]
+            cgroups_max_ever = max([s.get("cgroups", {}).get("max_usage_bytes", 0) for s in snapshots], default=0)
+
             # Calculate MB-hours (memory-time metric for cost analysis)
             mb_hours = self.calculate_mb_hours(snapshots)
 
             # Calculate percentile highs (like FPS "1% lows" but for memory spikes)
             rss_percentiles = self._calculate_percentile_highs(rss_values)
             vms_percentiles = self._calculate_percentile_highs(vms_values)
+
+            # Calculate cgroups percentiles if available
+            cgroups_percentiles = {"top_1_percent": 0, "top_0_1_percent": 0}
+            if cgroups_values:
+                cgroups_percentiles = self._calculate_percentile_highs(cgroups_values)
 
             stats = {
                 "total_snapshots": len(snapshots),
@@ -153,6 +222,16 @@ class MemoryTracker:
                     "avg": sum(vms_values) / len(vms_values) if vms_values else 0,
                     "top_1_percent": vms_percentiles["top_1_percent"],
                     "top_0_1_percent": vms_percentiles["top_0_1_percent"]
+                },
+                "cgroups": {
+                    "available": bool(cgroups_values),
+                    "current": cgroups_values[-1] if cgroups_values else 0,
+                    "min": min(cgroups_values) if cgroups_values else 0,
+                    "max": max(cgroups_values) if cgroups_values else 0,
+                    "max_ever": cgroups_max_ever,  # Peak since container start (continuous tracking!)
+                    "avg": sum(cgroups_values) / len(cgroups_values) if cgroups_values else 0,
+                    "top_1_percent": cgroups_percentiles["top_1_percent"],
+                    "top_0_1_percent": cgroups_percentiles["top_0_1_percent"]
                 },
                 "cost_metrics": {
                     "mb_hours_total": mb_hours["total"],
