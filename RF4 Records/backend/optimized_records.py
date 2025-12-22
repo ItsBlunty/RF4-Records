@@ -14,17 +14,24 @@ import time
 logger = logging.getLogger(__name__)
 
 # ============================================================================
-# CACHE FOR FISH NAMES - Prevents N+1 query problem in filtering
+# CACHES - Prevent repeated database queries for rarely-changing data
+# Fish/bait/waterbody lists only change with game updates (rare)
 # ============================================================================
+_CACHE_TTL_SECONDS = 3600  # 1 hour cache - these values rarely change
+
 _fish_names_cache = {
     "data": None,
     "timestamp": None,
-    "ttl_seconds": 300  # 5 minute cache
+}
+
+_filter_values_cache = {
+    "data": None,
+    "timestamp": None,
 }
 
 
 def get_cached_fish_names(db):
-    """Get fish names from cache or database. Cache refreshes every 5 minutes."""
+    """Get fish names (lowercase set) for exact match checking. Cache refreshes every hour."""
     global _fish_names_cache
 
     now = time.time()
@@ -32,7 +39,7 @@ def get_cached_fish_names(db):
     # Check if cache is valid
     if (_fish_names_cache["data"] is not None and
         _fish_names_cache["timestamp"] is not None and
-        now - _fish_names_cache["timestamp"] < _fish_names_cache["ttl_seconds"]):
+        now - _fish_names_cache["timestamp"] < _CACHE_TTL_SECONDS):
         return _fish_names_cache["data"]
 
     # Cache miss or expired - query database
@@ -52,45 +59,71 @@ def get_cached_fish_names(db):
     return fish_names_lower
 
 
+def get_cached_filter_values(db):
+    """Get filter dropdown values (fish, waterbody, bait). Cache refreshes every hour."""
+    global _filter_values_cache
+
+    now = time.time()
+
+    # Check if cache is valid
+    if (_filter_values_cache["data"] is not None and
+        _filter_values_cache["timestamp"] is not None and
+        now - _filter_values_cache["timestamp"] < _CACHE_TTL_SECONDS):
+        logger.debug("📦 Using cached filter values")
+        return _filter_values_cache["data"]
+
+    # Cache miss or expired - query database
+    logger.info("🔄 Refreshing filter values cache (fish, waterbody, bait)...")
+
+    # Fish names
+    fish_query = db.query(distinct(Record.fish)).filter(
+        Record.fish.isnot(None), Record.fish != ""
+    )
+
+    # Waterbody names
+    waterbody_query = db.query(distinct(Record.waterbody)).filter(
+        Record.waterbody.isnot(None), Record.waterbody != ""
+    )
+
+    # Bait names (complex query to handle semicolon-separated values)
+    bait_query = db.execute(
+        text("""
+        SELECT DISTINCT TRIM(bait_part) as bait_display FROM (
+            SELECT TRIM(UNNEST(STRING_TO_ARRAY(COALESCE(bait1, bait, ''), ';'))) as bait_part
+            FROM records
+            WHERE (bait1 IS NOT NULL AND bait1 != '')
+               OR (bait IS NOT NULL AND bait != '')
+            UNION
+            SELECT TRIM(UNNEST(STRING_TO_ARRAY(bait2, ';'))) as bait_part
+            FROM records
+            WHERE bait2 IS NOT NULL AND bait2 != ''
+        ) split_baits
+        WHERE bait_part != '' AND bait_part IS NOT NULL
+        ORDER BY bait_display
+    """)
+    )
+
+    filter_values = {
+        "fish": sorted([r[0] for r in fish_query.all() if r[0]]),
+        "waterbody": sorted([r[0] for r in waterbody_query.all() if r[0]]),
+        "bait": [r[0] for r in bait_query.fetchall() if r[0]],
+    }
+
+    # Update cache
+    _filter_values_cache["data"] = filter_values
+    _filter_values_cache["timestamp"] = now
+    logger.info(f"✅ Filter values cache updated: {len(filter_values['fish'])} fish, "
+               f"{len(filter_values['waterbody'])} waterbodies, {len(filter_values['bait'])} baits")
+
+    return filter_values
+
+
 def get_filter_values_optimized():
-    """Get unique filter values using optimized database queries"""
+    """Get unique filter values using cached database queries (1 hour TTL)"""
     db = SessionLocal()
 
     try:
-        # Use database-level DISTINCT queries instead of loading all records
-        fish_query = db.query(distinct(Record.fish)).filter(
-            Record.fish.isnot(None), Record.fish != ""
-        )
-        waterbody_query = db.query(distinct(Record.waterbody)).filter(
-            Record.waterbody.isnot(None), Record.waterbody != ""
-        )
-
-        # For bait, we need to handle single baits only (no sandwich baits)
-        # Include both bait1 and bait2 fields individually, splitting semicolon-separated values
-        # Use raw SQL for better performance with complex bait logic
-        bait_query = db.execute(
-            text("""
-            SELECT DISTINCT TRIM(bait_part) as bait_display FROM (
-                SELECT TRIM(UNNEST(STRING_TO_ARRAY(COALESCE(bait1, bait, ''), ';'))) as bait_part
-                FROM records 
-                WHERE (bait1 IS NOT NULL AND bait1 != '') 
-                   OR (bait IS NOT NULL AND bait != '')
-                UNION
-                SELECT TRIM(UNNEST(STRING_TO_ARRAY(bait2, ';'))) as bait_part
-                FROM records 
-                WHERE bait2 IS NOT NULL AND bait2 != ''
-            ) split_baits
-            WHERE bait_part != '' AND bait_part IS NOT NULL
-            ORDER BY bait_display
-        """)
-        )
-
-        return {
-            "fish": sorted([r[0] for r in fish_query.all() if r[0]]),
-            "waterbody": sorted([r[0] for r in waterbody_query.all() if r[0]]),
-            "bait": [r[0] for r in bait_query.fetchall() if r[0]],
-        }
-
+        return get_cached_filter_values(db)
     except Exception as e:
         logger.error(f"Error getting filter values: {e}")
         raise

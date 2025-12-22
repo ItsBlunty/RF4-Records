@@ -63,4 +63,4 @@ Thumbs.db
 
 # Temporary files
 *.tmp
-*.temp
+*.tempprod_backup.sql
