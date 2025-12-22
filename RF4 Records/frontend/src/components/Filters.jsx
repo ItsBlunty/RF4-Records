@@ -9,15 +9,6 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
   const waterbodySearchTriggerRef = React.useRef(null);
   const baitSearchTriggerRef = React.useRef(null);
 
-  // Clear a single filter field
-  const clearFilter = (field) => {
-    if (field === 'dataAge') {
-      onChange('dataAge', '');
-    } else {
-      onChange(field, []);
-    }
-  };
-
   const handleHistorySelect = (historicalFilters) => {
     // First trigger the search with historical filters
     if (onSubmitWithValues) {
@@ -192,15 +183,6 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
-              {filters.dataAge && (
-                <button
-                  type="button"
-                  onClick={() => clearFilter('dataAge')}
-                  className="absolute right-8 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              )}
             </div>
           </div>
 
