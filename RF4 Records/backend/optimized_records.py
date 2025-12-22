@@ -13,6 +13,44 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# ============================================================================
+# CACHE FOR FISH NAMES - Prevents N+1 query problem in filtering
+# ============================================================================
+_fish_names_cache = {
+    "data": None,
+    "timestamp": None,
+    "ttl_seconds": 300  # 5 minute cache
+}
+
+
+def get_cached_fish_names(db):
+    """Get fish names from cache or database. Cache refreshes every 5 minutes."""
+    global _fish_names_cache
+
+    now = time.time()
+
+    # Check if cache is valid
+    if (_fish_names_cache["data"] is not None and
+        _fish_names_cache["timestamp"] is not None and
+        now - _fish_names_cache["timestamp"] < _fish_names_cache["ttl_seconds"]):
+        return _fish_names_cache["data"]
+
+    # Cache miss or expired - query database
+    logger.info("🔄 Refreshing fish names cache...")
+    all_fish_names = (
+        db.query(distinct(Record.fish))
+        .filter(Record.fish.isnot(None), Record.fish != "")
+        .all()
+    )
+    fish_names_lower = set(name[0].lower() for name in all_fish_names if name[0])
+
+    # Update cache
+    _fish_names_cache["data"] = fish_names_lower
+    _fish_names_cache["timestamp"] = now
+    logger.info(f"✅ Fish names cache updated with {len(fish_names_lower)} species")
+
+    return fish_names_lower
+
 
 def get_filter_values_optimized():
     """Get unique filter values using optimized database queries"""
@@ -676,7 +714,14 @@ def get_older_records_optimized():
 def get_filtered_records_optimized(
     fish=None, waterbody=None, bait=None, data_age=None, limit=None, offset=None
 ):
-    """Get filtered records from database based on criteria - OPTIMIZED VERSION"""
+    """
+    Get filtered records from database based on criteria - OPTIMIZED VERSION
+
+    Key optimizations:
+    1. Fish names cached (prevents N+1 queries)
+    2. Day-based filtering uses created_at in SQL (not Python post-processing)
+    3. Removed duplicate bait filtering (SQL only, no Python re-check)
+    """
     start_time = time.time()
     db = SessionLocal()
 
@@ -684,24 +729,18 @@ def get_filtered_records_optimized(
         # Start with base query
         query = db.query(Record)
 
-        # Apply fish filter (support multiple values with smart exact/partial matching)
+        # ====================================================================
+        # OPTIMIZATION #1: Use cached fish names instead of querying per item
+        # ====================================================================
         if fish:
+            # Get cached fish names (single query, cached for 5 minutes)
+            available_fish = get_cached_fish_names(db)
+
             if isinstance(fish, list):
                 # Multiple fish - use OR condition with smart matching
                 fish_conditions = []
                 for f in fish:
                     if f.strip():
-                        # Get all available fish names for exact matching check
-                        all_fish_names = (
-                            db.query(distinct(Record.fish))
-                            .filter(Record.fish.isnot(None), Record.fish != "")
-                            .all()
-                        )
-                        available_fish = [
-                            name[0].lower() for name in all_fish_names if name[0]
-                        ]
-
-                        # Check if search term exactly matches any available fish name
                         search_term_lower = f.strip().lower()
                         if search_term_lower in available_fish:
                             # Exact match found - use exact matching only
@@ -714,15 +753,6 @@ def get_filtered_records_optimized(
                     query = query.filter(or_(*fish_conditions))
             else:
                 # Single fish (backward compatibility) with smart matching
-                # Get all available fish names for exact matching check
-                all_fish_names = (
-                    db.query(distinct(Record.fish))
-                    .filter(Record.fish.isnot(None), Record.fish != "")
-                    .all()
-                )
-                available_fish = [name[0].lower() for name in all_fish_names if name[0]]
-
-                # Check if search term exactly matches any available fish name
                 search_term_lower = fish.strip().lower()
                 if search_term_lower in available_fish:
                     # Exact match found - use exact matching only
@@ -747,6 +777,7 @@ def get_filtered_records_optimized(
                 query = query.filter(Record.waterbody.ilike(f"%{waterbody}%"))
 
         # Apply bait filter (support multiple values, check both bait1 and bait2)
+        # NOTE: SQL filtering only - removed redundant Python post-processing
         if bait:
             if isinstance(bait, list):
                 # Multiple baits - use OR condition for each bait across all bait fields
@@ -769,21 +800,48 @@ def get_filtered_records_optimized(
                     | (Record.bait.ilike(f"%{bait}%"))
                 )
 
-        # Apply data age filter
+        # ====================================================================
+        # OPTIMIZATION #2: ALL date filtering done in SQL using created_at
+        # This is the key fix - day-based filters now use indexed created_at
+        # ====================================================================
         if data_age:
+            now = datetime.now(timezone.utc)
+
             if data_age == "since-reset":
                 last_reset = get_last_record_reset_date()
                 query = query.filter(Record.created_at >= last_reset)
             elif data_age == "since-two-resets-ago":
                 two_resets_ago = get_two_resets_ago_date()
                 query = query.filter(Record.created_at >= two_resets_ago)
+            elif data_age == "1-day":
+                # Records created in the last 24 hours
+                cutoff = now - timedelta(days=1)
+                query = query.filter(Record.created_at >= cutoff)
+            elif data_age == "2-days":
+                cutoff = now - timedelta(days=2)
+                query = query.filter(Record.created_at >= cutoff)
+            elif data_age == "3-days":
+                cutoff = now - timedelta(days=3)
+                query = query.filter(Record.created_at >= cutoff)
+            elif data_age == "7-days":
+                cutoff = now - timedelta(days=7)
+                query = query.filter(Record.created_at >= cutoff)
+            elif data_age == "30-days":
+                cutoff = now - timedelta(days=30)
+                query = query.filter(Record.created_at >= cutoff)
+            elif data_age == "90-days":
+                cutoff = now - timedelta(days=90)
+                query = query.filter(Record.created_at >= cutoff)
+            # If data_age doesn't match any known value, no filter applied (returns all)
 
-        # Get all matching records
+        # Get all matching records - now with proper SQL filtering!
         query_start = time.time()
         records = query.order_by(Record.id.desc()).all()
         query_time = time.time() - query_start
 
-        # Apply post-processing filters that can't be done in SQL easily
+        # ====================================================================
+        # OPTIMIZATION #3: Simplified post-processing (no duplicate filtering)
+        # ====================================================================
         process_start = time.time()
         filtered_records = []
 
@@ -793,129 +851,13 @@ def get_filtered_records_optimized(
                 record.bait1, record.bait2, record.bait
             )
 
-            # Apply additional bait filtering for exact normalized matches
-            if bait:
-                if isinstance(bait, list):
-                    # Multiple baits - check if any match
-                    bait_matches = False
-                    for b in bait:
-                        if b.strip():
-                            normalized_search = get_normalized_bait_for_filtering(
-                                b.strip()
-                            )
-                            if normalized_search.lower() in bait_display.lower():
-                                bait_matches = True
-                                break
-                    if not bait_matches:
-                        continue
-                else:
-                    # Single bait (backward compatibility)
-                    normalized_search = get_normalized_bait_for_filtering(bait)
-                    if normalized_search.lower() not in bait_display.lower():
-                        continue
-
             # Parse combined categories
             if record.category and ";" in record.category:
                 categories = record.category.split(";")
             else:
                 categories = [record.category] if record.category else ["N"]
 
-            # Apply data age filter for day-based filters (using fishing date)
-            if data_age and data_age not in ["since-reset", "since-two-resets-ago"]:
-                now = datetime.now(timezone.utc)
-
-                # Parse date string (DD.MM.YY format)
-                if record.date:
-                    try:
-                        # Validate date format before parsing
-                        if not isinstance(record.date, str) or not record.date.strip():
-                            logger.warning(
-                                f"Invalid date format for record {record.player}/{record.fish}: empty or non-string date"
-                            )
-                            continue  # Skip records with invalid date format for day-based filters
-
-                        parts = record.date.strip().split(".")
-                        if len(parts) != 3:
-                            logger.warning(
-                                f"Invalid date format for record {record.player}/{record.fish}: '{record.date}' - expected DD.MM.YY format"
-                            )
-                            continue  # Skip records with invalid date format for day-based filters
-
-                        try:
-                            day = int(parts[0])
-                            month = int(parts[1])
-                            year = int(parts[2])
-                        except ValueError as e:
-                            logger.warning(
-                                f"Date parsing error for record {record.player}/{record.fish}: '{record.date}' - non-numeric components: {e}"
-                            )
-                            continue  # Skip records with non-numeric date components
-
-                        # Validate date component ranges
-                        if not (1 <= day <= 31):
-                            logger.warning(
-                                f"Invalid day for record {record.player}/{record.fish}: '{record.date}' - day {day} out of range"
-                            )
-                            continue
-                        if not (1 <= month <= 12):
-                            logger.warning(
-                                f"Invalid month for record {record.player}/{record.fish}: '{record.date}' - month {month} out of range"
-                            )
-                            continue
-                        if not (0 <= year <= 99):
-                            logger.warning(
-                                f"Invalid year for record {record.player}/{record.fish}: '{record.date}' - year {year} out of range for 2-digit format"
-                            )
-                            continue
-
-                        # Convert 2-digit year to 4-digit
-                        if year <= 50:
-                            year += 2000
-                        elif year < 100:
-                            year += 1900
-
-                        try:
-                            record_date = datetime(
-                                year, month, day, 12, 0, 0, tzinfo=timezone.utc
-                            )
-                        except ValueError as e:
-                            logger.warning(
-                                f"Invalid date for record {record.player}/{record.fish}: '{record.date}' - {year}-{month}-{day} is not a valid date: {e}"
-                            )
-                            continue  # Skip records with invalid calendar dates
-
-                        # Calculate days difference
-                        today = datetime(
-                            now.year, now.month, now.day, tzinfo=timezone.utc
-                        )
-                        days_diff = (today - record_date).days
-
-                        max_days = {
-                            "1-day": 0,
-                            "2-days": 1,
-                            "3-days": 2,
-                            "7-days": 6,
-                            "30-days": 29,
-                            "90-days": 89,
-                        }.get(data_age)
-
-                        if max_days is not None and days_diff > max_days:
-                            continue
-
-                    except Exception as e:
-                        # Log any unexpected errors and skip the record for day-based filters
-                        logger.warning(
-                            f"Unexpected error parsing date for record {record.player}/{record.fish}: '{record.date}' - {type(e).__name__}: {e}"
-                        )
-                        continue  # Skip records with any parsing errors for day-based filters
-                else:
-                    # No date field - skip for day-based filters
-                    logger.debug(
-                        f"No date field for record {record.player}/{record.fish} - skipping for day-based filter"
-                    )
-                    continue
-
-            # Add to filtered results
+            # Add to filtered results (no additional filtering needed - SQL did it all)
             filtered_records.append(
                 {
                     "player": record.player,
@@ -943,6 +885,10 @@ def get_filtered_records_optimized(
             filtered_records = filtered_records[start_idx:end_idx]
 
         total_time = time.time() - start_time
+
+        # Log performance for monitoring
+        logger.info(f"⚡ Filtered query: {total_filtered} records in {total_time:.3f}s "
+                   f"(SQL: {query_time:.3f}s, Process: {process_time:.3f}s)")
 
         return {
             "records": filtered_records,
