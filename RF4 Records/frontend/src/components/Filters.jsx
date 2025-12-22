@@ -9,6 +9,15 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
   const waterbodySearchTriggerRef = React.useRef(null);
   const baitSearchTriggerRef = React.useRef(null);
 
+  // Clear a single filter field
+  const clearFilter = (field) => {
+    if (field === 'dataAge') {
+      onChange('dataAge', '');
+    } else {
+      onChange(field, []);
+    }
+  };
+
   const handleHistorySelect = (historicalFilters) => {
     // First trigger the search with historical filters
     if (onSubmitWithValues) {
