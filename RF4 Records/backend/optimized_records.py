@@ -29,6 +29,11 @@ _filter_values_cache = {
     "timestamp": None,
 }
 
+_fish_location_mapping_cache = {
+    "data": None,
+    "timestamp": None,
+}
+
 
 def get_cached_fish_names(db):
     """Get fish names (lowercase set) for exact match checking. Cache refreshes every hour."""
@@ -116,6 +121,83 @@ def get_cached_filter_values(db):
                f"{len(filter_values['waterbody'])} waterbodies, {len(filter_values['bait'])} baits")
 
     return filter_values
+
+
+def get_cached_fish_location_mapping(db):
+    """
+    Get fish-location mapping for dynamic dropdown filtering. Cache refreshes every hour.
+    Returns:
+        - fish_by_location: { "Mosquito Lake": ["Bass", "Carp", ...], ... }
+        - locations_by_fish: { "Bass": ["Mosquito Lake", "Bear Lake", ...], ... }
+    """
+    global _fish_location_mapping_cache
+
+    now = time.time()
+
+    # Check if cache is valid
+    if (_fish_location_mapping_cache["data"] is not None and
+        _fish_location_mapping_cache["timestamp"] is not None and
+        now - _fish_location_mapping_cache["timestamp"] < _CACHE_TTL_SECONDS):
+        logger.debug("📦 Using cached fish-location mapping")
+        return _fish_location_mapping_cache["data"]
+
+    # Cache miss or expired - query database
+    logger.info("🔄 Refreshing fish-location mapping cache...")
+
+    # Query distinct fish-waterbody combinations
+    fish_location_query = db.query(
+        distinct(Record.fish), Record.waterbody
+    ).filter(
+        Record.fish.isnot(None),
+        Record.fish != "",
+        Record.waterbody.isnot(None),
+        Record.waterbody != ""
+    ).all()
+
+    # Build mappings
+    fish_by_location = {}
+    locations_by_fish = {}
+
+    for fish, waterbody in fish_location_query:
+        # Add to fish_by_location
+        if waterbody not in fish_by_location:
+            fish_by_location[waterbody] = set()
+        fish_by_location[waterbody].add(fish)
+
+        # Add to locations_by_fish
+        if fish not in locations_by_fish:
+            locations_by_fish[fish] = set()
+        locations_by_fish[fish].add(waterbody)
+
+    # Convert sets to sorted lists
+    fish_by_location = {loc: sorted(list(fish_set)) for loc, fish_set in fish_by_location.items()}
+    locations_by_fish = {fish: sorted(list(loc_set)) for fish, loc_set in locations_by_fish.items()}
+
+    mapping_data = {
+        "fish_by_location": fish_by_location,
+        "locations_by_fish": locations_by_fish,
+    }
+
+    # Update cache
+    _fish_location_mapping_cache["data"] = mapping_data
+    _fish_location_mapping_cache["timestamp"] = now
+    logger.info(f"✅ Fish-location mapping cache updated: {len(fish_by_location)} locations, "
+               f"{len(locations_by_fish)} fish species")
+
+    return mapping_data
+
+
+def get_fish_location_mapping_optimized():
+    """Get fish-location mapping using cached database queries (1 hour TTL)"""
+    db = SessionLocal()
+
+    try:
+        return get_cached_fish_location_mapping(db)
+    except Exception as e:
+        logger.error(f"Error getting fish-location mapping: {e}")
+        raise
+    finally:
+        db.close()
 
 
 def get_filter_values_optimized():

@@ -1047,15 +1047,20 @@ def get_filtered_records_endpoint(
 @app.get("/records/filter-values")
 @app.get("/api/records/filter-values")
 def get_filter_values_endpoint():
-    """Get unique values for filter dropdowns"""
+    """Get unique values for filter dropdowns and fish-location mapping for dynamic filtering"""
     import time
 
     api_start = time.time()
 
     try:
-        from optimized_records import get_filter_values_optimized
+        from optimized_records import get_filter_values_optimized, get_fish_location_mapping_optimized
 
         result = get_filter_values_optimized()
+        mapping = get_fish_location_mapping_optimized()
+
+        # Add mapping to result
+        result["fish_by_location"] = mapping["fish_by_location"]
+        result["locations_by_fish"] = mapping["locations_by_fish"]
 
         api_time = time.time() - api_start
 
@@ -1063,6 +1068,7 @@ def get_filter_values_endpoint():
         logger.info(f"  Fish: {len(result['fish'])} options")
         logger.info(f"  Waterbody: {len(result['waterbody'])} options")
         logger.info(f"  Bait: {len(result['bait'])} options")
+        logger.info(f"  Fish-Location mappings: {len(result['fish_by_location'])} locations, {len(result['locations_by_fish'])} fish")
         logger.info(f"  Total API time: {api_time:.3f}s")
 
         return result

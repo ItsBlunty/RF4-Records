@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Clock, Search, Target, Trophy } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
@@ -8,6 +8,49 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
   const fishSearchTriggerRef = React.useRef(null);
   const waterbodySearchTriggerRef = React.useRef(null);
   const baitSearchTriggerRef = React.useRef(null);
+
+  // Dynamic filtering: when locations are selected, filter fish list to show fish at those locations
+  // When fish are selected, filter location list to show locations where those fish appear
+  // Uses union logic: if multiple selected, show anything matching ANY of the selections
+  const filteredFishOptions = useMemo(() => {
+    // If no locations selected, show all fish
+    if (!filters.waterbody || filters.waterbody.length === 0) {
+      return uniqueValues.fish || [];
+    }
+
+    // Get fish_by_location mapping from uniqueValues
+    const fishByLocation = uniqueValues.fish_by_location || {};
+
+    // Union of all fish across selected locations
+    const fishSet = new Set();
+    filters.waterbody.forEach(location => {
+      const fishAtLocation = fishByLocation[location] || [];
+      fishAtLocation.forEach(fish => fishSet.add(fish));
+    });
+
+    // Return sorted array, or all fish if no mapping found
+    return fishSet.size > 0 ? Array.from(fishSet).sort() : (uniqueValues.fish || []);
+  }, [filters.waterbody, uniqueValues.fish, uniqueValues.fish_by_location]);
+
+  const filteredLocationOptions = useMemo(() => {
+    // If no fish selected, show all locations
+    if (!filters.fish || filters.fish.length === 0) {
+      return uniqueValues.waterbody || [];
+    }
+
+    // Get locations_by_fish mapping from uniqueValues
+    const locationsByFish = uniqueValues.locations_by_fish || {};
+
+    // Union of all locations across selected fish
+    const locationSet = new Set();
+    filters.fish.forEach(fish => {
+      const locationsForFish = locationsByFish[fish] || [];
+      locationsForFish.forEach(location => locationSet.add(location));
+    });
+
+    // Return sorted array, or all locations if no mapping found
+    return locationSet.size > 0 ? Array.from(locationSet).sort() : (uniqueValues.waterbody || []);
+  }, [filters.fish, uniqueValues.waterbody, uniqueValues.locations_by_fish]);
 
   const handleHistorySelect = (historicalFilters) => {
     // First trigger the search with historical filters
@@ -121,11 +164,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
           {/* Main Filter Row */}
           <div className="flex gap-4 items-center flex-1">
           
-          {/* Fish Filter */}
+          {/* Fish Filter - filtered by selected locations */}
           <MultiSelectFilter
             label="Fish"
             placeholder="Type fish name... (Enter to search, Tab to add)"
-            values={uniqueValues.fish}
+            values={filteredFishOptions}
             selectedValues={filters.fish}
             onChange={(values) => handleInputChange('fish', values)}
             onKeyPress={handleKeyPress}
@@ -134,11 +177,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             className="flex-1 min-w-[200px]"
           />
 
-          {/* Location Filter */}
+          {/* Location Filter - filtered by selected fish */}
           <MultiSelectFilter
             label="Location"
             placeholder="Type location... (Enter to search, Tab to add)"
-            values={uniqueValues.waterbody}
+            values={filteredLocationOptions}
             selectedValues={filters.waterbody}
             onChange={(values) => handleInputChange('waterbody', values)}
             onKeyPress={handleKeyPress}
