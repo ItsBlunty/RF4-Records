@@ -26,6 +26,7 @@ import Timeline from './components/Timeline.jsx';
 import QAPage from './components/QAPage.jsx';
 import CafeOrders from './components/CafeOrders.jsx';
 import LoadingOverlay from './components/LoadingOverlay.jsx';
+import LocationBrowser from './components/LocationBrowser.jsx';
 import { availableMaps } from './config/maps.js';
 import { isWithinAgeRange } from './utils/dateUtils.js';
 import { saveSearchToHistory } from './utils/searchHistory.js';
@@ -499,6 +500,26 @@ function AppContent() {
     fetchFilteredRecordsWithFilters(filtersToUse);
   };
 
+  // Handler for LocationBrowser - sets location filter, view mode, and triggers search
+  const handleLocationSelect = (waterbody, viewModeToSet) => {
+    // Create new filters with the selected location
+    const newFilters = {
+      ...filters,
+      waterbody: [waterbody],
+      fish: [],
+      bait: []
+    };
+
+    // Update filter state
+    setFilters(newFilters);
+
+    // Set the requested view mode
+    setViewMode(viewModeToSet);
+
+    // Trigger search with the new filters
+    handleFilterSubmitWithValues(newFilters);
+  };
+
   const handleSort = (key) => {
     setSortConfig(prevConfig => {
       if (prevConfig.key === key) {
@@ -658,16 +679,7 @@ function AppContent() {
             
             <LoadingOverlay isLoading={loadingRemaining}>
               {displayRecords.length === 0 ? (
-                <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                  <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🎣</div>
-                  <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Welcome to RF4 Records
-                  </h3>
-                  <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                    Enter a fish, location, or bait in the filters above, pick a time frame, then press Enter or click Search. 
-                    Use the view modes to explore records by individual entries, grouped by bait, or grouped by fish.
-                  </p>
-                </div>
+                <LocationBrowser onLocationSelect={handleLocationSelect} />
               ) : viewMode === 'grouped' ? (
                 <GroupedRecordsTable 
                   records={displayRecords} 
