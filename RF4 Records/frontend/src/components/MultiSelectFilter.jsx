@@ -22,34 +22,37 @@ const MultiSelectFilter = ({
 
   // Filter available values based on input and exclude already selected
   useEffect(() => {
+    const availableValues = values.filter(value => !selectedValues.includes(value));
+
     if (!inputValue.trim()) {
-      setFilteredValues([]);
-      setIsOpen(false);
+      // When no input, show all available values sorted alphabetically
+      const sorted = [...availableValues].sort((a, b) => a.localeCompare(b));
+      setFilteredValues(sorted);
+      // Don't auto-close dropdown when input is cleared - let click handlers manage this
       return;
     }
 
-    const filtered = values
-      .filter(value => 
-        value.toLowerCase().includes(inputValue.toLowerCase()) &&
-        !selectedValues.includes(value)
+    const filtered = availableValues
+      .filter(value =>
+        value.toLowerCase().includes(inputValue.toLowerCase())
       )
       .sort((a, b) => {
         const aLower = a.toLowerCase();
         const bLower = b.toLowerCase();
         const inputLower = inputValue.toLowerCase();
-        
+
         // Prioritize exact matches first
         const aExact = aLower === inputLower;
         const bExact = bLower === inputLower;
         if (aExact && !bExact) return -1;
         if (!aExact && bExact) return 1;
-        
+
         // Then prioritize matches that start with the input
         const aStarts = aLower.startsWith(inputLower);
         const bStarts = bLower.startsWith(inputLower);
         if (aStarts && !bStarts) return -1;
         if (!aStarts && bStarts) return 1;
-        
+
         // Finally, sort alphabetically
         return a.localeCompare(b);
       }); // No limit - show all matching suggestions with scrolling
@@ -242,7 +245,18 @@ const MultiSelectFilter = ({
       </div>
       
       <div className="relative">
-        <div className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center">
+        <div
+          className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center cursor-text"
+          onClick={() => {
+            // Focus input and open dropdown when clicking container
+            if (inputRef.current) {
+              inputRef.current.focus();
+            }
+            if (filteredValues.length > 0) {
+              setIsOpen(true);
+            }
+          }}
+        >
           {/* Selected value bubbles */}
           {selectedValues.map((value, index) => (
             <span
@@ -268,7 +282,8 @@ const MultiSelectFilter = ({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             onFocus={() => {
-              if (inputValue && filteredValues.length > 0) {
+              // Open dropdown on focus - show all options or filtered options
+              if (filteredValues.length > 0) {
                 setIsOpen(true);
               }
             }}
@@ -276,6 +291,9 @@ const MultiSelectFilter = ({
             className="flex-1 min-w-[120px] outline-none bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
             autoComplete="off"
           />
+
+          {/* Dropdown arrow indicator */}
+          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
 
         {/* Dropdown */}
