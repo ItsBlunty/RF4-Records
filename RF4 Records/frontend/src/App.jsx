@@ -110,11 +110,13 @@ function AppContent() {
     return filteredRecords;
   }, [filteredRecords, trophyFilter]);
   
-  // Unique values for dropdowns
+  // Unique values for dropdowns (includes fish-location mapping for dynamic filtering)
   const [uniqueValues, setUniqueValues] = useState({
     fish: [],
     waterbody: [],
-    bait: []
+    bait: [],
+    fish_by_location: {},
+    locations_by_fish: {}
   });
 
   // Add ref to prevent duplicate API calls in Strict Mode
@@ -207,11 +209,13 @@ function AppContent() {
         throw new Error('Invalid response format - expected filter values object');
       }
       
-      // Set unique values for filters
+      // Set unique values for filters (includes fish-location mapping)
       setUniqueValues({
         fish: response.data.fish || [],
         waterbody: response.data.waterbody || [],
-        bait: response.data.bait || []
+        bait: response.data.bait || [],
+        fish_by_location: response.data.fish_by_location || {},
+        locations_by_fish: response.data.locations_by_fish || {}
       });
       
       // Filter values loaded - records state managed separately
@@ -312,12 +316,18 @@ function AppContent() {
       setTotalRecords(response.data.length);
       setAllRecordsLoaded(true);
       
-      // Extract unique values for filters
+      // Extract unique values for filters (preserve existing mapping data)
       const fish = [...new Set(response.data.map(r => r.fish).filter(Boolean))].sort();
       const waterbody = [...new Set(response.data.map(r => r.waterbody).filter(Boolean))].sort();
       const bait = [...new Set(response.data.map(r => r.bait_display).filter(Boolean))].sort();
-      
-      setUniqueValues({ fish, waterbody, bait });
+
+      setUniqueValues(prev => ({
+        fish,
+        waterbody,
+        bait,
+        fish_by_location: prev.fish_by_location || {},
+        locations_by_fish: prev.locations_by_fish || {}
+      }));
       setLastRefresh(new Date());
       
     } catch (err) {
