@@ -104,7 +104,6 @@ const Links = () => {
       links: [
         { name: "MDawgGaming (Twitch)", url: "https://www.twitch.tv/mdawggaming" },
         { name: "Tretika (Twitch)", url: "https://www.twitch.tv/tretika" },
-        { name: "Dave Tormala (YouTube)", url: "https://www.youtube.com/c/DaveTormala" },
         { name: "xiix_denise_xiix (Twitch)", url: "https://www.twitch.tv/xiix_denise_xiix" },
         { name: "mur1cajake (Twitch)", url: "https://www.twitch.tv/mur1cajake" },
         { name: "rangler8 (Twitch)", url: "https://www.twitch.tv/rangler8" },
