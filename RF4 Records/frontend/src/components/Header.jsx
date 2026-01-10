@@ -142,13 +142,25 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             <button
               onClick={() => onPageChange && onPageChange('records')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'records' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                currentPage === 'records'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
                   : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
               }`}
             >
               <Database className="w-4 h-4 mr-2" />
               Records
+            </button>
+
+            <button
+              onClick={() => onPageChange && onPageChange('trophyweights')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'trophyweights'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <Trophy className="w-4 h-4 mr-2" />
+              Trophy Weights
             </button>
 
             <button
@@ -464,13 +476,28 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  currentPage === 'records' 
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                  currentPage === 'records'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Database className="w-4 h-4 mr-3" />
                 Records
+              </button>
+
+              <button
+                onClick={() => {
+                  onPageChange && onPageChange('trophyweights');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 'trophyweights'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <Trophy className="w-4 h-4 mr-3" />
+                Trophy Weights
               </button>
 
               <button
