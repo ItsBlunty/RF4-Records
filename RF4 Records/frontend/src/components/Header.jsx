@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, MapPin, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X, Vote } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, MapPin, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X } from 'lucide-react';
 import FeedbackButton from './FeedbackButton.jsx';
-import PollOverlay from './PollOverlay.jsx';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
   // Feedback modal state
   const [showFeedback, setShowFeedback] = useState(false);
-  // Poll modal state
-  const [showPoll, setShowPoll] = useState(false);
   // Check if we're in development/staging environment
   const isDevelopment = window.location.hostname !== 'rf4records.com';
   
@@ -69,17 +66,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
           {/* Left Side - Title and Attribution with Dark Mode Toggle */}
           <div className="flex items-center space-x-3 sm:space-x-4">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white">RF4 Records</h1>
-            
-            {/* Poll Title - Clickable */}
-            <button
-              onClick={() => setShowPoll(true)}
-              className="hidden md:flex items-center px-3 py-1.5 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
-              title="What type of fishing would you like to see added to RF4?"
-            >
-              <Vote className="w-4 h-4 mr-2" />
-              <span>POLL: Fishing Types</span>
-            </button>
-            
+
             <div className="hidden sm:flex items-center space-x-3">
               <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 sm:px-3 py-1 rounded-full">
                 Created by ItsBlunty
@@ -431,15 +418,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                 Created by ItsBlunty
               </span>
               
-              {/* Mobile Poll Button */}
-              <button
-                onClick={() => setShowPoll(true)}
-                className="px-2 py-1 text-xs bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded hover:from-purple-600 hover:to-blue-600 transition-all duration-200"
-                title="POLL: Fishing Types"
-              >
-                Poll
-              </button>
-              
               {/* Mobile Feedback Button */}
               <button
                 onClick={() => setShowFeedback(true)}
@@ -779,11 +757,6 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
         {/* Feedback Modal */}
         {showFeedback && (
           <FeedbackButton isOpen={showFeedback} onClose={() => setShowFeedback(false)} />
-        )}
-        
-        {/* Poll Modal */}
-        {showPoll && (
-          <PollOverlay isOpen={showPoll} onClose={() => setShowPoll(false)} />
         )}
       </div>
     </header>
