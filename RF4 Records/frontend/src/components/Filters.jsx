@@ -189,7 +189,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           )}
 
           {/* Main Filter Row */}
-          <div className="flex gap-4 items-center flex-1">
+          <div className="flex gap-4 items-end flex-1">
 
           {/* Fish Filter - filtered by selected locations */}
           <MultiSelectFilter
@@ -228,7 +228,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           />
 
           {/* Search History */}
-          <SearchHistory onSelectSearch={handleHistorySelect} className="self-end" />
+          <SearchHistory onSelectSearch={handleHistorySelect} />
         </div>
         </div>
       </div>
