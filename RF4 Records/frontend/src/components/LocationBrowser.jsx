@@ -45,11 +45,11 @@ const LocationBrowser = ({ onLocationSelect }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {LOCATION_DATA.map((location) => (
           <div
             key={location.waterbody}
-            className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer group aspect-[4/3]"
+            className="relative rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer group aspect-[4/3]"
           >
             <img
               src={`/images/LocationImages/${location.image}`}
@@ -62,26 +62,26 @@ const LocationBrowser = ({ onLocationSelect }) => {
             <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/40" />
 
             {/* Location name at top-left */}
-            <div className="absolute top-0 left-0 p-3">
-              <h4 className="text-white font-semibold text-base drop-shadow-lg">
+            <div className="absolute top-0 left-0 p-2">
+              <h4 className="text-white font-semibold text-sm drop-shadow-lg">
                 {location.displayName}
               </h4>
             </div>
 
             {/* Buttons at bottom-left */}
-            <div className="absolute bottom-0 left-0 p-3 flex gap-2">
+            <div className="absolute bottom-0 left-0 p-2 flex gap-2">
               <button
                 onClick={(e) => { e.stopPropagation(); handleBaitsClick(location.waterbody); }}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
               >
-                <Target className="w-3 h-3" />
+                <Target className="w-4 h-4" />
                 Baits
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleFishClick(location.waterbody); }}
-                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
               >
-                <Fish className="w-3 h-3" />
+                <Fish className="w-4 h-4" />
                 Fish
               </button>
             </div>
