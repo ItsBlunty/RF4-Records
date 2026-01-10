@@ -59,7 +59,7 @@ function AppContent() {
   // Get current page from URL
   const getCurrentPage = () => {
     if (location.pathname === '/links') return 'links';
-    if (location.pathname === '/locations') return 'locations';
+    if (location.pathname === '/records') return 'records';
     if (location.pathname === '/trophyweights') return 'trophyweights';
     if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
@@ -77,7 +77,7 @@ function AppContent() {
     if (location.pathname === '/qa') return 'qa';
     if (location.pathname === '/cafeorders') return 'cafeorders';
     if (location.pathname.startsWith('/maps')) return 'maps';
-    return 'records';
+    return 'locations';
   };
   
   // View mode state
@@ -157,12 +157,12 @@ function AppContent() {
 
 
   const handlePageChange = (page) => {
-    if (page === 'records') {
+    if (page === 'locations') {
       navigate('/');
+    } else if (page === 'records') {
+      navigate('/records');
     } else if (page === 'links') {
       navigate('/links');
-    } else if (page === 'locations') {
-      navigate('/locations');
     } else if (page === 'trophyweights') {
       navigate('/trophyweights');
     } else if (page === 'topbaits') {
@@ -757,7 +757,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/links" element={<AppContent />} />
-        <Route path="/locations" element={<AppContent />} />
+        <Route path="/records" element={<AppContent />} />
         <Route path="/trophyweights" element={<AppContent />} />
         <Route path="/topbaits" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
