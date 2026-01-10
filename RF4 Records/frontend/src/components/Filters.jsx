@@ -132,6 +132,8 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
                 <Clock className="inline h-3 w-3 mr-1" />
                 Data Age
               </label>
+              {/* Spacer to match MultiSelectFilter label row height */}
+              <div className="h-3 w-3" />
             </div>
             <div className="relative">
               <select
