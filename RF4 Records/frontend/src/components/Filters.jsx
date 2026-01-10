@@ -1,7 +1,70 @@
-import React, { useMemo } from 'react';
-import { Clock, Target } from 'lucide-react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { Target, HelpCircle, ChevronDown } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
+
+// DataAgeFilter component - structure matches MultiSelectFilter exactly
+const DataAgeFilter = ({ value, onChange }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
+        setShowTooltip(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative flex-1 min-w-[200px]">
+      <div className="flex items-center justify-between mb-1">
+        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+          Data Age
+        </label>
+        <div className="relative" ref={tooltipRef}>
+          <button
+            type="button"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+            onClick={() => setShowTooltip(!showTooltip)}
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <HelpCircle className="h-3 w-3" />
+          </button>
+          {showTooltip && (
+            <div className="absolute right-0 top-full mt-1 w-64 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg p-2 shadow-lg z-50">
+              <div className="space-y-1">
+                <div>Filter records by how recently they were caught</div>
+              </div>
+              <div className="absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="relative">
+        <div
+          className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center cursor-text"
+        >
+          <select
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            className="flex-1 min-w-[120px] outline-none bg-transparent text-sm text-gray-900 dark:text-gray-100 cursor-pointer appearance-none"
+          >
+            <option value="1-day">Fish Caught in the Last Day</option>
+            <option value="2-days">Fish Caught in the Last 2 Days</option>
+            <option value="3-days">Fish Caught in the Last 3 Days</option>
+            <option value="since-reset">Fish Caught Since Last Reset</option>
+          </select>
+          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageChange, currentPage }) => {
   // Dynamic filtering: when locations are selected, filter fish list to show fish at those locations
@@ -93,7 +156,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           )}
 
           {/* Main Filter Row */}
-          <div className="flex gap-4 items-end flex-1">
+          <div className="flex gap-4 items-center flex-1">
 
           {/* Fish Filter - filtered by selected locations */}
           <MultiSelectFilter
@@ -125,37 +188,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
             className="flex-1 min-w-[200px]"
           />
 
-          {/* Data Age Filter */}
-          <div className="flex-1 min-w-[200px]">
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                <Clock className="inline h-3 w-3 mr-1" />
-                Data Age
-              </label>
-              {/* Spacer to match MultiSelectFilter label row height */}
-              <div className="h-3 w-3" />
-            </div>
-            <div className="relative">
-              <div className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex items-center">
-                <select
-                  value={filters.dataAge || '1-day'}
-                  onChange={e => handleDataAgeChange('dataAge', e.target.value)}
-                  className="w-full text-sm bg-transparent text-gray-900 dark:text-gray-100 appearance-none outline-none cursor-pointer pr-6"
-                >
-                  <option value="1-day">Fish Caught in the Last Day</option>
-                  <option value="2-days">Fish Caught in the Last 2 Days</option>
-                  <option value="3-days">Fish Caught in the Last 3 Days</option>
-                  <option value="since-reset">Fish Caught Since Last Reset</option>
-                </select>
-                {/* Custom dropdown arrow */}
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Data Age Filter - structure matches MultiSelectFilter exactly */}
+          <DataAgeFilter
+            value={filters.dataAge || '1-day'}
+            onChange={(value) => handleDataAgeChange('dataAge', value)}
+          />
 
           {/* Search History */}
           <SearchHistory onSelectSearch={handleHistorySelect} />
