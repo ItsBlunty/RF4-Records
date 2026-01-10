@@ -228,7 +228,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           />
 
           {/* Search History */}
-          <SearchHistory onSelectSearch={handleHistorySelect} />
+          <SearchHistory onSelectSearch={handleHistorySelect} className="self-end" />
         </div>
         </div>
       </div>
