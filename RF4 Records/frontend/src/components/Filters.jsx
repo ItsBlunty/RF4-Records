@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Clock, Target, Trophy } from 'lucide-react';
+import { Clock, Target } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
 
@@ -80,26 +80,16 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
       <div className="max-w-7xl mx-auto">
         <div className="flex gap-4">
-          {/* Quick Access Buttons - Separate from main filter row */}
+          {/* Top Baits Quick Access */}
           {currentPage === 'records' && (
-            <div className="flex flex-col gap-2 self-start">
-              <button
-                onClick={() => onPageChange && onPageChange('topbaits')}
-                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
-                title="Top Baits"
-              >
-                <Target className="w-3 h-3 mr-1" />
-                &nbsp;&nbsp;Top Baits
-              </button>
-              <button
-                onClick={() => onPageChange && onPageChange('trophyweights')}
-                className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700"
-                title="Trophy Weights"
-              >
-                <Trophy className="w-3 h-3 mr-1" />
-                Trophy Weights
-              </button>
-            </div>
+            <button
+              onClick={() => onPageChange && onPageChange('topbaits')}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 self-end"
+              title="Top Baits"
+            >
+              <Target className="w-4 h-4 mr-2" />
+              Top Baits
+            </button>
           )}
 
           {/* Main Filter Row */}
