@@ -1,14 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { X, Clock, Search, Target, Trophy } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Clock, Target, Trophy } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
 
-const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues, onClear, onPageChange, currentPage }) => {
-  // Refs to store search trigger functions from MultiSelectFilter components
-  const fishSearchTriggerRef = React.useRef(null);
-  const waterbodySearchTriggerRef = React.useRef(null);
-  const baitSearchTriggerRef = React.useRef(null);
-
+const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageChange, currentPage }) => {
   // Dynamic filtering: when locations are selected, filter fish list to show fish at those locations
   // When fish are selected, filter location list to show locations where those fish appear
   // Uses union logic: if multiple selected, show anything matching ANY of the selections
@@ -57,83 +52,29 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
     if (onSubmitWithValues) {
       onSubmitWithValues(historicalFilters);
     }
-    
+
     // Then update the UI state to reflect the selected filters
     Object.keys(historicalFilters).forEach(key => {
       onChange(key, historicalFilters[key]);
     });
   };
 
-  // Check if any of the main text fields (fish, waterbody, bait) have content
-  const hasTextContent = () => {
-    return !!(filters.fish && filters.fish.length > 0) || 
-           !!(filters.waterbody && filters.waterbody.length > 0) || 
-           !!(filters.bait && filters.bait.length > 0);
-  };
-
   const handleInputChange = (field, value) => {
     onChange(field, value);
-  };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      onSubmit();
-    }
-  };
-
-  const handleAddAndSearch = (field) => (newValues) => {
-    // Create new filter object with the updated field
-    const newFilters = {
-      ...filters,
-      [field]: newValues
-    };
-    
-    // Update the filter state and immediately trigger search with the new values
-    onChange(field, newValues);
-    
-    // Use the new search function that accepts specific filter values
-    if (onSubmitWithValues) {
-      onSubmitWithValues(newFilters);
-    } else {
-      // Fallback to old behavior
-      setTimeout(() => {
-        onSubmit();
-      }, 0);
+    // Auto-search when fish, waterbody, or bait changes (not dataAge)
+    if (field !== 'dataAge') {
+      const newFilters = { ...filters, [field]: value };
+      if (onSubmitWithValues) {
+        onSubmitWithValues(newFilters);
+      }
     }
   };
 
   const handleDataAgeChange = (field, value) => {
     onChange(field, value);
-    // Data age filter should not auto-submit, only submit on button press
+    // Data age filter does not auto-submit - user must add a fish/location/bait filter
   };
-
-
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent actual form submission
-    
-    // Trigger search with any pending input values from MultiSelectFilter components
-    const updatedFilters = { ...filters };
-    
-    // Get updated values from each MultiSelectFilter component
-    if (fishSearchTriggerRef.current) {
-      updatedFilters.fish = fishSearchTriggerRef.current();
-    }
-    if (waterbodySearchTriggerRef.current) {
-      updatedFilters.waterbody = waterbodySearchTriggerRef.current();
-    }
-    if (baitSearchTriggerRef.current) {
-      updatedFilters.bait = baitSearchTriggerRef.current();
-    }
-    
-    // Use the updated filters for search
-    if (onSubmitWithValues) {
-      onSubmitWithValues(updatedFilters);
-    } else {
-      onSubmit();
-    }
-  };
-
-
 
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
@@ -160,46 +101,37 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
               </button>
             </div>
           )}
-          
+
           {/* Main Filter Row */}
           <div className="flex gap-4 items-center flex-1">
-          
+
           {/* Fish Filter - filtered by selected locations */}
           <MultiSelectFilter
             label="Fish"
-            placeholder="Type fish name... (Enter to search, Tab to add)"
+            placeholder="Select or type fish name..."
             values={filteredFishOptions}
             selectedValues={filters.fish}
             onChange={(values) => handleInputChange('fish', values)}
-            onKeyPress={handleKeyPress}
-            onAddAndSearch={handleAddAndSearch('fish')}
-            onSearchTriggered={(triggerFn) => { fishSearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
           {/* Location Filter - filtered by selected fish */}
           <MultiSelectFilter
             label="Location"
-            placeholder="Type location... (Enter to search, Tab to add)"
+            placeholder="Select or type location..."
             values={filteredLocationOptions}
             selectedValues={filters.waterbody}
             onChange={(values) => handleInputChange('waterbody', values)}
-            onKeyPress={handleKeyPress}
-            onAddAndSearch={handleAddAndSearch('waterbody')}
-            onSearchTriggered={(triggerFn) => { waterbodySearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
           {/* Bait Filter */}
           <MultiSelectFilter
             label="Bait"
-            placeholder="Type bait... (Enter to search, Tab to add)"
+            placeholder="Select or type bait..."
             values={uniqueValues.bait}
             selectedValues={filters.bait}
             onChange={(values) => handleInputChange('bait', values)}
-            onKeyPress={handleKeyPress}
-            onAddAndSearch={handleAddAndSearch('bait')}
-            onSearchTriggered={(triggerFn) => { baitSearchTriggerRef.current = triggerFn; }}
             className="flex-1 min-w-[200px]"
           />
 
@@ -229,29 +161,9 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
             </div>
           </div>
 
-          {/* Action Buttons Group */}
-          <div className="flex-shrink-0 flex gap-3 items-center">
-            {/* Search Button */}
-            <button
-              type="button"
-              onClick={handleSubmit}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center space-x-2"
-            >
-              <Search className="h-4 w-4" />
-              <span>Search</span>
-            </button>
-
-            {/* Search History */}
+          {/* Search History */}
+          <div className="flex-shrink-0 flex items-center">
             <SearchHistory onSelectSearch={handleHistorySelect} />
-
-            {/* Clear Button */}
-            <button
-              type="button"
-              onClick={onClear}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              Clear All
-            </button>
           </div>
         </div>
         </div>
@@ -260,4 +172,4 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmit, onSubmitWithValues
   );
 };
 
-export default Filters; 
+export default Filters;

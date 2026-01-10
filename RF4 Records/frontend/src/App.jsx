@@ -442,28 +442,11 @@ function AppContent() {
   }, [records, sortConfig]);
 
 
-  const clearFilters = () => {
-    setFilters({
-      fish: [],
-      waterbody: [],
-      bait: [],
-      dataAge: '1-day'
-    });
-    // Clear displayed records but keep cached data
-    setFilteredRecords([]);
-    // Clear URL parameters
-    navigate(location.pathname, { replace: true });
-  };
-
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => ({
       ...prev,
       [filterType]: value
     }));
-  };
-
-  const handleFilterSubmit = () => {
-    handleFilterSubmitWithValues(filters);
   };
 
   const handleFilterSubmitWithValues = (filtersToUse) => {
@@ -584,9 +567,7 @@ function AppContent() {
             filters={filters}
             uniqueValues={uniqueValues}
             onChange={handleFilterChange}
-            onSubmit={handleFilterSubmit}
             onSubmitWithValues={handleFilterSubmitWithValues}
-            onClear={clearFilters}
             onPageChange={handlePageChange}
             currentPage={getCurrentPage()}
           />

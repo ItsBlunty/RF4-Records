@@ -1,16 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, ChevronDown, HelpCircle } from 'lucide-react';
 
-const MultiSelectFilter = ({ 
-  label, 
-  placeholder, 
-  values = [], 
-  selectedValues = [], 
-  onChange, 
-  onKeyPress,
-  onAddAndSearch,
-  onSearchTriggered,
-  className = '' 
+const MultiSelectFilter = ({
+  label,
+  placeholder,
+  values = [],
+  selectedValues = [],
+  onChange,
+  className = ''
 }) => {  const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filteredValues, setFilteredValues] = useState([]);
@@ -83,56 +80,45 @@ const MultiSelectFilter = ({
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      
+
       let valueToAdd = null;
-      
+
       if (highlightedIndex >= 0 && filteredValues[highlightedIndex]) {
         // Select highlighted option
         valueToAdd = filteredValues[highlightedIndex];
       } else if (inputValue.trim()) {
         // If there's an exact match, use it; otherwise, use the input value
-        const exactMatch = values.find(v => 
-          v.toLowerCase() === inputValue.toLowerCase() && 
+        const exactMatch = values.find(v =>
+          v.toLowerCase() === inputValue.toLowerCase() &&
           !selectedValues.includes(v)
         );
         valueToAdd = exactMatch || inputValue.trim();
       }
-      
+
       if (valueToAdd && !selectedValues.includes(valueToAdd)) {
-        // Update the parent with new values and trigger search
+        // Add the value - onChange will trigger auto-search in parent
         const newValues = [...selectedValues, valueToAdd];
         setInputValue('');
         setIsOpen(false);
         setHighlightedIndex(-1);
-        
-        if (onAddAndSearch) {
-          // Use the new callback that handles both updating state and searching
-          onAddAndSearch(newValues);
-        } else {
-          // Fallback to old behavior
-          onChange(newValues);
-          setTimeout(() => {
-            if (onKeyPress) {
-              onKeyPress(e);
-            }
-          }, 50);
-        }
-      } else {
-        // No value to add, just trigger search with current values
-        if (onKeyPress) {
-          onKeyPress(e);
-        }
+        onChange(newValues);
       }
     } else if (e.key === 'Tab') {
-      e.preventDefault();
-      
       if (inputValue.trim()) {
-        // Add current input as a bubble on Tab
-        const exactMatch = values.find(v => 
-          v.toLowerCase() === inputValue.toLowerCase() && 
+        e.preventDefault();
+        // Add current input as a bubble on Tab - onChange will trigger auto-search
+        const exactMatch = values.find(v =>
+          v.toLowerCase() === inputValue.toLowerCase() &&
           !selectedValues.includes(v)
         );
-        addValue(exactMatch || inputValue.trim());
+        const valueToAdd = exactMatch || inputValue.trim();
+        if (valueToAdd && !selectedValues.includes(valueToAdd)) {
+          const newValues = [...selectedValues, valueToAdd];
+          setInputValue('');
+          setIsOpen(false);
+          setHighlightedIndex(-1);
+          onChange(newValues);
+        }
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -182,38 +168,6 @@ const MultiSelectFilter = ({
     addValue(value);
   };
 
-  // Function to handle search trigger from parent (Search button click)
-  const handleSearchTrigger = () => {
-    if (inputValue.trim() && !selectedValues.includes(inputValue.trim())) {
-      // Add current input value to selected values and trigger search
-      const exactMatch = values.find(v => 
-        v.toLowerCase() === inputValue.toLowerCase() && 
-        !selectedValues.includes(v)
-      );
-      const valueToAdd = exactMatch || inputValue.trim();
-      const newValues = [...selectedValues, valueToAdd];
-      
-      setInputValue('');
-      setIsOpen(false);
-      setHighlightedIndex(-1);
-      
-      // Update parent with new values
-      onChange(newValues);
-      
-      // Return the new values so parent can use them for search
-      return newValues;
-    }
-    
-    // No input value to add, return current selected values
-    return selectedValues;
-  };
-
-  // Expose the handleSearchTrigger function to parent via callback
-  React.useEffect(() => {
-    if (onSearchTriggered) {
-      onSearchTriggered(handleSearchTrigger);
-    }
-  }, [inputValue, selectedValues, values, onSearchTriggered]);
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div className="flex items-center justify-between mb-1">
@@ -233,10 +187,10 @@ const MultiSelectFilter = ({
           {showTooltip && (
             <div className="absolute right-0 top-full mt-1 w-64 bg-gray-900 dark:bg-gray-700 text-white text-xs rounded-lg p-2 shadow-lg z-50">
               <div className="space-y-1">
-                <div>• Press <strong>Enter</strong> to search</div>
-                <div>• Press <strong>Tab</strong> to add as bubble</div>
-                <div>• Click from dropdown to select</div>
-                <div>• Use arrow keys to navigate</div>
+                <div>• Click or type to select options</div>
+                <div>• Press <strong>Enter</strong> or <strong>Tab</strong> to add</div>
+                <div>• Click <strong>X</strong> to remove</div>
+                <div>• Search updates automatically</div>
               </div>
               <div className="absolute -top-1 right-2 w-2 h-2 bg-gray-900 dark:bg-gray-700 rotate-45"></div>
             </div>
