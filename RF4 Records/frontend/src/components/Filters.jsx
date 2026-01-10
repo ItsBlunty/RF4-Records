@@ -54,10 +54,10 @@ const DataAgeFilter = ({ value, onChange }) => {
             onChange={e => onChange(e.target.value)}
             className="flex-1 min-w-[120px] outline-none bg-transparent text-sm text-gray-900 dark:text-gray-100 cursor-pointer appearance-none"
           >
-            <option value="1-day">Fish Caught in the Last Day</option>
-            <option value="2-days">Fish Caught in the Last 2 Days</option>
-            <option value="3-days">Fish Caught in the Last 3 Days</option>
-            <option value="since-reset">Fish Caught Since Last Reset</option>
+            <option value="1-day" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last Day</option>
+            <option value="2-days" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last 2 Days</option>
+            <option value="3-days" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last 3 Days</option>
+            <option value="since-reset" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught Since Last Reset</option>
           </select>
           <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
         </div>
