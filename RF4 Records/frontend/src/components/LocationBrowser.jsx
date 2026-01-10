@@ -35,50 +35,55 @@ const LocationBrowser = ({ onLocationSelect }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-      <div className="text-center mb-4">
-        <h3 className="text-base font-medium text-gray-600 dark:text-gray-400">
-          Select a location to browse records
-        </h3>
+    <div className="p-6">
+      <div className="text-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-1">
+          Explore Fishing Records Across Beautiful Locations
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Select a location to browse fishing records
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {LOCATION_DATA.map((location) => (
           <div
             key={location.waterbody}
-            className="flex rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
+            className="relative rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow cursor-pointer group aspect-[4/3]"
           >
-            {/* Buttons on the left */}
-            <div className="flex flex-col gap-1 p-2 bg-gray-100 dark:bg-gray-700">
+            <img
+              src={`/images/LocationImages/${location.image}`}
+              alt={location.displayName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+            />
+
+            {/* Dark overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/40" />
+
+            {/* Location name at top-left */}
+            <div className="absolute top-0 left-0 p-3">
+              <h4 className="text-white font-semibold text-base drop-shadow-lg">
+                {location.displayName}
+              </h4>
+            </div>
+
+            {/* Buttons at bottom-left */}
+            <div className="absolute bottom-0 left-0 p-3 flex gap-2">
               <button
-                onClick={() => handleBaitsClick(location.waterbody)}
-                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap"
+                onClick={(e) => { e.stopPropagation(); handleBaitsClick(location.waterbody); }}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
               >
                 <Target className="w-3 h-3" />
                 Baits
               </button>
               <button
-                onClick={() => handleFishClick(location.waterbody)}
-                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 transition-colors whitespace-nowrap"
+                onClick={(e) => { e.stopPropagation(); handleFishClick(location.waterbody); }}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
               >
                 <Fish className="w-3 h-3" />
                 Fish
               </button>
-            </div>
-
-            {/* Image with name overlay */}
-            <div className="relative flex-1">
-              <img
-                src={`/images/LocationImages/${location.image}`}
-                alt={location.displayName}
-                className="w-full h-full object-cover min-h-[80px]"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
-                <h4 className="text-white font-semibold text-sm p-2 w-full">
-                  {location.displayName}
-                </h4>
-              </div>
             </div>
           </div>
         ))}
