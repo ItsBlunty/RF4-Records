@@ -35,51 +35,48 @@ const LocationBrowser = ({ onLocationSelect }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <div className="text-center mb-6">
-        <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
-          Browse by Location
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+      <div className="text-center mb-4">
+        <h3 className="text-base font-medium text-gray-600 dark:text-gray-400">
+          Select a location to browse records
         </h3>
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          Click a button to view records grouped by baits or fish for each location
-        </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {LOCATION_DATA.map((location) => (
           <div
             key={location.waterbody}
-            className="bg-gray-50 dark:bg-gray-700 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 transition-colors"
+            className="group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
           >
-            <div className="relative">
-              <img
-                src={`/images/LocationImages/${location.image}`}
-                alt={location.displayName}
-                className="w-full h-32 object-cover"
-                loading="lazy"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                <h4 className="text-white font-medium text-sm truncate">
-                  {location.displayName}
-                </h4>
-              </div>
-            </div>
+            <img
+              src={`/images/LocationImages/${location.image}`}
+              alt={location.displayName}
+              className="w-full h-28 object-cover"
+              loading="lazy"
+            />
 
-            <div className="p-2 flex gap-2">
-              <button
-                onClick={() => handleBaitsClick(location.waterbody)}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-700 text-white transition-colors"
-              >
-                <Target className="w-3 h-3" />
-                Baits
-              </button>
-              <button
-                onClick={() => handleFishClick(location.waterbody)}
-                className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded-md bg-green-600 hover:bg-green-700 text-white transition-colors"
-              >
-                <Fish className="w-3 h-3" />
-                Fish
-              </button>
+            {/* Overlay with name and buttons */}
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent flex flex-col justify-end p-2">
+              <h4 className="text-white font-medium text-xs mb-1.5 truncate">
+                {location.displayName}
+              </h4>
+
+              <div className="flex gap-1.5">
+                <button
+                  onClick={() => handleBaitsClick(location.waterbody)}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium rounded bg-blue-600/90 hover:bg-blue-500 text-white transition-colors"
+                >
+                  <Target className="w-3 h-3" />
+                  Baits
+                </button>
+                <button
+                  onClick={() => handleFishClick(location.waterbody)}
+                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium rounded bg-white/90 hover:bg-white text-gray-700 transition-colors"
+                >
+                  <Fish className="w-3 h-3" />
+                  Fish
+                </button>
+              </div>
             </div>
           </div>
         ))}
