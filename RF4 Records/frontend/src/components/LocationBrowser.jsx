@@ -42,40 +42,42 @@ const LocationBrowser = ({ onLocationSelect }) => {
         </h3>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {LOCATION_DATA.map((location) => (
           <div
             key={location.waterbody}
-            className="group relative rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+            className="flex rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700"
           >
-            <img
-              src={`/images/LocationImages/${location.image}`}
-              alt={location.displayName}
-              className="w-full h-28 object-cover"
-              loading="lazy"
-            />
+            {/* Buttons on the left */}
+            <div className="flex flex-col gap-1 p-2 bg-gray-100 dark:bg-gray-700">
+              <button
+                onClick={() => handleBaitsClick(location.waterbody)}
+                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors whitespace-nowrap"
+              >
+                <Target className="w-3 h-3" />
+                Baits
+              </button>
+              <button
+                onClick={() => handleFishClick(location.waterbody)}
+                className="flex items-center justify-center gap-1 px-3 py-2 text-xs font-medium rounded border border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 transition-colors whitespace-nowrap"
+              >
+                <Fish className="w-3 h-3" />
+                Fish
+              </button>
+            </div>
 
-            {/* Overlay with name and buttons */}
-            <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent flex flex-col justify-end p-2">
-              <h4 className="text-white font-medium text-xs mb-1.5 truncate">
-                {location.displayName}
-              </h4>
-
-              <div className="flex gap-1.5">
-                <button
-                  onClick={() => handleBaitsClick(location.waterbody)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium rounded bg-blue-600/90 hover:bg-blue-500 text-white transition-colors"
-                >
-                  <Target className="w-3 h-3" />
-                  Baits
-                </button>
-                <button
-                  onClick={() => handleFishClick(location.waterbody)}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium rounded bg-white/90 hover:bg-white text-gray-700 transition-colors"
-                >
-                  <Fish className="w-3 h-3" />
-                  Fish
-                </button>
+            {/* Image with name overlay */}
+            <div className="relative flex-1">
+              <img
+                src={`/images/LocationImages/${location.image}`}
+                alt={location.displayName}
+                className="w-full h-full object-cover min-h-[80px]"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+                <h4 className="text-white font-semibold text-sm p-2 w-full">
+                  {location.displayName}
+                </h4>
               </div>
             </div>
           </div>
