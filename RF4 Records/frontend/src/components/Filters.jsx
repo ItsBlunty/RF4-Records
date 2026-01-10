@@ -127,15 +127,17 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
 
           {/* Data Age Filter */}
           <div className="flex-1 min-w-[200px]">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              <Clock className="inline h-3 w-3 mr-1" />
-              Data Age
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                <Clock className="inline h-3 w-3 mr-1" />
+                Data Age
+              </label>
+            </div>
             <div className="relative">
               <select
                 value={filters.dataAge || '1-day'}
                 onChange={e => handleDataAgeChange('dataAge', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none min-h-[40px]"
               >
                 <option value="1-day">Fish Caught in the Last Day</option>
                 <option value="2-days">Fish Caught in the Last 2 Days</option>
@@ -152,9 +154,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           </div>
 
           {/* Search History */}
-          <div className="flex-shrink-0 flex items-center">
-            <SearchHistory onSelectSearch={handleHistorySelect} />
-          </div>
+          <SearchHistory onSelectSearch={handleHistorySelect} className="self-end" />
         </div>
         </div>
       </div>

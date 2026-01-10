@@ -77,15 +77,15 @@ const SearchHistory = ({ onSelectSearch, className = '' }) => {
         type="button"
         onClick={() => hasHistory && setIsOpen(!isOpen)}
         disabled={!hasHistory}
-        className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-          hasHistory 
-            ? 'text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' 
-            : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-not-allowed'
+        className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors ${
+          hasHistory
+            ? 'bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-700 cursor-pointer'
+            : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-500 cursor-not-allowed'
         }`}
         title={hasHistory ? "Search History" : "No search history yet"}
       >
         <History className="w-4 h-4 mr-2" />
-        <span className="hidden sm:inline">History</span>
+        History
         <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
