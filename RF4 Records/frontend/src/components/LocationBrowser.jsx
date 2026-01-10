@@ -2,26 +2,27 @@ import React from 'react';
 import { Fish, Target } from 'lucide-react';
 
 // Map image filenames to database waterbody names
+// Order matches the maps page, with Prison Pond at the end (no map)
 const LOCATION_DATA = [
-  { image: 'Akhtuba River.png', waterbody: 'Akhtuba River', displayName: 'Akhtuba River' },
-  { image: 'Amber Lake.png', waterbody: 'The Amber Lake', displayName: 'Amber Lake' },
-  { image: 'Bear Lake.png', waterbody: 'Bear Lake', displayName: 'Bear Lake' },
-  { image: 'Belaya River.png', waterbody: 'Belaya River', displayName: 'Belaya River' },
-  { image: 'Copper Lake.png', waterbody: 'Copper lake', displayName: 'Copper Lake' },
-  { image: 'Elk Lake.png', waterbody: 'Elk Lake', displayName: 'Elk Lake' },
-  { image: 'Kuori Lake.png', waterbody: 'Kuori Lake', displayName: 'Kuori Lake' },
-  { image: 'Ladoga Archipelago.png', waterbody: 'Ladoga archipelago', displayName: 'Ladoga Archipelago' },
-  { image: 'Ladoga Lake.png', waterbody: 'Ladoga Lake', displayName: 'Ladoga Lake' },
-  { image: 'Lower Tunguska River.png', waterbody: 'Lower Tunguska River', displayName: 'Lower Tunguska River' },
   { image: 'Mosquito Lake.png', waterbody: 'Mosquito Lake', displayName: 'Mosquito Lake' },
-  { image: 'Norwegian Sea.png', waterbody: 'Norwegian Sea', displayName: 'Norwegian Sea' },
+  { image: 'Elk Lake.png', waterbody: 'Elk Lake', displayName: 'Elk Lake' },
+  { image: 'Winding Rivulet.png', waterbody: 'Winding Rivulet', displayName: 'Winding Rivulet' },
   { image: 'Old Burg Lake.png', waterbody: 'Old Burg Lake', displayName: 'Old Burg Lake' },
-  { image: 'Prison Pond.png', waterbody: 'Penalty pond', displayName: 'Penalty Pond' },
+  { image: 'Belaya River.png', waterbody: 'Belaya River', displayName: 'Belaya River' },
+  { image: 'Kuori Lake.png', waterbody: 'Kuori Lake', displayName: 'Kuori Lake' },
+  { image: 'Bear Lake.png', waterbody: 'Bear Lake', displayName: 'Bear Lake' },
+  { image: 'Volkhov Lake.png', waterbody: 'Volkhov River', displayName: 'Volkhov River' },
   { image: 'Seversky Donets River.png', waterbody: 'Seversky Donets River', displayName: 'Seversky Donets River' },
   { image: 'Sura River.png', waterbody: 'Sura River', displayName: 'Sura River' },
-  { image: 'Volkhov Lake.png', waterbody: 'Volkhov River', displayName: 'Volkhov River' },
-  { image: 'Winding Rivulet.png', waterbody: 'Winding Rivulet', displayName: 'Winding Rivulet' },
+  { image: 'Ladoga Lake.png', waterbody: 'Ladoga Lake', displayName: 'Ladoga Lake' },
+  { image: 'Amber Lake.png', waterbody: 'The Amber Lake', displayName: 'Amber Lake' },
+  { image: 'Ladoga Archipelago.png', waterbody: 'Ladoga archipelago', displayName: 'Ladoga Archipelago' },
+  { image: 'Akhtuba River.png', waterbody: 'Akhtuba River', displayName: 'Akhtuba River' },
+  { image: 'Copper Lake.png', waterbody: 'Copper lake', displayName: 'Copper Lake' },
+  { image: 'Lower Tunguska River.png', waterbody: 'Lower Tunguska River', displayName: 'Lower Tunguska River' },
   { image: 'Yama River.png', waterbody: 'Yama River', displayName: 'Yama River' },
+  { image: 'Norwegian Sea.png', waterbody: 'Norwegian Sea', displayName: 'Norwegian Sea' },
+  { image: 'Prison Pond.png', waterbody: 'Penalty pond', displayName: 'Penalty Pond' },
 ];
 
 const LocationBrowser = ({ onLocationSelect }) => {
