@@ -136,21 +136,23 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
               <div className="h-3 w-3" />
             </div>
             <div className="relative">
-              <select
-                value={filters.dataAge || '1-day'}
-                onChange={e => handleDataAgeChange('dataAge', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 appearance-none min-h-[40px]"
-              >
-                <option value="1-day">Fish Caught in the Last Day</option>
-                <option value="2-days">Fish Caught in the Last 2 Days</option>
-                <option value="3-days">Fish Caught in the Last 3 Days</option>
-                <option value="since-reset">Fish Caught Since Last Reset</option>
-              </select>
-              {/* Custom dropdown arrow */}
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
+              <div className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex items-center">
+                <select
+                  value={filters.dataAge || '1-day'}
+                  onChange={e => handleDataAgeChange('dataAge', e.target.value)}
+                  className="w-full text-sm bg-transparent text-gray-900 dark:text-gray-100 appearance-none outline-none cursor-pointer pr-6"
+                >
+                  <option value="1-day">Fish Caught in the Last Day</option>
+                  <option value="2-days">Fish Caught in the Last 2 Days</option>
+                  <option value="3-days">Fish Caught in the Last 3 Days</option>
+                  <option value="since-reset">Fish Caught Since Last Reset</option>
+                </select>
+                {/* Custom dropdown arrow */}
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
