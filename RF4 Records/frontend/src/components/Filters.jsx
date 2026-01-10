@@ -3,13 +3,27 @@ import { Target, HelpCircle, ChevronDown } from 'lucide-react';
 import MultiSelectFilter from './MultiSelectFilter.jsx';
 import SearchHistory from './SearchHistory.jsx';
 
-// DataAgeFilter component - structure matches MultiSelectFilter exactly
+// DataAgeFilter component - custom dropdown matching MultiSelectFilter style
+const DATA_AGE_OPTIONS = [
+  { value: '1-day', label: 'Fish Caught in the Last Day' },
+  { value: '2-days', label: 'Fish Caught in the Last 2 Days' },
+  { value: '3-days', label: 'Fish Caught in the Last 3 Days' },
+  { value: 'since-reset', label: 'Fish Caught Since Last Reset' },
+];
+
 const DataAgeFilter = ({ value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
+  const dropdownRef = useRef(null);
   const tooltipRef = useRef(null);
+
+  const selectedOption = DATA_AGE_OPTIONS.find(opt => opt.value === value) || DATA_AGE_OPTIONS[0];
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
       if (tooltipRef.current && !tooltipRef.current.contains(event.target)) {
         setShowTooltip(false);
       }
@@ -18,8 +32,13 @@ const DataAgeFilter = ({ value, onChange }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleSelect = (optionValue) => {
+    onChange(optionValue);
+    setIsOpen(false);
+  };
+
   return (
-    <div className="relative flex-1 min-w-[200px]">
+    <div className="relative flex-1 min-w-[200px]" ref={dropdownRef}>
       <div className="flex items-center justify-between mb-1">
         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
           Data Age
@@ -47,20 +66,34 @@ const DataAgeFilter = ({ value, onChange }) => {
 
       <div className="relative">
         <div
-          className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center cursor-text"
+          className="w-full min-h-[40px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 bg-white dark:bg-gray-700 flex flex-wrap gap-1 items-center cursor-pointer"
+          onClick={() => setIsOpen(!isOpen)}
         >
-          <select
-            value={value}
-            onChange={e => onChange(e.target.value)}
-            className="flex-1 min-w-[120px] outline-none bg-transparent text-sm text-gray-900 dark:text-gray-100 cursor-pointer appearance-none"
-          >
-            <option value="1-day" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last Day</option>
-            <option value="2-days" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last 2 Days</option>
-            <option value="3-days" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught in the Last 3 Days</option>
-            <option value="since-reset" className="text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-700">Fish Caught Since Last Reset</option>
-          </select>
-          <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+          <span className="flex-1 min-w-[120px] text-sm text-gray-900 dark:text-gray-100">
+            {selectedOption.label}
+          </span>
+          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
         </div>
+
+        {/* Custom Dropdown */}
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+            {DATA_AGE_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                  option.value === value
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
+                    : 'text-gray-900 dark:text-gray-100'
+                }`}
+                onClick={() => handleSelect(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
