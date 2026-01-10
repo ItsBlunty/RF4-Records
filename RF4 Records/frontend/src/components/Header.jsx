@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X, Vote } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, MapPin, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X, Vote } from 'lucide-react';
 import FeedbackButton from './FeedbackButton.jsx';
 import PollOverlay from './PollOverlay.jsx';
 
@@ -130,15 +130,27 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
             <button
               onClick={() => onPageChange && onPageChange('links')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                currentPage === 'links' 
-                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
+                currentPage === 'links'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
                   : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
               }`}
             >
               <Link className="w-4 h-4 mr-2" />
               Links
             </button>
-            
+
+            <button
+              onClick={() => onPageChange && onPageChange('locations')}
+              className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                currentPage === 'locations'
+                  ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
+                  : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
+              }`}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              Locations
+            </button>
+
             <button
               onClick={() => onPageChange && onPageChange('records')}
               className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
@@ -461,15 +473,30 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                   setMobileMenuOpen(false);
                 }}
                 className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  currentPage === 'links' 
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                  currentPage === 'links'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
               >
                 <Link className="w-4 h-4 mr-3" />
                 Links
               </button>
-              
+
+              <button
+                onClick={() => {
+                  onPageChange && onPageChange('locations');
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  currentPage === 'locations'
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <MapPin className="w-4 h-4 mr-3" />
+                Locations
+              </button>
+
               <button
                 onClick={() => {
                   onPageChange && onPageChange('records');

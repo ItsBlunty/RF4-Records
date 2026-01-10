@@ -59,6 +59,7 @@ function AppContent() {
   // Get current page from URL
   const getCurrentPage = () => {
     if (location.pathname === '/links') return 'links';
+    if (location.pathname === '/locations') return 'locations';
     if (location.pathname === '/trophyweights') return 'trophyweights';
     if (location.pathname === '/topbaits') return 'topbaits';
     if (location.pathname === '/skillguides') return 'guides';
@@ -160,6 +161,8 @@ function AppContent() {
       navigate('/');
     } else if (page === 'links') {
       navigate('/links');
+    } else if (page === 'locations') {
+      navigate('/locations');
     } else if (page === 'trophyweights') {
       navigate('/trophyweights');
     } else if (page === 'topbaits') {
@@ -573,8 +576,18 @@ function AppContent() {
           />
           <div className="mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {displayRecords.length === 0 ? (
-              /* Show LocationBrowser when no search results */
-              <LocationBrowser onLocationSelect={handleLocationSelect} />
+              /* Show empty state message when no search results */
+              <div className="text-center py-12">
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  Use the filters above to search for records, or browse by{' '}
+                  <button
+                    onClick={() => handlePageChange('locations')}
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    location
+                  </button>
+                </p>
+              </div>
             ) : (
               /* Show results UI when there are records */
               <>
@@ -691,6 +704,8 @@ function AppContent() {
         </>
       ) : getCurrentPage() === 'links' ? (
         <Links />
+      ) : getCurrentPage() === 'locations' ? (
+        <LocationBrowser onLocationSelect={handleLocationSelect} />
       ) : getCurrentPage() === 'trophyweights' ? (
         <TrophyWeights />
       ) : getCurrentPage() === 'topbaits' ? (
@@ -742,6 +757,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/links" element={<AppContent />} />
+        <Route path="/locations" element={<AppContent />} />
         <Route path="/trophyweights" element={<AppContent />} />
         <Route path="/topbaits" element={<AppContent />} />
         <Route path="/skillguides" element={<AppContent />} />
