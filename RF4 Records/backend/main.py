@@ -209,6 +209,18 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error generating top baits cache on startup: {e}")
 
+    # Pre-warm filter values cache on startup (fish, location, bait dropdowns)
+    try:
+        from optimized_records import get_filter_values_optimized, get_fish_location_mapping_optimized
+
+        print("📋 Pre-warming filter values cache on startup...", flush=True)
+        filter_values = get_filter_values_optimized()
+        mapping = get_fish_location_mapping_optimized()
+        print(f"✅ Filter values cache ready: {len(filter_values['fish'])} fish, {len(filter_values['waterbody'])} locations, {len(filter_values['bait'])} baits", flush=True)
+        print(f"✅ Fish-location mapping ready: {len(mapping['fish_by_location'])} locations, {len(mapping['locations_by_fish'])} fish", flush=True)
+    except Exception as e:
+        logger.error(f"Error pre-warming filter values cache on startup: {e}")
+
     # Now start the scheduler after database is ready
     try:
         scheduler.start()
