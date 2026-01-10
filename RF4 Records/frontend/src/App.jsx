@@ -486,7 +486,7 @@ function AppContent() {
     fetchFilteredRecordsWithFilters(filtersToUse);
   };
 
-  // Handler for LocationBrowser - sets location filter, view mode, and triggers search
+  // Handler for LocationBrowser - sets location filter, view mode, navigates to records, and triggers search
   const handleLocationSelect = (waterbody, viewModeToSet) => {
     // Create new filters with the selected location
     const newFilters = {
@@ -502,8 +502,18 @@ function AppContent() {
     // Set the requested view mode
     setViewMode(viewModeToSet);
 
+    // Navigate to records page and trigger search
+    const params = new URLSearchParams();
+    params.append('waterbody', waterbody);
+    if (newFilters.dataAge && newFilters.dataAge !== '1-day') {
+      params.append('data_age', newFilters.dataAge);
+    }
+
+    isNavigatingFromSubmit.current = true;
+    navigate(`/records?${params.toString()}`);
+
     // Trigger search with the new filters
-    handleFilterSubmitWithValues(newFilters);
+    fetchFilteredRecordsWithFilters(newFilters);
   };
 
   const handleSort = (key) => {
