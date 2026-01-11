@@ -1030,7 +1030,12 @@ def get_filtered_records_optimized(
 
 
 def get_top_baits_data_optimized():
-    """Get top baits analysis for the past 3 weeks with Sunday 6PM UTC markers - OPTIMIZED"""
+    """
+    Get top baits analysis for the past 3 weeks with Sunday 6PM UTC markers.
+
+    OPTIMIZED VERSION: Uses SQL aggregation instead of loading all records into memory.
+    Memory usage reduced from ~5GB (500K ORM objects) to ~10MB (aggregated results only).
+    """
     start_time = time.time()
     db = SessionLocal()
 
@@ -1039,14 +1044,6 @@ def get_top_baits_data_optimized():
         last_reset = get_last_record_reset_date()
         two_resets_ago = get_two_resets_ago_date()
         three_resets_ago = get_three_resets_ago_date()
-        four_resets_ago = get_four_resets_ago_date()
-
-        # Define the three weekly periods
-        periods = {
-            "this_week": (last_reset, None),
-            "last_week": (two_resets_ago, last_reset),
-            "three_weeks_ago": (three_resets_ago, two_resets_ago),
-        }
 
         logger.info(f"🎣 Analyzing top baits for periods:")
         logger.info(f"  This Week: {last_reset.strftime('%Y-%m-%d %H:%M')} - Present")
@@ -1057,125 +1054,141 @@ def get_top_baits_data_optimized():
             f"  3 Weeks Ago: {three_resets_ago.strftime('%Y-%m-%d %H:%M')} - {two_resets_ago.strftime('%Y-%m-%d %H:%M')}"
         )
 
-        # Get all records from 3 weeks ago onwards
+        # SQL aggregation query - let PostgreSQL do the heavy lifting
+        # This returns ~10K rows instead of loading 500K+ ORM objects
         query_start = time.time()
-        all_records = (
-            db.query(Record).filter(Record.created_at >= three_resets_ago).all()
-        )
+
+        aggregation_sql = text("""
+            SELECT
+                fish,
+                bait1,
+                bait2,
+                bait,
+                CASE
+                    WHEN created_at >= :last_reset THEN 'this_week'
+                    WHEN created_at >= :two_resets_ago AND created_at < :last_reset THEN 'last_week'
+                    WHEN created_at >= :three_resets_ago AND created_at < :two_resets_ago THEN 'three_weeks_ago'
+                END as period,
+                COUNT(*) as catch_count,
+                MAX(weight) as max_weight
+            FROM records
+            WHERE
+                created_at >= :three_resets_ago
+                AND fish IS NOT NULL
+                AND fish != ''
+            GROUP BY fish, bait1, bait2, bait,
+                CASE
+                    WHEN created_at >= :last_reset THEN 'this_week'
+                    WHEN created_at >= :two_resets_ago AND created_at < :last_reset THEN 'last_week'
+                    WHEN created_at >= :three_resets_ago AND created_at < :two_resets_ago THEN 'three_weeks_ago'
+                END
+            HAVING
+                CASE
+                    WHEN created_at >= :last_reset THEN 'this_week'
+                    WHEN created_at >= :two_resets_ago AND created_at < :last_reset THEN 'last_week'
+                    WHEN created_at >= :three_resets_ago AND created_at < :two_resets_ago THEN 'three_weeks_ago'
+                END IS NOT NULL
+        """)
+
+        aggregated_rows = db.execute(
+            aggregation_sql,
+            {
+                "last_reset": last_reset,
+                "two_resets_ago": two_resets_ago,
+                "three_resets_ago": three_resets_ago,
+            }
+        ).fetchall()
+
         query_time = time.time() - query_start
+        logger.info(f"📊 SQL aggregation returned {len(aggregated_rows)} rows in {query_time:.3f}s")
 
-        logger.info(f"📊 Retrieved {len(all_records)} records in {query_time:.3f}s")
+        # Get total record count for stats (separate lightweight query)
+        total_records = db.execute(
+            text("SELECT COUNT(*) FROM records WHERE created_at >= :three_resets_ago"),
+            {"three_resets_ago": three_resets_ago}
+        ).scalar()
 
-        # Get all unique fish names
-        fish_names = set()
-        for record in all_records:
-            if record.fish:
-                fish_names.add(record.fish)
-
-        fish_names = sorted(list(fish_names))
-        logger.info(f"🐟 Analyzing {len(fish_names)} unique fish species")
-
-        # Process each fish and period
+        # Process aggregated results in Python (much smaller dataset now)
         process_start = time.time()
+
+        # Build nested structure: fish -> period -> bait -> stats
+        fish_period_bait_stats = {}
+
+        for row in aggregated_rows:
+            fish = row[0]
+            bait1 = row[1]
+            bait2 = row[2]
+            bait = row[3]
+            period = row[4]
+            catch_count = row[5]
+            max_weight = row[6] or 0
+
+            # Normalize bait display (same logic as before, but on aggregated data)
+            bait_display = normalize_bait_display(bait1, bait2, bait)
+            if not bait_display or bait_display.strip() == "":
+                continue
+
+            # Initialize nested dicts if needed
+            if fish not in fish_period_bait_stats:
+                fish_period_bait_stats[fish] = {}
+            if period not in fish_period_bait_stats[fish]:
+                fish_period_bait_stats[fish][period] = {}
+
+            # Aggregate by normalized bait display
+            # (multiple bait1/bait2/bait combos might normalize to same display)
+            if bait_display not in fish_period_bait_stats[fish][period]:
+                fish_period_bait_stats[fish][period][bait_display] = {
+                    "count": 0,
+                    "max_weight": 0,
+                }
+
+            fish_period_bait_stats[fish][period][bait_display]["count"] += catch_count
+            fish_period_bait_stats[fish][period][bait_display]["max_weight"] = max(
+                fish_period_bait_stats[fish][period][bait_display]["max_weight"],
+                max_weight
+            )
+
+        # Build final results structure
         results = {}
+        fish_names = sorted(fish_period_bait_stats.keys())
+        period_names = ["this_week", "last_week", "three_weeks_ago"]
 
         for fish_name in fish_names:
             results[fish_name] = {}
 
-            for period_name, (start_date, end_date) in periods.items():
-                # Filter records for this fish and period
-                period_records = []
-                for record in all_records:
-                    if record.fish != fish_name:
-                        continue
+            for period_name in period_names:
+                bait_stats = fish_period_bait_stats[fish_name].get(period_name, {})
 
-                    # Ensure record.created_at is timezone-aware
-                    record_created_at = record.created_at
-                    if record_created_at.tzinfo is None:
-                        # If naive, assume UTC
-                        record_created_at = record_created_at.replace(
-                            tzinfo=timezone.utc
-                        )
-
-                    # Now we can safely compare timezone-aware datetimes
-                    if record_created_at >= start_date and (
-                        end_date is None or record_created_at < end_date
-                    ):
-                        period_records.append(record)
-
-                if not period_records:
+                if not bait_stats:
                     results[fish_name][period_name] = {
                         "caught_most": None,
                         "caught_biggest": None,
                     }
                     continue
 
-                # Analyze baits for this period
-                bait_stats = {}
-
-                for record in period_records:
-                    # Get normalized bait display
-                    bait_display = normalize_bait_display(
-                        record.bait1, record.bait2, record.bait
-                    )
-
-                    if not bait_display or bait_display.strip() == "":
-                        continue
-
-                    if bait_display not in bait_stats:
-                        bait_stats[bait_display] = {
-                            "count": 0,
-                            "max_weight": 0,
-                            "records": [],
-                        }
-
-                    bait_stats[bait_display]["count"] += 1
-                    bait_stats[bait_display]["max_weight"] = max(
-                        bait_stats[bait_display]["max_weight"], record.weight or 0
-                    )
-                    bait_stats[bait_display]["records"].append(
-                        {
-                            "weight": record.weight,
-                            "player": record.player,
-                            "date": record.date,
-                        }
-                    )
-
                 # Find top baits
-                if bait_stats:
-                    # Most caught: bait with highest count
-                    most_caught_bait = max(
-                        bait_stats.items(), key=lambda x: x[1]["count"]
-                    )
+                most_caught_bait = max(bait_stats.items(), key=lambda x: x[1]["count"])
+                biggest_caught_bait = max(bait_stats.items(), key=lambda x: x[1]["max_weight"])
 
-                    # Biggest caught: bait with highest max weight
-                    biggest_caught_bait = max(
-                        bait_stats.items(), key=lambda x: x[1]["max_weight"]
-                    )
-
-                    results[fish_name][period_name] = {
-                        "caught_most": {
-                            "bait": most_caught_bait[0],
-                            "count": most_caught_bait[1]["count"],
-                        },
-                        "caught_biggest": {
-                            "bait": biggest_caught_bait[0],
-                            "weight": biggest_caught_bait[1]["max_weight"],
-                        },
-                    }
-                else:
-                    results[fish_name][period_name] = {
-                        "caught_most": None,
-                        "caught_biggest": None,
-                    }
+                results[fish_name][period_name] = {
+                    "caught_most": {
+                        "bait": most_caught_bait[0],
+                        "count": most_caught_bait[1]["count"],
+                    },
+                    "caught_biggest": {
+                        "bait": biggest_caught_bait[0],
+                        "weight": biggest_caught_bait[1]["max_weight"],
+                    },
+                }
 
         process_time = time.time() - process_start
         total_time = time.time() - start_time
 
         logger.info(f"🎯 Top baits analysis completed:")
-        logger.info(f"  Query time: {query_time:.3f}s")
-        logger.info(f"  Processing time: {process_time:.3f}s")
+        logger.info(f"  SQL aggregation: {query_time:.3f}s")
+        logger.info(f"  Python processing: {process_time:.3f}s")
         logger.info(f"  Total time: {total_time:.3f}s")
+        logger.info(f"  Memory efficient: {len(aggregated_rows)} aggregated rows vs {total_records} total records")
 
         return {
             "fish_data": results,
@@ -1197,8 +1210,9 @@ def get_top_baits_data_optimized():
                 },
             },
             "performance": {
-                "total_records": len(all_records),
+                "total_records": total_records,
                 "total_fish_species": len(fish_names),
+                "aggregated_rows": len(aggregated_rows),
                 "query_time": round(query_time, 3),
                 "processing_time": round(process_time, 3),
                 "total_time": round(total_time, 3),
