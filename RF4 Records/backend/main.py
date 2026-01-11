@@ -196,30 +196,12 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Error initializing Q&A dataset on startup: {e}")
 
-    # Generate top baits cache on startup (database is ready at this point)
-    try:
-        from top_baits_cache import generate_top_baits_cache
+    # Note: Top baits cache will be generated on first API request (lazy loading)
+    # Deferred from startup to reduce memory spike - loads 3 weeks of records into memory
+    print("🎣 Top baits cache: will be generated on first request (lazy loading)", flush=True)
 
-        print("🎣 Generating top baits cache on startup...", flush=True)
-        success = generate_top_baits_cache()
-        if success:
-            print("✅ Top baits cache generated successfully", flush=True)
-        else:
-            print("⚠️ Failed to generate top baits cache on startup", flush=True)
-    except Exception as e:
-        logger.error(f"Error generating top baits cache on startup: {e}")
-
-    # Pre-warm filter values cache on startup (fish, location, bait dropdowns)
-    try:
-        from optimized_records import get_filter_values_optimized, get_fish_location_mapping_optimized
-
-        print("📋 Pre-warming filter values cache on startup...", flush=True)
-        filter_values = get_filter_values_optimized()
-        mapping = get_fish_location_mapping_optimized()
-        print(f"✅ Filter values cache ready: {len(filter_values['fish'])} fish, {len(filter_values['waterbody'])} locations, {len(filter_values['bait'])} baits", flush=True)
-        print(f"✅ Fish-location mapping ready: {len(mapping['fish_by_location'])} locations, {len(mapping['locations_by_fish'])} fish", flush=True)
-    except Exception as e:
-        logger.error(f"Error pre-warming filter values cache on startup: {e}")
+    # Note: Filter values cache will be populated on first API request (lazy loading)
+    # Removed pre-warm at startup to reduce memory usage during initialization
 
     # Now start the scheduler after database is ready
     try:
