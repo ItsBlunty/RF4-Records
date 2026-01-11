@@ -80,38 +80,42 @@ def get_cached_filter_values(db):
     # Cache miss or expired - query database
     logger.info("🔄 Refreshing filter values cache (fish, waterbody, bait)...")
 
-    # Fish names
+    # Fish names - simple DISTINCT query
     fish_query = db.query(distinct(Record.fish)).filter(
         Record.fish.isnot(None), Record.fish != ""
     )
 
-    # Waterbody names
+    # Waterbody names - simple DISTINCT query
     waterbody_query = db.query(distinct(Record.waterbody)).filter(
         Record.waterbody.isnot(None), Record.waterbody != ""
     )
 
-    # Bait names (complex query to handle semicolon-separated values)
-    bait_query = db.execute(
+    # Bait names - OPTIMIZED: Get distinct bait strings first, then split in Python
+    # This is much faster than splitting 225K rows in PostgreSQL
+    # We only get ~2000 unique bait strings, then split those in Python (~200KB memory)
+    bait_distinct_query = db.execute(
         text("""
-        SELECT DISTINCT TRIM(bait_part) as bait_display FROM (
-            SELECT TRIM(UNNEST(STRING_TO_ARRAY(COALESCE(bait1, bait, ''), ';'))) as bait_part
-            FROM records
-            WHERE (bait1 IS NOT NULL AND bait1 != '')
-               OR (bait IS NOT NULL AND bait != '')
-            UNION
-            SELECT TRIM(UNNEST(STRING_TO_ARRAY(bait2, ';'))) as bait_part
-            FROM records
-            WHERE bait2 IS NOT NULL AND bait2 != ''
-        ) split_baits
-        WHERE bait_part != '' AND bait_part IS NOT NULL
-        ORDER BY bait_display
+        SELECT DISTINCT bait1 FROM records WHERE bait1 IS NOT NULL AND bait1 != ''
+        UNION
+        SELECT DISTINCT bait2 FROM records WHERE bait2 IS NOT NULL AND bait2 != ''
+        UNION
+        SELECT DISTINCT bait FROM records WHERE bait IS NOT NULL AND bait != ''
     """)
     )
+
+    # Split semicolon-separated values in Python (fast - only ~2000 strings)
+    bait_set = set()
+    for row in bait_distinct_query.fetchall():
+        if row[0]:
+            for part in row[0].split(';'):
+                part = part.strip()
+                if part:
+                    bait_set.add(part)
 
     filter_values = {
         "fish": sorted([r[0] for r in fish_query.all() if r[0]]),
         "waterbody": sorted([r[0] for r in waterbody_query.all() if r[0]]),
-        "bait": [r[0] for r in bait_query.fetchall() if r[0]],
+        "bait": sorted(list(bait_set)),
     }
 
     # Update cache
