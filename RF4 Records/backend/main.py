@@ -849,46 +849,31 @@ def get_initial_records():
 @app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records():
-    """Get remaining records after initial 1000 (high-performance optimized)"""
-    try:
-        from optimized_records import get_remaining_records_optimized
-
-        # Use optimized function with database-level pagination
-        result = get_remaining_records_optimized(skip=1000)
-
-        logger.info(f"Retrieved {len(result['records'])} remaining records optimized")
-        return result
-
-    except Exception as e:
-        logger.error(f"Error retrieving remaining records: {e}")
-        return {"error": "Failed to retrieve remaining records"}
+    """
+    DISABLED: This endpoint loaded ALL records after first 1000 into memory.
+    Use /records/filtered with data_age parameter instead.
+    """
+    logger.warning("🚫 /records/remaining endpoint called - DISABLED to prevent memory bomb")
+    return {
+        "error": "This endpoint is disabled to prevent server memory issues",
+        "message": "Use /records/filtered?data_age=1-day instead",
+        "suggestion": "The /records/filtered endpoint supports pagination with limit and offset"
+    }
 
 
 @app.get("/records")
 @app.get("/api/records")
 def get_records():
-    """Get all records from database with filter values (high-performance optimized)"""
-    try:
-        from optimized_records import (
-            get_all_records_optimized,
-            get_filter_values_optimized,
-        )
-
-        # Get all records with optimized query
-        all_records, total_count = get_all_records_optimized()
-
-        # Get unique values with optimized queries
-        unique_values = get_filter_values_optimized()
-
-        logger.info(f"Retrieved all {len(all_records)} records optimized")
-        return {
-            "records": all_records,
-            "total_records": len(all_records),
-            "unique_values": unique_values,
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving records: {e}")
-        return {"error": "Failed to retrieve records"}
+    """
+    DISABLED: This endpoint loaded ALL 225K+ records into memory causing 2-5GB memory spikes.
+    Use /records/filtered with data_age parameter instead.
+    """
+    logger.warning("🚫 /records endpoint called - DISABLED to prevent memory bomb (225K+ ORM objects)")
+    return {
+        "error": "This endpoint is disabled to prevent server memory issues",
+        "message": "Use /records/filtered?data_age=1-day instead",
+        "suggestion": "The /records/filtered endpoint supports fish, waterbody, bait, and data_age filters"
+    }
 
 
 @app.get("/records/recent")
@@ -951,36 +936,17 @@ def get_all_recent_records():
 @app.get("/records/older")
 @app.get("/api/records/older")
 def get_older_records():
-    """Get older records (before last reset) for background loading"""
-    import time
-
-    api_start = time.time()
-
-    try:
-        from optimized_records import get_older_records_optimized
-
-        result = get_older_records_optimized()
-
-        api_time = time.time() - api_start
-
-        logger.info(f"🚀 API Response Complete (Background):")
-        logger.info(
-            f"  Retrieved {len(result['records'])} older records for background"
-        )
-        logger.info(f"  Total API time: {api_time:.3f}s")
-        logger.info(
-            f"  DB time: {result['performance']['query_time']}s ({result['performance']['query_time'] / api_time * 100:.1f}%)"
-        )
-        logger.info(
-            f"  API overhead: {api_time - result['performance']['total_time']:.3f}s"
-        )
-
-        return result
-
-    except Exception as e:
-        api_time = time.time() - api_start
-        logger.error(f"Error retrieving older records after {api_time:.3f}s: {e}")
-        return {"error": "Failed to retrieve older records"}
+    """
+    DISABLED: This endpoint loaded ALL records before last reset into memory (~200K+ records).
+    This caused 2-5GB memory spikes that couldn't be recovered without restart.
+    Use /records/filtered with data_age parameter instead.
+    """
+    logger.warning("🚫 /records/older endpoint called - DISABLED to prevent memory bomb (200K+ ORM objects)")
+    return {
+        "error": "This endpoint is disabled to prevent server memory issues",
+        "message": "Use /records/filtered?data_age=since-reset or data_age=7-days instead",
+        "suggestion": "The /records/filtered endpoint is memory-safe and supports all filtering options"
+    }
 
 
 @app.get("/records/filtered")
