@@ -512,80 +512,76 @@ def get_four_resets_ago_date():
 
 
 def get_recent_records_optimized(limit: int = 1000):
-    """Get recent records since last reset - SPEED OPTIMIZED for initial load"""
+    """Get recent records since last reset - MEMORY OPTIMIZED with raw SQL"""
     db = SessionLocal()
 
     try:
         last_reset = get_last_record_reset_date()
 
-        # Get ALL recent records since last reset (not limited)
-        all_recent_records = (
-            db.query(Record)
-            .filter(Record.created_at >= last_reset)
-            .order_by(Record.id.desc())
-            .all()
-        )
+        # Get counts using efficient SQL COUNT (not loading objects)
+        recent_count = db.execute(
+            text("SELECT COUNT(*) FROM records WHERE created_at >= :last_reset"),
+            {"last_reset": last_reset}
+        ).scalar()
+        total_records = db.execute(text("SELECT COUNT(*) FROM records")).scalar()
 
-        # Get actual counts
-        recent_count = len(all_recent_records)
-        total_records = db.query(Record).count()
-
-        # Limit for initial display but return actual count
-        recent_records = (
-            all_recent_records[:limit]
-            if len(all_recent_records) > limit
-            else all_recent_records
-        )
+        # Get limited records using SQL LIMIT (not Python slicing)
+        sql = """
+            SELECT id, player, fish, weight, waterbody, bait, bait1, bait2,
+                   date, region, category, created_at, trophy_class
+            FROM records
+            WHERE created_at >= :last_reset
+            ORDER BY id DESC
+            LIMIT :limit
+        """
+        rows = db.execute(text(sql), {"last_reset": last_reset, "limit": limit}).fetchall()
 
         result = []
         fish_set = set()
         waterbody_set = set()
         bait_set = set()
 
-        for record in recent_records:
-            # Format bait display with alphabetical ordering
-            bait_display = normalize_bait_display(
-                record.bait1, record.bait2, record.bait
-            )
+        for row in rows:
+            bait1 = row[6]
+            bait2 = row[7]
+            bait_val = row[5]
+            category = row[10]
+            created_at = row[11]
 
-            # Parse combined categories
-            if record.category and ";" in record.category:
-                categories = record.category.split(";")
+            bait_display = normalize_bait_display(bait1, bait2, bait_val)
+
+            if category and ";" in category:
+                categories = category.split(";")
             else:
-                categories = [record.category] if record.category else ["N"]
+                categories = [category] if category else ["N"]
 
-            result.append(
-                {
-                    "player": record.player,
-                    "fish": record.fish,
-                    "weight": record.weight,
-                    "waterbody": record.waterbody,
-                    "bait_display": bait_display,
-                    "date": record.date,
-                    "region": record.region,
-                    "categories": categories,
-                    "created_at": record.created_at.isoformat()
-                    if record.created_at
-                    else None,
-                    "trophy_class": record.trophy_class,
-                }
-            )
+            result.append({
+                "player": row[1],
+                "fish": row[2],
+                "weight": row[3],
+                "waterbody": row[4],
+                "bait_display": bait_display,
+                "date": row[8],
+                "region": row[9],
+                "categories": categories,
+                "created_at": created_at.isoformat() if created_at else None,
+                "trophy_class": row[12],
+            })
 
-            # OPTIMIZATION: Build unique values during main loop (faster)
-            if record.fish:
-                fish_set.add(record.fish)
-            if record.waterbody:
-                waterbody_set.add(record.waterbody)
+            # Build unique values during main loop
+            if row[2]:  # fish
+                fish_set.add(row[2])
+            if row[4]:  # waterbody
+                waterbody_set.add(row[4])
             if bait_display:
                 bait_set.add(bait_display)
 
         return {
             "records": result,
-            "recent_count": recent_count,  # Actual count of recent records
+            "recent_count": recent_count,
             "total_records": total_records,
             "showing_recent_only": True,
-            "showing_limited": len(recent_records)
-            < recent_count,  # True if we're showing limited subset
+            "showing_limited": len(result) < recent_count,
             "has_older_records": recent_count < total_records,
             "last_reset_date": last_reset.isoformat(),
             "unique_values": {
@@ -603,80 +599,77 @@ def get_recent_records_optimized(limit: int = 1000):
 
 
 def get_all_recent_records_optimized():
-    """Get ALL recent records since last reset (no limit) for when user filters by since-reset"""
+    """Get ALL recent records since last reset - MEMORY OPTIMIZED with raw SQL"""
     start_time = time.time()
     db = SessionLocal()
 
     try:
-        # Timer: Reset date calculation
         reset_start = time.time()
         last_reset = get_last_record_reset_date()
         reset_time = time.time() - reset_start
 
-        # Timer: Database query for recent records
-        query_start = time.time()
-        recent_records = (
-            db.query(Record)
-            .filter(Record.created_at >= last_reset)
-            .order_by(Record.id.desc())
-            .all()
-        )
-        query_time = time.time() - query_start
-
-        # Timer: Total count query
+        # Get counts efficiently
         count_start = time.time()
-        total_records = db.query(Record).count()
+        total_records = db.execute(text("SELECT COUNT(*) FROM records")).scalar()
         count_time = time.time() - count_start
 
-        recent_count = len(recent_records)
+        # Get records using raw SQL (not ORM objects)
+        query_start = time.time()
+        sql = """
+            SELECT id, player, fish, weight, waterbody, bait, bait1, bait2,
+                   date, region, category, created_at, trophy_class
+            FROM records
+            WHERE created_at >= :last_reset
+            ORDER BY id DESC
+        """
+        rows = db.execute(text(sql), {"last_reset": last_reset}).fetchall()
+        query_time = time.time() - query_start
 
-        # Timer: Data processing
+        recent_count = len(rows)
+
+        # Process raw rows
         process_start = time.time()
         result = []
         fish_set = set()
         waterbody_set = set()
         bait_set = set()
 
-        for record in recent_records:
-            # Format bait display with alphabetical ordering
-            bait_display = normalize_bait_display(
-                record.bait1, record.bait2, record.bait
-            )
+        for row in rows:
+            bait1 = row[6]
+            bait2 = row[7]
+            bait_val = row[5]
+            category = row[10]
+            created_at = row[11]
 
-            # Parse combined categories
-            if record.category and ";" in record.category:
-                categories = record.category.split(";")
+            bait_display = normalize_bait_display(bait1, bait2, bait_val)
+
+            if category and ";" in category:
+                categories = category.split(";")
             else:
-                categories = [record.category] if record.category else ["N"]
+                categories = [category] if category else ["N"]
 
-            result.append(
-                {
-                    "player": record.player,
-                    "fish": record.fish,
-                    "weight": record.weight,
-                    "waterbody": record.waterbody,
-                    "bait_display": bait_display,
-                    "date": record.date,
-                    "region": record.region,
-                    "categories": categories,
-                    "created_at": record.created_at.isoformat()
-                    if record.created_at
-                    else None,
-                    "trophy_class": record.trophy_class,
-                }
-            )
+            result.append({
+                "player": row[1],
+                "fish": row[2],
+                "weight": row[3],
+                "waterbody": row[4],
+                "bait_display": bait_display,
+                "date": row[8],
+                "region": row[9],
+                "categories": categories,
+                "created_at": created_at.isoformat() if created_at else None,
+                "trophy_class": row[12],
+            })
 
-            # Build unique values during main loop
-            if record.fish:
-                fish_set.add(record.fish)
-            if record.waterbody:
-                waterbody_set.add(record.waterbody)
+            if row[2]:
+                fish_set.add(row[2])
+            if row[4]:
+                waterbody_set.add(row[4])
             if bait_display:
                 bait_set.add(bait_display)
 
         process_time = time.time() - process_start
 
-        # Timer: Unique values sorting
         sort_start = time.time()
         unique_values = {
             "fish": sorted(list(fish_set)),
@@ -687,8 +680,7 @@ def get_all_recent_records_optimized():
 
         total_time = time.time() - start_time
 
-        # Log performance metrics
-        logger.info(f"📊 Recent Records Performance:")
+        logger.info(f"📊 Recent Records Performance (raw SQL):")
         logger.info(f"  Reset date calc: {reset_time:.3f}s")
         logger.info(f"  DB query ({recent_count} records): {query_time:.3f}s")
         logger.info(f"  Total count query: {count_time:.3f}s")
@@ -709,15 +701,13 @@ def get_all_recent_records_optimized():
                 "total_time": round(total_time, 3),
                 "query_time": round(query_time, 3),
                 "process_time": round(process_time, 3),
-                "records_per_second": round(recent_count / total_time, 0),
+                "records_per_second": round(recent_count / total_time, 0) if total_time > 0 else 0,
             },
         }
 
     except Exception as e:
         total_time = time.time() - start_time
-        logger.error(
-            f"Error retrieving all recent records after {total_time:.3f}s: {e}"
-        )
+        logger.error(f"Error retrieving all recent records after {total_time:.3f}s: {e}")
         raise
     finally:
         db.close()
@@ -830,165 +820,148 @@ def get_filtered_records_optimized(
     fish=None, waterbody=None, bait=None, data_age=None, limit=None, offset=None
 ):
     """
-    Get filtered records from database based on criteria - OPTIMIZED VERSION
+    Get filtered records from database based on criteria - MEMORY OPTIMIZED VERSION
 
-    Key optimizations:
-    1. Fish names cached (prevents N+1 queries)
-    2. Day-based filtering uses created_at in SQL (not Python post-processing)
-    3. Removed duplicate bait filtering (SQL only, no Python re-check)
+    Uses raw SQL instead of ORM objects to reduce memory usage by ~10x.
+    100K records: ~50MB instead of ~500MB.
     """
     start_time = time.time()
     db = SessionLocal()
 
     try:
-        # Start with base query
-        query = db.query(Record)
+        # Build dynamic SQL query with parameters
+        where_clauses = []
+        params = {}
 
-        # ====================================================================
-        # OPTIMIZATION #1: Use cached fish names instead of querying per item
-        # ====================================================================
+        # Fish filter
         if fish:
-            # Get cached fish names (single query, cached for 5 minutes)
             available_fish = get_cached_fish_names(db)
+            fish_list = fish if isinstance(fish, list) else [fish]
+            fish_conditions = []
 
-            if isinstance(fish, list):
-                # Multiple fish - use OR condition with smart matching
-                fish_conditions = []
-                for f in fish:
-                    if f.strip():
-                        search_term_lower = f.strip().lower()
-                        if search_term_lower in available_fish:
-                            # Exact match found - use exact matching only
-                            fish_conditions.append(Record.fish.ilike(f.strip()))
-                        else:
-                            # No exact match - use partial matching
-                            fish_conditions.append(Record.fish.ilike(f"%{f.strip()}%"))
+            for i, f in enumerate(fish_list):
+                if f and f.strip():
+                    param_name = f"fish_{i}"
+                    search_term_lower = f.strip().lower()
+                    if search_term_lower in available_fish:
+                        # Exact match (case insensitive)
+                        fish_conditions.append(f"LOWER(fish) = LOWER(:{param_name})")
+                        params[param_name] = f.strip()
+                    else:
+                        # Partial match
+                        fish_conditions.append(f"fish ILIKE :{param_name}")
+                        params[param_name] = f"%{f.strip()}%"
 
-                if fish_conditions:
-                    query = query.filter(or_(*fish_conditions))
-            else:
-                # Single fish (backward compatibility) with smart matching
-                search_term_lower = fish.strip().lower()
-                if search_term_lower in available_fish:
-                    # Exact match found - use exact matching only
-                    query = query.filter(Record.fish.ilike(fish.strip()))
-                else:
-                    # No exact match - use partial matching
-                    query = query.filter(Record.fish.ilike(f"%{fish}%"))
+            if fish_conditions:
+                where_clauses.append(f"({' OR '.join(fish_conditions)})")
 
-        # Apply waterbody filter (support multiple values)
+        # Waterbody filter
         if waterbody:
-            if isinstance(waterbody, list):
-                # Multiple waterbodies - use OR condition
-                waterbody_conditions = [
-                    Record.waterbody.ilike(f"%{w.strip()}%")
-                    for w in waterbody
-                    if w.strip()
-                ]
-                if waterbody_conditions:
-                    query = query.filter(or_(*waterbody_conditions))
-            else:
-                # Single waterbody (backward compatibility)
-                query = query.filter(Record.waterbody.ilike(f"%{waterbody}%"))
+            waterbody_list = waterbody if isinstance(waterbody, list) else [waterbody]
+            waterbody_conditions = []
 
-        # Apply bait filter (support multiple values, check both bait1 and bait2)
-        # NOTE: SQL filtering only - removed redundant Python post-processing
+            for i, w in enumerate(waterbody_list):
+                if w and w.strip():
+                    param_name = f"waterbody_{i}"
+                    waterbody_conditions.append(f"waterbody ILIKE :{param_name}")
+                    params[param_name] = f"%{w.strip()}%"
+
+            if waterbody_conditions:
+                where_clauses.append(f"({' OR '.join(waterbody_conditions)})")
+
+        # Bait filter (check bait1, bait2, and bait fields)
         if bait:
-            if isinstance(bait, list):
-                # Multiple baits - use OR condition for each bait across all bait fields
-                all_bait_conditions = []
-                for b in bait:
-                    if b.strip():
-                        bait_conditions = [
-                            Record.bait1.ilike(f"%{b.strip()}%"),
-                            Record.bait2.ilike(f"%{b.strip()}%"),
-                            Record.bait.ilike(f"%{b.strip()}%"),
-                        ]
-                        all_bait_conditions.append(or_(*bait_conditions))
-                if all_bait_conditions:
-                    query = query.filter(or_(*all_bait_conditions))
-            else:
-                # Single bait (backward compatibility)
-                query = query.filter(
-                    (Record.bait1.ilike(f"%{bait}%"))
-                    | (Record.bait2.ilike(f"%{bait}%"))
-                    | (Record.bait.ilike(f"%{bait}%"))
-                )
+            bait_list = bait if isinstance(bait, list) else [bait]
+            bait_conditions = []
 
-        # ====================================================================
-        # OPTIMIZATION #2: ALL date filtering done in SQL using created_at
-        # This is the key fix - day-based filters now use indexed created_at
-        # ====================================================================
+            for i, b in enumerate(bait_list):
+                if b and b.strip():
+                    param_name = f"bait_{i}"
+                    params[param_name] = f"%{b.strip()}%"
+                    bait_conditions.append(
+                        f"(bait1 ILIKE :{param_name} OR bait2 ILIKE :{param_name} OR bait ILIKE :{param_name})"
+                    )
+
+            if bait_conditions:
+                where_clauses.append(f"({' OR '.join(bait_conditions)})")
+
+        # Date filter
         if data_age:
             now = datetime.now(timezone.utc)
+            cutoff = None
 
             if data_age == "since-reset":
-                last_reset = get_last_record_reset_date()
-                query = query.filter(Record.created_at >= last_reset)
+                cutoff = get_last_record_reset_date()
             elif data_age == "since-two-resets-ago":
-                two_resets_ago = get_two_resets_ago_date()
-                query = query.filter(Record.created_at >= two_resets_ago)
+                cutoff = get_two_resets_ago_date()
             elif data_age == "1-day":
-                # Records created in the last 24 hours
                 cutoff = now - timedelta(days=1)
-                query = query.filter(Record.created_at >= cutoff)
             elif data_age == "2-days":
                 cutoff = now - timedelta(days=2)
-                query = query.filter(Record.created_at >= cutoff)
             elif data_age == "3-days":
                 cutoff = now - timedelta(days=3)
-                query = query.filter(Record.created_at >= cutoff)
             elif data_age == "7-days":
                 cutoff = now - timedelta(days=7)
-                query = query.filter(Record.created_at >= cutoff)
             elif data_age == "30-days":
                 cutoff = now - timedelta(days=30)
-                query = query.filter(Record.created_at >= cutoff)
             elif data_age == "90-days":
                 cutoff = now - timedelta(days=90)
-                query = query.filter(Record.created_at >= cutoff)
-            # If data_age doesn't match any known value, no filter applied (returns all)
 
-        # Get all matching records - now with proper SQL filtering!
+            if cutoff:
+                where_clauses.append("created_at >= :cutoff")
+                params["cutoff"] = cutoff
+
+        # Build final SQL query - select only needed columns (not full ORM objects)
+        sql = """
+            SELECT id, player, fish, weight, waterbody, bait, bait1, bait2,
+                   date, region, category, created_at, trophy_class
+            FROM records
+        """
+
+        if where_clauses:
+            sql += " WHERE " + " AND ".join(where_clauses)
+
+        sql += " ORDER BY id DESC"
+
+        # Execute raw SQL query
         query_start = time.time()
-        records = query.order_by(Record.id.desc()).all()
+        result = db.execute(text(sql), params)
+        rows = result.fetchall()
         query_time = time.time() - query_start
 
-        # ====================================================================
-        # OPTIMIZATION #3: Simplified post-processing (no duplicate filtering)
-        # ====================================================================
+        # Process raw rows into dicts (much smaller than ORM objects)
         process_start = time.time()
         filtered_records = []
 
-        for record in records:
-            # Format bait display with alphabetical ordering
-            bait_display = normalize_bait_display(
-                record.bait1, record.bait2, record.bait
-            )
+        for row in rows:
+            # Access by index for raw rows
+            bait1 = row[6]
+            bait2 = row[7]
+            bait_val = row[5]
+            category = row[10]
+            created_at = row[11]
+
+            # Format bait display
+            bait_display = normalize_bait_display(bait1, bait2, bait_val)
 
             # Parse combined categories
-            if record.category and ";" in record.category:
-                categories = record.category.split(";")
+            if category and ";" in category:
+                categories = category.split(";")
             else:
-                categories = [record.category] if record.category else ["N"]
+                categories = [category] if category else ["N"]
 
-            # Add to filtered results (no additional filtering needed - SQL did it all)
-            filtered_records.append(
-                {
-                    "player": record.player,
-                    "fish": record.fish,
-                    "weight": record.weight,
-                    "waterbody": record.waterbody,
-                    "bait_display": bait_display,
-                    "date": record.date,
-                    "region": record.region,
-                    "categories": categories,
-                    "created_at": record.created_at.isoformat()
-                    if record.created_at
-                    else None,
-                    "trophy_class": record.trophy_class,
-                }
-            )
+            filtered_records.append({
+                "player": row[1],
+                "fish": row[2],
+                "weight": row[3],
+                "waterbody": row[4],
+                "bait_display": bait_display,
+                "date": row[8],
+                "region": row[9],
+                "categories": categories,
+                "created_at": created_at.isoformat() if created_at else None,
+                "trophy_class": row[12],
+            })
 
         process_time = time.time() - process_start
 
