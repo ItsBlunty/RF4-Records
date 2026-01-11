@@ -4062,7 +4062,8 @@ def serve_frontend(path: str):
         "refresh",
         "cleanup",
         "status",
-        "records",
+        # Note: "records" removed - /records is now a frontend route only
+        # API endpoints use /api/records/* or /records/filtered, /records/recent, etc.
     ]
     for prefix in api_prefixes:
         if path.startswith(prefix) or path == prefix.rstrip("/"):
