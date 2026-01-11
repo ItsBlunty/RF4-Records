@@ -846,14 +846,13 @@ def get_initial_records():
         return {"error": "Failed to retrieve initial records"}
 
 
-@app.get("/records/remaining")
 @app.get("/api/records/remaining")
 def get_remaining_records():
     """
     DISABLED: This endpoint loaded ALL records after first 1000 into memory.
     Use /records/filtered with data_age parameter instead.
     """
-    logger.warning("🚫 /records/remaining endpoint called - DISABLED to prevent memory bomb")
+    logger.warning("🚫 /api/records/remaining endpoint called - DISABLED to prevent memory bomb")
     return {
         "error": "This endpoint is disabled to prevent server memory issues",
         "message": "Use /records/filtered?data_age=1-day instead",
@@ -861,14 +860,16 @@ def get_remaining_records():
     }
 
 
-@app.get("/records")
 @app.get("/api/records")
 def get_records():
     """
     DISABLED: This endpoint loaded ALL 225K+ records into memory causing 2-5GB memory spikes.
     Use /records/filtered with data_age parameter instead.
+
+    Note: /records route removed to allow SPA routing (browser navigation to /records?...
+    should serve index.html, not this API response)
     """
-    logger.warning("🚫 /records endpoint called - DISABLED to prevent memory bomb (225K+ ORM objects)")
+    logger.warning("🚫 /api/records endpoint called - DISABLED to prevent memory bomb (225K+ ORM objects)")
     return {
         "error": "This endpoint is disabled to prevent server memory issues",
         "message": "Use /records/filtered?data_age=1-day instead",
@@ -933,7 +934,6 @@ def get_all_recent_records():
         return {"error": "Failed to retrieve all recent records"}
 
 
-@app.get("/records/older")
 @app.get("/api/records/older")
 def get_older_records():
     """
@@ -941,7 +941,7 @@ def get_older_records():
     This caused 2-5GB memory spikes that couldn't be recovered without restart.
     Use /records/filtered with data_age parameter instead.
     """
-    logger.warning("🚫 /records/older endpoint called - DISABLED to prevent memory bomb (200K+ ORM objects)")
+    logger.warning("🚫 /api/records/older endpoint called - DISABLED to prevent memory bomb (200K+ ORM objects)")
     return {
         "error": "This endpoint is disabled to prevent server memory issues",
         "message": "Use /records/filtered?data_age=since-reset or data_age=7-days instead",
