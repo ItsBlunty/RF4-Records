@@ -158,18 +158,11 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
   const handleInputChange = (field, value) => {
     onChange(field, value);
 
-    // Auto-search when fish, waterbody, or bait changes (not dataAge)
-    if (field !== 'dataAge') {
-      const newFilters = { ...filters, [field]: value };
-      if (onSubmitWithValues) {
-        onSubmitWithValues(newFilters);
-      }
+    // Auto-search when any filter changes
+    const newFilters = { ...filters, [field]: value };
+    if (onSubmitWithValues) {
+      onSubmitWithValues(newFilters);
     }
-  };
-
-  const handleDataAgeChange = (field, value) => {
-    onChange(field, value);
-    // Data age filter does not auto-submit - user must add a fish/location/bait filter
   };
 
   return (
@@ -224,7 +217,7 @@ const Filters = ({ filters, uniqueValues, onChange, onSubmitWithValues, onPageCh
           {/* Data Age Filter - structure matches MultiSelectFilter exactly */}
           <DataAgeFilter
             value={filters.dataAge || '1-day'}
-            onChange={(value) => handleDataAgeChange('dataAge', value)}
+            onChange={(value) => handleInputChange('dataAge', value)}
           />
 
           {/* Search History */}
