@@ -1,31 +1,34 @@
 import React from 'react';
-import { Fish, Target } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Fish, Target, Map } from 'lucide-react';
 
 // Map image filenames to database waterbody names
 // Order matches the maps page, with Prison Pond at the end (no map)
 const LOCATION_DATA = [
-  { image: 'Mosquito Lake.jpg', waterbody: 'Mosquito Lake', displayName: 'Mosquito Lake' },
-  { image: 'Elk Lake.jpg', waterbody: 'Elk Lake', displayName: 'Elk Lake' },
-  { image: 'Winding Rivulet.jpg', waterbody: 'Winding Rivulet', displayName: 'Winding Rivulet' },
-  { image: 'Old Burg Lake.jpg', waterbody: 'Old Burg Lake', displayName: 'Old Burg Lake' },
-  { image: 'Belaya River.jpg', waterbody: 'Belaya River', displayName: 'Belaya River' },
-  { image: 'Kuori Lake.jpg', waterbody: 'Kuori Lake', displayName: 'Kuori Lake' },
-  { image: 'Bear Lake.jpg', waterbody: 'Bear Lake', displayName: 'Bear Lake' },
-  { image: 'Volkhov Lake.jpg', waterbody: 'Volkhov River', displayName: 'Volkhov River' },
-  { image: 'Seversky Donets River.jpg', waterbody: 'Seversky Donets River', displayName: 'Seversky Donets River' },
-  { image: 'Sura River.jpg', waterbody: 'Sura River', displayName: 'Sura River' },
-  { image: 'Ladoga Lake.jpg', waterbody: 'Ladoga Lake', displayName: 'Ladoga Lake' },
-  { image: 'Amber Lake.jpg', waterbody: 'The Amber Lake', displayName: 'Amber Lake' },
-  { image: 'Ladoga Archipelago.jpg', waterbody: 'Ladoga archipelago', displayName: 'Ladoga Archipelago' },
-  { image: 'Akhtuba River.jpg', waterbody: 'Akhtuba River', displayName: 'Akhtuba River' },
-  { image: 'Copper Lake.jpg', waterbody: 'Copper lake', displayName: 'Copper Lake' },
-  { image: 'Lower Tunguska River.jpg', waterbody: 'Lower Tunguska River', displayName: 'Lower Tunguska River' },
-  { image: 'Yama River.jpg', waterbody: 'Yama River', displayName: 'Yama River' },
-  { image: 'Norwegian Sea.jpg', waterbody: 'Norwegian Sea', displayName: 'Norwegian Sea' },
-  { image: 'Prison Pond.jpg', waterbody: 'Penalty pond', displayName: 'Penalty Pond' },
+  { image: 'Mosquito Lake.jpg', waterbody: 'Mosquito Lake', displayName: 'Mosquito Lake', mapSlug: 'mosquito' },
+  { image: 'Elk Lake.jpg', waterbody: 'Elk Lake', displayName: 'Elk Lake', mapSlug: 'elklake' },
+  { image: 'Winding Rivulet.jpg', waterbody: 'Winding Rivulet', displayName: 'Winding Rivulet', mapSlug: 'winding' },
+  { image: 'Old Burg Lake.jpg', waterbody: 'Old Burg Lake', displayName: 'Old Burg Lake', mapSlug: 'oldburg' },
+  { image: 'Belaya River.jpg', waterbody: 'Belaya River', displayName: 'Belaya River', mapSlug: 'belaya' },
+  { image: 'Kuori Lake.jpg', waterbody: 'Kuori Lake', displayName: 'Kuori Lake', mapSlug: 'kuori' },
+  { image: 'Bear Lake.jpg', waterbody: 'Bear Lake', displayName: 'Bear Lake', mapSlug: 'bear' },
+  { image: 'Volkhov Lake.jpg', waterbody: 'Volkhov River', displayName: 'Volkhov River', mapSlug: 'volkhov' },
+  { image: 'Seversky Donets River.jpg', waterbody: 'Seversky Donets River', displayName: 'Seversky Donets River', mapSlug: 'seversky' },
+  { image: 'Sura River.jpg', waterbody: 'Sura River', displayName: 'Sura River', mapSlug: 'sura' },
+  { image: 'Ladoga Lake.jpg', waterbody: 'Ladoga Lake', displayName: 'Ladoga Lake', mapSlug: 'ladoga' },
+  { image: 'Amber Lake.jpg', waterbody: 'The Amber Lake', displayName: 'Amber Lake', mapSlug: 'amber' },
+  { image: 'Ladoga Archipelago.jpg', waterbody: 'Ladoga archipelago', displayName: 'Ladoga Archipelago', mapSlug: 'archipelago' },
+  { image: 'Akhtuba River.jpg', waterbody: 'Akhtuba River', displayName: 'Akhtuba River', mapSlug: 'akhtuba' },
+  { image: 'Copper Lake.jpg', waterbody: 'Copper lake', displayName: 'Copper Lake', mapSlug: 'copper' },
+  { image: 'Lower Tunguska River.jpg', waterbody: 'Lower Tunguska River', displayName: 'Lower Tunguska River', mapSlug: 'lowertunguska' },
+  { image: 'Yama River.jpg', waterbody: 'Yama River', displayName: 'Yama River', mapSlug: 'yama' },
+  { image: 'Norwegian Sea.jpg', waterbody: 'Norwegian Sea', displayName: 'Norwegian Sea', mapSlug: 'norwegian' },
+  { image: 'Prison Pond.jpg', waterbody: 'Penalty pond', displayName: 'Penalty Pond', mapSlug: null },
 ];
 
 const LocationBrowser = ({ onLocationSelect }) => {
+  const navigate = useNavigate();
+
   const handleBaitsClick = (waterbody) => {
     onLocationSelect(waterbody, 'grouped');
   };
@@ -75,6 +78,15 @@ const LocationBrowser = ({ onLocationSelect }) => {
                 <Fish className="w-4 h-4" />
                 Fish
               </button>
+              {location.mapSlug && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(`/maps/${location.mapSlug}`); }}
+                  className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-colors shadow-md"
+                >
+                  <Map className="w-4 h-4" />
+                  Map
+                </button>
+              )}
             </div>
           </div>
         ))}
