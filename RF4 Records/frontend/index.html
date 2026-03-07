@@ -18,7 +18,8 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
     <script>
-      if (window.location.hostname === 'rf4-records-production.up.railway.app') {
+      var h = window.location.hostname;
+      if (h === 'rf4.fish' || h === 'rf4records.com' || h === 'www.rf4.fish' || h === 'www.rf4records.com') {
         var s = document.createElement('script');
         s.async = true;
         s.src = 'https://ackee-production-2ebf.up.railway.app/tracker.js';
