@@ -17,6 +17,16 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
     <link rel="manifest" href="/site.webmanifest">
+    <script>
+      if (window.location.hostname === 'rf4-records-production.up.railway.app') {
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://ackee-production-2ebf.up.railway.app/tracker.js';
+        s.dataset.ackeeServer = 'https://ackee-production-2ebf.up.railway.app';
+        s.dataset.ackeeDomainId = 'bf59ae49-d78b-4b79-a71f-e02144885c8e';
+        document.head.appendChild(s);
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
