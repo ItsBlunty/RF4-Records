@@ -4082,9 +4082,25 @@ def serve_frontend(path: str):
         requested_file = os.path.join(frontend_dist_path, path)
         if os.path.isfile(requested_file):
             return FileResponse(requested_file)
-        else:
-            # For SPA routing, serve index.html for all other paths
+
+        # Valid frontend routes (must match React Router routes in App.jsx)
+        valid_frontend_routes = [
+            "", "links", "records", "trophyweights", "topbaits",
+            "skillguides", "skilltrees", "wearcalc", "waterbodyprices",
+            "alcohol", "reelinfo", "rodinfo", "iteminfo", "iteminfo/lines",
+            "iteminfo/lures", "lurecrafting", "timeline", "qa", "cafeorders",
+        ]
+
+        is_valid = (
+            path in valid_frontend_routes
+            or path == "maps"
+            or path.startswith("maps/")
+        )
+
+        if is_valid:
             return FileResponse(index_path)
+        else:
+            return FileResponse(index_path, status_code=404)
     else:
         # Fallback if frontend is not built
         return {"message": "Frontend not available - API only mode", "path": path}
