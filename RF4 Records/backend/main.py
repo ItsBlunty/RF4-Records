@@ -4083,7 +4083,10 @@ def serve_frontend(path: str):
         if os.path.isfile(requested_file):
             return FileResponse(requested_file)
 
-        # Valid frontend routes (must match React Router routes in App.jsx)
+        # IMPORTANT: Valid frontend routes - must stay in sync with TWO places:
+        #   1. React Router routes in frontend/src/App.jsx (the <Route> definitions)
+        #   2. getCurrentPage() in frontend/src/App.jsx (the page switching logic)
+        # When adding a new frontend page, add the route to all three locations.
         valid_frontend_routes = [
             "", "links", "records", "trophyweights", "topbaits",
             "skillguides", "skilltrees", "wearcalc", "waterbodyprices",
@@ -4094,7 +4097,7 @@ def serve_frontend(path: str):
         is_valid = (
             path in valid_frontend_routes
             or path == "maps"
-            or path.startswith("maps/")
+            or path.startswith("maps/")  # /maps/:mapName dynamic route
         )
 
         if is_valid:

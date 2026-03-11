@@ -776,6 +776,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
+      {/* IMPORTANT: When adding new routes, also update:
+          1. getCurrentPage() above (the page switching logic)
+          2. valid_frontend_routes in backend/main.py (for correct 404 status codes) */}
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/links" element={<AppContent />} />
