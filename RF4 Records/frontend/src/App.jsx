@@ -77,7 +77,8 @@ function AppContent() {
     if (location.pathname === '/qa') return 'qa';
     if (location.pathname === '/cafeorders') return 'cafeorders';
     if (location.pathname.startsWith('/maps')) return 'maps';
-    return 'locations';
+    if (location.pathname === '/') return 'locations';
+    return 'notfound';
   };
   
   // View mode state
@@ -750,6 +751,17 @@ function AppContent() {
         <QAPage darkMode={darkMode} />
       ) : getCurrentPage() === 'cafeorders' ? (
         <CafeOrders />
+      ) : getCurrentPage() === 'notfound' ? (
+        <div className="flex flex-col items-center justify-center py-24 px-4">
+          <h1 className="text-6xl font-bold text-gray-300 dark:text-gray-600 mb-4">404</h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">Page not found</p>
+          <button
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium"
+          >
+            Go Home
+          </button>
+        </div>
       ) : null}
       
       {/* About Modal */}
@@ -786,6 +798,7 @@ function App() {
         <Route path="/timeline" element={<AppContent />} />
         <Route path="/qa" element={<AppContent />} />
         <Route path="/cafeorders" element={<AppContent />} />
+        <Route path="*" element={<AppContent />} />
       </Routes>
     </Router>
   );
