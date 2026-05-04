@@ -16,6 +16,7 @@ import WaterbodyPrices from './components/WaterbodyPrices.jsx';
 import Links from './components/Links.jsx';
 import SkillTrees from './components/SkillTrees.jsx';
 import ReelInfo from './components/ReelInfo.jsx';
+import ReelSpeedCalc from './components/ReelSpeedCalc.jsx';
 import RodInfo from './components/RodInfo.jsx';
 import ItemInfo from './components/ItemInfo.jsx';
 import Lines from './components/Lines.jsx';
@@ -69,6 +70,7 @@ function AppContent() {
     if (location.pathname === '/waterbodyprices') return 'waterbodyprices';
     if (location.pathname === '/alcohol') return 'alcohol';
     if (location.pathname === '/reelinfo') return 'reelinfo';
+    if (location.pathname === '/reelspeedcalc') return 'reelspeedcalc';
     if (location.pathname === '/rodinfo') return 'rodinfo';
     if (location.pathname === '/iteminfo') return 'iteminfo';
     if (location.pathname === '/iteminfo/lines') return 'lines';
@@ -182,6 +184,8 @@ function AppContent() {
       navigate('/alcohol');
     } else if (page === 'reelinfo') {
       navigate('/reelinfo');
+    } else if (page === 'reelspeedcalc') {
+      navigate('/reelspeedcalc');
     } else if (page === 'rodinfo') {
       navigate('/rodinfo');
     } else if (page === 'iteminfo') {
@@ -733,6 +737,8 @@ function AppContent() {
         <AlcoholGuide />
       ) : getCurrentPage() === 'reelinfo' ? (
         <ReelInfo />
+      ) : getCurrentPage() === 'reelspeedcalc' ? (
+        <ReelSpeedCalc />
       ) : getCurrentPage() === 'rodinfo' ? (
         <RodInfo />
       ) : getCurrentPage() === 'iteminfo' ? (
@@ -791,6 +797,7 @@ function App() {
         <Route path="/waterbodyprices" element={<AppContent />} />
         <Route path="/alcohol" element={<AppContent />} />
         <Route path="/reelinfo" element={<AppContent />} />
+        <Route path="/reelspeedcalc" element={<AppContent />} />
         <Route path="/rodinfo" element={<AppContent />} />
         <Route path="/iteminfo" element={<AppContent />} />
         <Route path="/iteminfo/lines" element={<AppContent />} />
