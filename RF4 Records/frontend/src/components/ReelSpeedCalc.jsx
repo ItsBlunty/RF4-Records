@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Gauge, ArrowRight } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 
 const MIN_SETTING = 1;
 const MAX_SETTING = 50;
@@ -111,12 +111,12 @@ const ReelSpeedCalc = () => {
   const reel2OutOfRange = reel2EquivalentSettingRaw != null && reel2EquivalentSettingRaw > MAX_SETTING;
   const reel2BelowMin = reel2EquivalentSettingRaw != null && reel2EquivalentSettingRaw < MIN_SETTING;
 
-  const reel2EquivalentSettingClamped = reel2EquivalentSettingRaw != null
-    ? Math.max(MIN_SETTING, Math.min(MAX_SETTING, reel2EquivalentSettingRaw))
+  const reel2EquivalentSettingWhole = reel2EquivalentSettingRaw != null
+    ? Math.max(MIN_SETTING, Math.min(MAX_SETTING, Math.round(reel2EquivalentSettingRaw)))
     : null;
 
-  const reel2ActualSpeedAtClamped = (reel2EquivalentSettingClamped != null && reel2MaxSpeed)
-    ? (reel2MaxSpeed * reel2EquivalentSettingClamped) / MAX_SETTING
+  const reel2ActualSpeedAtWhole = (reel2EquivalentSettingWhole != null && reel2MaxSpeed)
+    ? (reel2MaxSpeed * reel2EquivalentSettingWhole) / MAX_SETTING
     : null;
 
   const handleSettingInput = (val) => {
@@ -234,26 +234,16 @@ const ReelSpeedCalc = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Speed setting (1-50)
               </label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={MIN_SETTING}
-                  max={MAX_SETTING}
-                  step={1}
-                  value={settingNum}
-                  onChange={(e) => setReel1Setting(Number(e.target.value))}
-                  className="flex-1"
-                />
-                <input
-                  type="number"
-                  min={MIN_SETTING}
-                  max={MAX_SETTING}
-                  value={reel1Setting}
-                  onChange={(e) => handleSettingInput(e.target.value)}
-                  onBlur={handleSettingBlur}
-                  className="w-20 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-center"
-                />
-              </div>
+              <input
+                type="number"
+                min={MIN_SETTING}
+                max={MAX_SETTING}
+                step={1}
+                value={reel1Setting}
+                onChange={(e) => handleSettingInput(e.target.value)}
+                onBlur={handleSettingBlur}
+                className="w-24 px-2 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-center"
+              />
             </div>
 
             {reel1 && (
@@ -262,7 +252,7 @@ const ReelSpeedCalc = () => {
                   Max retrieve (setting 50): <span className="font-medium">{reel1MaxSpeed?.toFixed(2)} m/s</span>
                 </div>
                 <div className="text-gray-700 dark:text-gray-300">
-                  Actual retrieve at setting {settingNum}: <span className="font-medium">{targetActualSpeed?.toFixed(3)} m/s</span>
+                  Retrieve at setting {settingNum}: <span className="font-medium">{targetActualSpeed?.toFixed(3)} m/s</span>
                 </div>
               </div>
             )}
@@ -295,58 +285,45 @@ const ReelSpeedCalc = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* Result */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <ArrowRight className="w-5 h-5" />
-            Equivalent setting for Reel 2
-          </h2>
-
-          {!reel1 || !reel2 ? (
-            <p className="text-gray-500 dark:text-gray-400">
-              Select both reels above to see the equivalent speed setting.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              <div className="text-3xl font-bold text-primary-600 dark:text-primary-400">
-                {reel2EquivalentSettingRaw != null ? reel2EquivalentSettingRaw.toFixed(2) : '-'}
-                <span className="text-base font-normal text-gray-500 dark:text-gray-400 ml-2">
-                  / {MAX_SETTING}
-                </span>
-              </div>
-
-              {reel2OutOfRange && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-                  Reel 2's max retrieve speed ({reel2MaxSpeed?.toFixed(2)} m/s) is lower than the target retrieve speed ({targetActualSpeed?.toFixed(3)} m/s). Even at setting 50, Reel 2 cannot match Reel 1.
+            {reel1 && reel2 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Equivalent speed setting for Reel 2
                 </div>
-              )}
 
-              {reel2BelowMin && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
-                  The equivalent setting is below 1, the lowest possible setting. Reel 2 will retrieve faster than Reel 1 even at setting 1.
+                <div className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                  {reel2EquivalentSettingWhole != null ? reel2EquivalentSettingWhole : '-'}
+                  <span className="text-base font-normal text-gray-500 dark:text-gray-400 ml-2">
+                    / {MAX_SETTING}
+                  </span>
                 </div>
-              )}
 
-              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                <div>
-                  Nearest whole setting: <span className="font-medium text-gray-900 dark:text-white">{reel2EquivalentSettingClamped != null ? Math.round(reel2EquivalentSettingClamped) : '-'}</span>
-                </div>
-                {reel2ActualSpeedAtClamped != null && (
-                  <div>
-                    Reel 2 retrieve at setting {reel2EquivalentSettingClamped.toFixed(2)}: <span className="font-medium text-gray-900 dark:text-white">{reel2ActualSpeedAtClamped.toFixed(3)} m/s</span>
+                {reel2ActualSpeedAtWhole != null && (
+                  <div className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                    Retrieve at setting {reel2EquivalentSettingWhole}: <span className="font-medium">{reel2ActualSpeedAtWhole.toFixed(3)} m/s</span>
+                  </div>
+                )}
+
+                {reel2OutOfRange && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+                    Reel 2's max retrieve speed ({reel2MaxSpeed?.toFixed(2)} m/s) is lower than the target retrieve speed ({targetActualSpeed?.toFixed(3)} m/s). Even at setting 50, Reel 2 cannot match Reel 1.
+                  </div>
+                )}
+
+                {reel2BelowMin && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg text-sm text-amber-800 dark:text-amber-200">
+                    The equivalent setting is below 1, the lowest possible setting. Reel 2 will retrieve faster than Reel 1 even at setting 1.
                   </div>
                 )}
               </div>
-            </div>
-          )}
-
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 space-y-1">
-            <p><strong>How it works:</strong> A reel's listed retrieve speed is its speed at setting 50. At any other setting, the actual speed scales linearly: <code>actual = max × (setting / 50)</code>.</p>
-            <p>To match Reel 1's retrieve speed on Reel 2: <code>setting2 = setting1 × (max1 / max2)</code>.</p>
+            )}
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+          <p><strong>How it works:</strong> A reel's listed retrieve speed is its speed at setting 50. At any other setting, the actual speed scales linearly: <code>actual = max × (setting / 50)</code>.</p>
+          <p>To match Reel 1's retrieve speed on Reel 2: <code>setting2 = setting1 × (max1 / max2)</code>, then rounded to the nearest whole number since only integer settings can be selected in-game.</p>
         </div>
       </div>
     </div>
