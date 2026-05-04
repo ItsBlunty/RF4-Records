@@ -4090,7 +4090,7 @@ def serve_frontend(path: str):
         valid_frontend_routes = [
             "", "links", "records", "trophyweights", "topbaits",
             "skillguides", "skilltrees", "wearcalc", "waterbodyprices",
-            "alcohol", "reelinfo", "rodinfo", "iteminfo", "iteminfo/lines",
+            "alcohol", "reelinfo", "reelspeedcalc", "rodinfo", "iteminfo", "iteminfo/lines",
             "iteminfo/lures", "lurecrafting", "timeline", "qa", "cafeorders",
         ]
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, MapPin, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X } from 'lucide-react';
+import { Sun, Moon, Info, Database, BookOpen, Trophy, Target, Calculator, Wine, Link, DollarSign, TreePine, Settings, Zap, Map, MapPin, ChevronDown, Clock, GamepadIcon, HelpCircle, MessageCircle, FileImage, Coffee, Menu, X, Gauge } from 'lucide-react';
 import FeedbackButton from './FeedbackButton.jsx';
 
 const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDarkMode, onAboutClick, currentPage, onPageChange }) => {
@@ -317,7 +317,7 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
               <button
                 onClick={() => setGearDropdownOpen(!gearDropdownOpen)}
                 className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  ['wearcalc', 'reelinfo', 'rodinfo', 'iteminfo', 'lines', 'lures'].includes(currentPage)
+                  ['wearcalc', 'reelinfo', 'reelspeedcalc', 'rodinfo', 'iteminfo', 'lines', 'lures'].includes(currentPage)
                     ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800' 
                     : 'bg-gray-500 dark:bg-gray-500 text-white hover:bg-gray-600 dark:hover:bg-gray-600'
                 }`}
@@ -352,6 +352,18 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                   >
                     <Settings className="w-4 h-4 inline mr-2" />
                     Reel Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('reelspeedcalc');
+                      setGearDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                      currentPage === 'reelspeedcalc' ? 'bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    <Gauge className="w-4 h-4 inline mr-2" />
+                    Reel Speed Calc
                   </button>
                   <button
                     onClick={() => {
@@ -679,13 +691,27 @@ const Header = ({ total, filtered, onRefresh, lastRefresh, darkMode, onToggleDar
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
-                      currentPage === 'reelinfo' 
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300' 
+                      currentPage === 'reelinfo'
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
                     <Settings className="w-4 h-4 mr-3" />
                     Reel Info
+                  </button>
+                  <button
+                    onClick={() => {
+                      onPageChange && onPageChange('reelspeedcalc');
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center px-3 py-2 text-sm rounded-lg transition-colors ${
+                      currentPage === 'reelspeedcalc'
+                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <Gauge className="w-4 h-4 mr-3" />
+                    Reel Speed Calc
                   </button>
                   <button
                     onClick={() => {

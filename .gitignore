@@ -69,3 +69,6 @@ Thumbs.db
 *.sql
 *_backup.sql
 prod_backup.sql
+
+# Internal audit notes
+RAM_AUDIT.md
